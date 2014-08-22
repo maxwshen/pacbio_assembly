@@ -1,3 +1,5 @@
+# A-Bruijn Graph Construction
+
 import sys
 import string
 import datetime
@@ -7,12 +9,12 @@ import os
 from collections import defaultdict
 
 def main():
-  if len(sys.argv) != 6:
-    print 'Usage: python assembly <reads.fasta> <genome.fasta> <k> <T> <gv filename>'
-    sys.exit(0)
-
-  assembly(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), sys.argv[5])
-
+  reads_file = sys.argv[1]
+  genome_file = sys.argv[2]
+  _k = int(sys.argv[3])
+  _t = int(sys.argv[4])
+  gv_file = sys.argv[5]
+  assembly(reads_file, genome_file, _k, _t, gv_file)
 
 def assembly(reads, genome_file, _k, _t, gvname):
   # Given input reads in fasta format, assemble the genome
@@ -59,21 +61,23 @@ def assembly(reads, genome_file, _k, _t, gvname):
       if i > 0:
         genome += line.strip()
 
-  # position = 625
-  position = 0
+  starting_pos = 0    # 625
+  jump_length = 1     # 1250
+  neighborhood_width = 1250
+  neighborhood_margin = 0
+  position = starting_pos
   while position < len(genome) - _k + 1:
     seedktmer = genome[position : position + _k]
     if seedktmer in allnodes:
       seednode = allnodes[seedktmer]
-      neighborhood(reads, seednode, 1250, 0, position)
+      neighborhood(reads, seednode, neighborhood_width, neighborhood_margin, position)
       print '... Done.', position, datetime.datetime.now()
-      position += 1
-      # position += 1250
+      position += jump_length
     else:
       position += 1
 
   # testnode = allnodes['AAATGTTAATGGTCTGAAACGGAT']
-  # neighborhood(reads, testnode, 1250, 0)
+  # neighborhood(reads, testnode, neighborhood_width, neighborhood_margin)
   print '... Done.', datetime.datetime.now()
 
   return
@@ -157,6 +161,9 @@ def neighborhood(reads, centerNode, dist, margin, position):
   #   dist: Integer
   # Output:
   #   A set of sequences corresponding to the neighborhood of dist/2 around node
+  # Margin is deprecated, but refers to searching for nodes within the neighborhood by
+  #   exploring farther outside and then back in.
+  # Position is the true genomic position.
 
   nodes = dict()        # Keys are nodes, values are position, 0 = starting pt
   traversed = set()     # Set of nodes
@@ -195,7 +202,6 @@ def neighborhood(reads, centerNode, dist, margin, position):
       current = nodes.keys()[0]
       currpos = nodes[current]
       del nodes[current]
-
 
     print len(nodes)
 
