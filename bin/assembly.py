@@ -43,7 +43,6 @@ def assembly(reads, genome_file, _k, _t, gvname):
       for item in i[1]:
         if item > 0:
           f.write(str(item) + '\t')
-  #   print len(i[0]), len(i[1])
 
   print 'Generating graph...', datetime.datetime.now()
   headNode, allnodes = aBruijn(cReads)
@@ -53,6 +52,11 @@ def assembly(reads, genome_file, _k, _t, gvname):
   numJoined = 0
   numJoined = joinInOutDeg1Edges(headNode, _k)
   print '... Done.', datetime.datetime.now()
+
+  for n in allnodes:
+    print n.ktmer, len(n.reads)
+
+  return
 
   print 'Finding many neighborhoods...'
   genome = ''

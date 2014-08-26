@@ -27,8 +27,13 @@ def main():
     print 'Usage: python findTrueKmer <reads_file> <genome_file> <k> <cutoff>'
     sys.exit(0)
 
-  # findTrueKmer(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), 4)
-  findTrueKmer(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), 2)
+  reads_file = sys.argv[1]
+  genome_file = sys.argv[2]
+  _k = int(sys.argv[3])
+  cutoff = int(sys.argv[4])
+  t_greaterthan = 2
+
+  findTrueKmer(reads_file, genome_file, _k, cutoff, t_greaterthan)
   return 
 
   for t_cutoff in range(0, 10):
