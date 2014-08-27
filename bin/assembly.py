@@ -53,7 +53,7 @@ def assembly(reads, genome_file, _k, _t, gvname):
   numJoined = joinInOutDeg1Edges(headNode, _k)
   print '... Done.', datetime.datetime.now()
 
-  for n in allnodes:
+  for n in allnodes.values():
     print n.ktmer, len(n.reads)
 
   return

@@ -23,21 +23,21 @@ import locAL
 from collections import defaultdict
 
 def main():
-  if len(sys.argv) != 5:
-    print 'Usage: python findTrueKmer <reads_file> <genome_file> <k> <cutoff>'
-    sys.exit(0)
-
   reads_file = sys.argv[1]
   genome_file = sys.argv[2]
   _k = int(sys.argv[3])
   cutoff = int(sys.argv[4])
-  t_greaterthan = 2
+  t_atleast = int(sys.argv[5])
+  if sys.argv[6] == 'True':
+    fn = True
+  else:
+    fn = False
 
-  findTrueKmer(reads_file, genome_file, _k, cutoff, t_greaterthan)
+  findTrueKmer(reads_file, genome_file, _k, cutoff, t_atleast, fn)
   return 
 
-  for t_cutoff in range(0, 10):
-    findTrueKmer(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), t_cutoff)
+  for t_atleast in range(1, 11):
+    findTrueKmer(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), t_atleast)
 
 
 def generateRandomKmer(_k):
@@ -68,7 +68,55 @@ def graphviz(genomeKmers, degrees, kmers, cutoff):
     f.write('}')
 
 
-def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff):
+def filter_neighbors(degrees, cutoff):
+  # Input: Dict, keys = kmers, values = degrees
+  new_degrees = dict()
+  removed = set()
+  count = 0
+  for key in sorted(degrees, key=degrees.get, reverse=True):
+    if key not in removed:
+      new_degrees[key] = degrees[key]
+      neighbors = find_neighbors(degrees, key)
+      for n in [i for i in neighbors if i in degrees]:
+        removed.add(n)
+    else:
+      count += 1
+    if len(new_degrees) > cutoff:
+      break
+
+  print 'Filtered', count, 'kmers'
+  return new_degrees
+
+def find_neighbors(degrees, kmer):
+  del_kmers = GenerateIndelKmers.genDelKmers(kmer, 1)[1]
+  remove_list = []
+  for dk in del_kmers:
+    if dk == kmer[:-1] or dk == kmer[1:]:
+      remove_list.append(dk)
+  for dk in remove_list:
+    del_kmers.remove(dk)
+  remove_list = []
+  ins_kmers = GenerateIndelKmers.genInsKmers(kmer, 1)[1]
+  for ik in ins_kmers:
+    if kmer == ik[:-1] or kmer == ik[1:]:
+      remove_list.append(ik)
+  for ik in remove_list:
+    ins_kmers.remove(ik)
+
+  del_ins = set()
+  for dk in del_kmers:
+    for i in GenerateIndelKmers.genInsKmers(dk, 1)[1]:
+      del_ins.add(i)
+  for ik in ins_kmers:
+    for i in GenerateIndelKmers.genDelKmers(ik, 1)[1]:
+      del_ins.add(i)
+
+  del_ins.remove(kmer)
+
+  neighbors = [i for i in del_ins if i in degrees]
+  return neighbors
+
+def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff, fn):
   _kplus = _k + 1
   _kminus = _k - 1
   isdna = False
@@ -122,39 +170,44 @@ def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff):
 
   # Find degrees of all kmers
   degrees = dict()    # Key = kmer, Value = degree
-  # for kmer in kmers:
-  #   degree = 0
-  #   # del_kmers = GenerateIndelKmers.genDelKmers(kmer, 1)[1]
-  #   # for del_kmer in del_kmers:
-  #   #   if del_kmer in kminusmers:
-  #   #     # degree += 1
-  #   #     degree += kminusmers[del_kmer]
+  for kmer in kmers:
+    degree = 0
+    for del_kmer in GenerateIndelKmers.genDelKmers(kmer, 1)[1]:
+      if del_kmer in kminusmers:
+        if del_kmer != kmer[:-1] and del_kmer != kmer[1:]:
+          # degree += 1
+          degree += kminusmers[del_kmer]
 
-  #   ins_kmers = GenerateIndelKmers.genInsKmers(kmer, 1)[1]
-  #   for ins_kmer in ins_kmers:
-  #     if ins_kmer in kplusmers:
-  #       if kmer != ins_kmer[:-1] and kmer != ins_kmer[1:]:
-  #         degree += kplusmers[ins_kmer]
+    for ins_kmer in GenerateIndelKmers.genInsKmers(kmer, 1)[1]:
+      if ins_kmer in kplusmers:
+        if kmer != ins_kmer[:-1] and kmer != ins_kmer[1:]:
+          degree += kplusmers[ins_kmer]
 
-  #   degrees[kmer] = degree + kmers[kmer]
+    degrees[kmer] = degree + kmers[kmer]
 
   # Generate degrees by finding all possible deletions of (k+1)-mers
-  for kplusmer in kplusmers:
-    normal_kmers = GenerateIndelKmers.genDelKmers(kplusmer, 1)[1]
-    for kmer in normal_kmers:
-      if kmer != kplusmer[:-1] and kmer != kplusmer[1:]:
-        if kmer in degrees:
-          degrees[kmer] += kplusmers[kplusmer]
-        else:
-          degrees[kmer] = kplusmers[kplusmer]
-        if kmer not in kmers:
-          kmers[kmer] = 0
+  # for kplusmer in kplusmers:
+  #   normal_kmers = GenerateIndelKmers.genDelKmers(kplusmer, 1)[1]
+  #   for kmer in normal_kmers:
+  #     if kmer != kplusmer[:-1] and kmer != kplusmer[1:]:
+  #       if kmer in degrees:
+  #         degrees[kmer] += kplusmers[kplusmer]
+  #       else:
+  #         degrees[kmer] = kplusmers[kplusmer]
+  #       if kmer not in kmers:
+  #         kmers[kmer] = 0
 
   for kmer in degrees:
     degrees[kmer] += kmers[kmer]
   for kmer in kmers:
     if kmer not in degrees:
       degrees[kmer] = kmers[kmer]
+
+  for n in find_neighbors(degrees, 'ATGCACTGGGCATAC'):
+    print n, degrees[n]
+
+  if fn:
+    degrees = filter_neighbors(degrees, cutoff)
 
   numToOutput = cutoff
   numincorrect = 0
@@ -163,7 +216,7 @@ def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff):
   best = set()
   numoft = dict()
   for key in sorted(degrees, key=degrees.get, reverse=True):
-    if kmers[key] > t_cutoff:      # Filter by t
+    if kmers[key] >= t_cutoff:      # Filter by t
       if num >= 0:
         current_deg = degrees[key]
       elif degrees[key] != current_deg:
