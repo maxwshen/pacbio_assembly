@@ -116,6 +116,26 @@ def find_neighbors(degrees, kmer):
   neighbors = [i for i in del_ins if i in degrees]
   return neighbors
 
+def consensus(reads):
+  # Constructs a multiple alignment where each column has exactly 1 kind of nt
+  allnt = [list(reads[0])]
+  mat = [list(reads[0])]
+  for r in reads[1:]:
+    print mat
+    curr = []
+    for i in range(len(r)):
+      char = r[i]
+      if char != allnt[i]:
+        allnt = allnt[0:i] + [char] + allnt[i:]
+        for j in range(len(mat)):
+          mat[j] = mat[j][0:i] + ['-'] + mat[j][i:]  
+      curr.append(char)
+    mat.append(curr)
+
+  for m in mat:
+    print m
+
+
 def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff, fn):
   _kplus = _k + 1
   _kminus = _k - 1
@@ -205,6 +225,9 @@ def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff, fn):
 
   for n in find_neighbors(degrees, 'ATGCACTGGGCATAC'):
     print n, degrees[n]
+
+  consensus(find_neighbors(degrees, 'ATGCACTGGGCATAC'))
+  return
 
   if fn:
     degrees = filter_neighbors(degrees, cutoff)

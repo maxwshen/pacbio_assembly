@@ -15,35 +15,29 @@ def main():
   plot(input_file)
 
 def plot(input_file):
-  x1 = []
-  y1 = []
-  x2 = []
-  y2 = []
+  data1 = []
+  data2 = []
 
   fileh = open(input_file, 'r')
   for i, line in enumerate(fileh):  
     words = line.strip().split()
+
+    data = int(words[1])
     correctness = words[2]
-    x = int(words[1])
-    y = int(words[6])
+    
     if correctness == 'correct':
-      x1.append(x)
-      y1.append(y)
+      data1.append(data)
     else:
-      x2.append(x)
-      y2.append(y)
+      data2.append(data)
 
   largest = [max(correct_deg), max(wrong_deg)]
   binrange = range(0, max(largest))
-  for i in range(len(correct_deg)):
-    plt.plot(x1, y1, 'go', alpha=0.1)
 
-  for i in range(len(wrong_deg)):
-    plt.plot(x2, y2, 'ro', alpha=0.1)
+  plt.hist(data1, color = 'green', bins = binrange, alpha = 0.4, log = True)
+  plt.hist(data2, color = 'red', bins = binrange, alpha = 0.4, log = True)
 
-  plt.xlabel('t of Central Node')
-  plt.ylabel('Degree of Central Node')
-  # plt.axis([0, 30, 0, 10000])
+  plt.xlabel('Degree')
+  plt.ylabel('Quantity')
   plt.show()
 
 if __name__ == '__main__':
