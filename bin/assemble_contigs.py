@@ -44,7 +44,8 @@ def assemble_contigs(contigs_file, highdegnodes_file):
     for i, line in enumerate(f):
       kmer = line.split()[0]
       degree = int(line.split()[3])
-      nodes[kmer] = degree
+      _t = int(line.split()[6])
+      nodes[kmer] = (degree, _t)
       lenkmer = len(kmer)
 
   while True:
@@ -61,10 +62,16 @@ def assemble_contigs(contigs_file, highdegnodes_file):
 
     print overlap
     print c1kmer[-lenkmer:], nodes[c1kmer[-lenkmer:]], c2kmer[:lenkmer], nodes[c2kmer[:lenkmer]]
-    if nodes[c1kmer[-lenkmer:]] > nodes[c2kmer[:lenkmer]]:
+    # First by t, then by degree if t's are equal
+    if nodes[c1kmer[-lenkmer:]][1] > nodes[c2kmer[:lenkmer]][1]:
       new_contig = c1kmer + c2kmer[overlap:]
-    else:
+    elif nodes[c1kmer[-lenkmer:]][1] < nodes[c2kmer[:lenkmer]][1]:
       new_contig = c1kmer[:-overlap] + c2kmer
+    else:
+      if nodes[c1kmer[-lenkmer:]][0] > nodes[c2kmer[:lenkmer]][0]:
+        new_contig = c1kmer + c2kmer[overlap:]
+      else:
+        new_contig = c1kmer[:-overlap] + c2kmer
 
     print c1[0], c2[1], new_contig
     contigs.append((c1[0], c2[1], new_contig))
@@ -102,7 +109,7 @@ def find_overlap(contigs):
       if c1start < c2start < c1end:
         # +1 because the ending position is 1 less than it should be. BUG to fix
         # +1 because there are 2 nucleotides between positions 1 and 2
-        return c1end - c2start + 2, c1, c2
+        return c1end - c2start + 1, c1, c2
   return None
 
 if __name__ == '__main__':
