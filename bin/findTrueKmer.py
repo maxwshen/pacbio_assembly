@@ -36,6 +36,14 @@ def main():
   findTrueKmer(reads_file, genome_file, _k, cutoff, t_atleast, fn)
   return 
 
+  # Batch
+  for i in range(12):
+    _i = str(i)
+    reads_file = '/home/mshen/research/data/high_cov/ec_reads_rh_hc_n' + _i + '_gi.fasta'
+    genome_file = '/home/mshen/research/data/high_cov/ec_genome_rh_hc_n' + _i + '.fasta'
+    findTrueKmer(reads_file, genome_file, _k, cutoff, t_atleast, fn)
+  return
+
   for t_atleast in range(1, 11):
     findTrueKmer(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), t_atleast)
 
@@ -84,7 +92,7 @@ def filter_neighbors(degrees, cutoff):
     if len(new_degrees) > cutoff:
       break
 
-  print 'Filtered', count, 'kmers'
+  # print 'Filtered', count, 'kmers'
   return new_degrees
 
 def find_neighbors(degrees, kmer):
@@ -223,11 +231,11 @@ def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff, fn):
     if kmer not in degrees:
       degrees[kmer] = kmers[kmer]
 
-  for n in find_neighbors(degrees, 'ATGCACTGGGCATAC'):
-    print n, degrees[n]
+  # for n in find_neighbors(degrees, 'ATGCACTGGGCATAC'):
+  #   print n, degrees[n]
 
-  consensus(find_neighbors(degrees, 'ATGCACTGGGCATAC'))
-  return
+  # consensus(find_neighbors(degrees, 'ATGCACTGGGCATAC'))
+  # return
 
   if fn:
     degrees = filter_neighbors(degrees, cutoff)
@@ -246,6 +254,7 @@ def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff, fn):
         break
 
       if key in genomeKmers:
+        pass
         print key, 'Deg =', degrees[key], 't =', kmers[key], 'correct'
       else:
         print key, 'Deg =', degrees[key], 't =', kmers[key], 'incorrect'

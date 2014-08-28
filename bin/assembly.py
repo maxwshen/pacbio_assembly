@@ -53,10 +53,6 @@ def assembly(reads, genome_file, _k, _t, gvname):
   numJoined = joinInOutDeg1Edges(headNode, _k)
   print '... Done.', datetime.datetime.now()
 
-  for n in allnodes.values():
-    print n.ktmer, len(n.reads)
-
-  return
 
   print 'Finding many neighborhoods...'
   genome = ''
@@ -275,8 +271,9 @@ def findKTmers(reads, _k, _t):
         isdna = True
   ans = set()
 
+  filter_maximum = 10
   for key, val in counts.iteritems():
-    if val >= _t:
+    if _t <= val <= filter_maximum:
       ans.add(key)
   print 'Found', len(ans), 'ktmers in', readcount, 'reads'
   return ans

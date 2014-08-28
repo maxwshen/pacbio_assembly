@@ -65,7 +65,7 @@ def main():
   contigs = contig(nodes, genome_file, gvname, kparam, lparam)
   supercontigs = findPathsNew(nodes, kparam)
   find_location(supercontigs, genome_file, kparam, lparam)
-  # checkAccuracy(contigs, genome_file)
+  checkAccuracy(supercontigs, genome_file)
 
   # bestpath = findPaths(nodes)
   # checkAccuracy([bestpath], genome_file)
@@ -73,6 +73,8 @@ def main():
 def find_location(super_contigs, genome_file, kparam, lparam):
   # Input: List of strings
   # Finds the starting and ending locations of super contigs
+  # This works by finding the first and last kmer in each super contig
+  # and finding their position in the genome.
   with open(genome_file) as f:
     genome = f.readlines()[1]
   genome_kminusmers = defaultdict(list)

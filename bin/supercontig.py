@@ -31,10 +31,10 @@ def main():
   # genome = '/home/mshen/research/sim/sim_genome_1kb_noshift.fasta'
   _k = str( 15 )
   cutoff_deg_nodes = str( 1000 )
-  t_greater_than_cutoff = str( 2 )
+  t_greater_than_cutoff = str( 0 )
+  filter_neighbors = 'True'
   _l = str( 0 )
   trim_num = str( 0 )
-  num_iterations = 2
   
   t_atleast_cutoff = str(int(t_greater_than_cutoff) + 1)
   # name_base = 'sim_ns1'
@@ -42,15 +42,18 @@ def main():
 
 
 
-  for i in range(num_iterations):
+  for i in range(12):
+    _i = str(i)
+    reads = '/home/mshen/research/data/high_cov/ec_reads_rh_hc_n' + _i + '_gi.fasta'
+    genome = '/home/mshen/research/data/high_cov/ec_genome_rh_hc_n' + _i + '.fasta'
+
     print 'Reads:', reads
     print 'Genome:', genome
     print 'k:', _k
     print 'Cutoff for high degree nodes:', cutoff_deg_nodes
     print 't-cutoff: t >', t_greater_than_cutoff
     print 'l:', _l
-    print 'Trim num:', trim_num
-    print 'Number of Iterations:', num_iterations, '\n'
+    print 'Trim num:', trim_num, '\n'
 
     _i = str(i)
     fold = name_base + '_fold_s' + _i + '.t' + t_atleast_cutoff + '.' + _k + '.L' + _l + '/'
@@ -66,7 +69,7 @@ def main():
 
     # Find high degree nodes in reads
     with open(highdegnodes_outfile, 'w') as f:
-      call(python_ver + ' ' + findTrueKmer + ' ' + reads + ' ' + genome + ' ' + _k + ' ' + cutoff_deg_nodes, stdout = f, shell = True)
+      call(python_ver + ' ' + findTrueKmer + ' ' + reads + ' ' + genome + ' ' + _k + ' ' + cutoff_deg_nodes + ' ' + t_atleast_cutoff + ' ' + filter_neighbors, stdout = f, shell = True)
     with open(highdegnodes_outfile) as f:
       with open(highdegnodes_kmers_outfile, 'w') as g:
         for i, line in enumerate(f):
@@ -90,11 +93,6 @@ def main():
           if line == 'Done\n':
             get_contigs = True
 
-    # Replace contigs into reads
-    call(python_ver + ' ' + genome_sim + ' -f ' + fold + ' -c ' + just_contigs_file + ' --kmers ' + highdegnodes_kmers_outfile + ' -g ' + genome + ' -r ' + reads + ' -o ' + output_reads + ' --k ' + _k, shell=True)
-
-    _k = str(int(_k) - 1)
-    reads = fold + output_reads
 
 if __name__ == '__main__':
   start = datetime.datetime.now()
