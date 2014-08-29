@@ -45,7 +45,7 @@ def main():
   return
 
   for t_atleast in range(1, 11):
-    findTrueKmer(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]), t_atleast)
+    findTrueKmer(reads_file, genome_file, _k, cutoff, t_atleast, fn)
 
 
 def generateRandomKmer(_k):
@@ -74,7 +74,6 @@ def graphviz(genomeKmers, degrees, kmers, cutoff):
         f.write(key[:-1] + ' -> ' + key[1:] + ' [color="red"];\n')
       num -= 1
     f.write('}')
-
 
 def filter_neighbors(degrees, cutoff):
   # Input: Dict, keys = kmers, values = degrees
@@ -126,6 +125,7 @@ def find_neighbors(degrees, kmer):
 
 def consensus(reads):
   # Constructs a multiple alignment where each column has exactly 1 kind of nt
+  # Doesn't work properly right now, need to use dynamic programming
   allnt = [list(reads[0])]
   mat = [list(reads[0])]
   for r in reads[1:]:
@@ -142,7 +142,6 @@ def consensus(reads):
 
   for m in mat:
     print m
-
 
 def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff, fn):
   _kplus = _k + 1

@@ -26,8 +26,8 @@ def main():
   # Batch
   for i in range(12):
     _i = str(i)
-    contigs_file = '/home/mshen/research/highcov__fold_s' + _i + '.t1.15.L0/contigsout.s' + _i + '.t1.15.L0.txt'
-    highdegnodes_file = '/home/mshen/research/highcov__fold_s' + _i + '.t1.15.L0/highdegnodes.15.s' + _i + '.t1.kmers.out'
+    contigs_file = '/home/mshen/research/highdegassembly_stats/highcov__fold_s' + _i + '.t1.15.L0/contigsout.s' + _i + '.t1.15.L0.txt'
+    highdegnodes_file = '/home/mshen/research/highdegassembly_stats/highcov__fold_s' + _i + '.t1.15.L0/highdegnodes.15.s' + _i + '.t1.kmers.out'
     genome_file = '/home/mshen/research/data/high_cov/ec_genome_rh_hc_n' + _i + '.fasta'
 
     supercontig = assemble_contigs(contigs_file, highdegnodes_file)

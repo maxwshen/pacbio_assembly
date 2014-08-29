@@ -30,9 +30,9 @@ def main():
   reads = sys.argv[1]
   genome = sys.argv[2]
   # genome = '/home/mshen/research/sim/sim_genome_1kb_noshift.fasta'
-  _k = str( 15 )
+  _k = str( 10 )
   cutoff_deg_nodes = str( 1000 )
-  t_greater_than_cutoff = str( 0 )
+  t_greater_than_cutoff = str( 1 )
   filter_neighbors = 'True'
   _l = str( 0 )
   trim_num = str( 0 )
@@ -42,20 +42,20 @@ def main():
   name_base = sys.argv[3]
 
 
-  for j in range(30, 5, -1):
-    for i in range(10):
+  for j in range(10, 9, -1):
+    for i in range(0, 1):
       _i = str(i)
       _j = str(j)
 
       # Simulated reads
       # j range from 30 to 5, i range 10
-      reads = '/home/mshen/research/sim/sim_10ns/sim_reads_1kb_ns' + _i + '_cov' + _j + '.fasta'
-      genome = '/home/mshen/research/sim/sim_10ns/sim_genome_1kb_ns' + _i + '.fasta'
+      # reads = '/home/mshen/research/sim/sim_10ns/sim_reads_1kb_ns' + _i + '_cov' + _j + '.fasta'
+      # genome = '/home/mshen/research/sim/sim_10ns/sim_genome_1kb_ns' + _i + '.fasta'
 
       # E. coli reads
       # j range from 35 to 5, i range 12
-      # reads = '/home/mshen/research/data/all_cov/ec_reads_rh_hc_n' + _i + '_cov' + _j + '.fasta'
-      # genome = '/home/mshen/research/data/all_cov/ec_genome_rh_hc_n' + _i + '.fasta'
+      reads = '/home/mshen/research/data/all_cov/ec_reads_rh_hc_n' + _i + '_cov' + _j + '.fasta'
+      genome = '/home/mshen/research/data/all_cov/ec_genome_rh_hc_n' + _i + '.fasta'
 
       # print 'Reads:', reads
       # print 'Genome:', genome
