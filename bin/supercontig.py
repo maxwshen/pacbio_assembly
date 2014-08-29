@@ -42,20 +42,20 @@ def main():
   name_base = sys.argv[3]
 
 
-  for j in range(35, 5, -1):
-    for i in range(12):
+  for j in range(30, 5, -1):
+    for i in range(10):
       _i = str(i)
       _j = str(j)
 
       # Simulated reads
       # j range from 30 to 5, i range 10
-      # reads = '/home/mshen/research/sim/sim_10ns/sim_reads_1kb_ns' + _i + '_cov' + _j + '.fasta'
-      # genome = '/home/mshen/research/sim/sim_10ns/sim_genome_1kb_ns' + _i + '.fasta'
+      reads = '/home/mshen/research/sim/sim_10ns/sim_reads_1kb_ns' + _i + '_cov' + _j + '.fasta'
+      genome = '/home/mshen/research/sim/sim_10ns/sim_genome_1kb_ns' + _i + '.fasta'
 
       # E. coli reads
       # j range from 35 to 5, i range 12
-      reads = '/home/mshen/research/data/all_cov/ec_reads_rh_hc_n' + _i + '_cov' + _j + '.fasta'
-      genome = '/home/mshen/research/data/all_cov/ec_genome_rh_hc_n' + _i + '.fasta'
+      # reads = '/home/mshen/research/data/all_cov/ec_reads_rh_hc_n' + _i + '_cov' + _j + '.fasta'
+      # genome = '/home/mshen/research/data/all_cov/ec_genome_rh_hc_n' + _i + '.fasta'
 
       # print 'Reads:', reads
       # print 'Genome:', genome
