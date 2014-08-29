@@ -19,6 +19,11 @@ def main():
   highdegnodes_file = sys.argv[2] 
   genome_file = sys.argv[3]
 
+  supercontig = assemble_contigs(contigs_file, highdegnodes_file)
+  checkAccuracy(supercontig, genome_file)
+  return
+
+  # Batch
   for i in range(12):
     _i = str(i)
     contigs_file = '/home/mshen/research/highcov__fold_s' + _i + '.t1.15.L0/contigsout.s' + _i + '.t1.15.L0.txt'
@@ -29,7 +34,7 @@ def main():
     checkAccuracy(supercontig, genome_file)
 
 def assemble_contigs(contigs_file, highdegnodes_file):
-  length_cutoff = 20
+  length_cutoff = 0
   contigs = [] # List of tuples (start, end, contig)
   with open(contigs_file) as f:
     for i, line in enumerate(f):
@@ -60,20 +65,35 @@ def assemble_contigs(contigs_file, highdegnodes_file):
       print 'Overlap > lenkmer:', overlap, c1kmer, c2kmer
       sys.exit(0)
 
-    print overlap
-    print c1kmer[-lenkmer:], nodes[c1kmer[-lenkmer:]], c2kmer[:lenkmer], nodes[c2kmer[:lenkmer]]
+    # print overlap
+    # print c1kmer[-lenkmer:], nodes[c1kmer[-lenkmer:]], c2kmer[:lenkmer], nodes[c2kmer[:lenkmer]]
     # First by t, then by degree if t's are equal
-    if nodes[c1kmer[-lenkmer:]][1] > nodes[c2kmer[:lenkmer]][1]:
+    if c1kmer[-lenkmer:] not in nodes.keys():
+      print c1kmer[-lenkmer:], 'not in high-deg nodes'
+      c1deg = 0
+      c1t = 0
+    else:
+      c1deg = nodes[c1kmer[-lenkmer:]][0]
+      c1t = nodes[c1kmer[-lenkmer:]][1]
+    if c2kmer[:lenkmer] not in nodes:
+      print c2kmer[:lenkmer], 'not in high-deg nodes'
+      c2deg = 0
+      c2t = 0
+    else:
+      c2deg = nodes[c2kmer[:lenkmer]][0]
+      c2t = nodes[c2kmer[:lenkmer]][1]
+      
+    if c1t > c2t:
       new_contig = c1kmer + c2kmer[overlap:]
-    elif nodes[c1kmer[-lenkmer:]][1] < nodes[c2kmer[:lenkmer]][1]:
+    elif c1t < c2t:
       new_contig = c1kmer[:-overlap] + c2kmer
     else:
-      if nodes[c1kmer[-lenkmer:]][0] > nodes[c2kmer[:lenkmer]][0]:
+      if c1deg > c2deg:
         new_contig = c1kmer + c2kmer[overlap:]
       else:
         new_contig = c1kmer[:-overlap] + c2kmer
 
-    print c1[0], c2[1], new_contig
+    # print c1[0], c2[1], new_contig
     contigs.append((c1[0], c2[1], new_contig))
     del contigs[contigs.index(c1)]
     del contigs[contigs.index(c2)]
