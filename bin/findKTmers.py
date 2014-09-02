@@ -18,13 +18,13 @@ def main():
   _k = int(sys.argv[2])
   _t = int(sys.argv[3])
 
-  findKTmers(reads, _k, _t)
+  kmers = findKTmers(reads, _k, _t)
 
 def findKTmers(reads, _k, _t):
   # Returns a set of strings
 
   isdna = False
-  counts = dict()
+  counts = dict()   # Key = kmer, Value = t
   readcount = 0
   with open(reads) as f:
     for i, line in enumerate(f):
@@ -51,6 +51,13 @@ def findKTmers(reads, _k, _t):
   print 'Found ' + str(len(ans)) + ' (' + str(_k) + ',' + str(_t) + ')-mers in ' + str(readcount) + ' reads'
 
   # print ans
+
+  genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
+  with open(genome_file) as f:
+    genome = ''.join(f.readlines()[1:]).translate(None, '\r\n')
+  for kmer in counts.keys():
+    if counts[kmer] > 3:
+      print kmer, counts[kmer], genome.count(kmer)
 
   return ans
 

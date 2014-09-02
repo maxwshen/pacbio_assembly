@@ -17,9 +17,9 @@ def main():
   genome_file = sys.argv[2]
   _k = int(sys.argv[3])
 
-  table(reads_file, genome_file, _k)
+  highdegnodes_stats(reads_file, genome_file, _k)
 
-def table(reads_file, genome_file, _k):
+def highdegnodes_stats(reads_file, genome_file, _k):
   h_reads, r_reads = read_fasta(reads_file)
   h_genome, r_genome = read_fasta(genome_file)
   genome = r_genome[0]
@@ -61,6 +61,8 @@ def table(reads_file, genome_file, _k):
       for i in GenerateIndelKmers.genDelKmers(dk, 1)[1]:
         del_del.add(i)
 
+    print '\n', kmer, x
+
     for j in range(len(r_reads)):
       read = r_reads[j]
       starting_pos = int(h_reads[j].split('$')[-3])
@@ -75,8 +77,12 @@ def table(reads_file, genome_file, _k):
 
         pos = starting_pos + i
 
+        # Exact
+        if l_0 == kmer:
+          curr._t += 1
         if l_0 in del_ins:
           curr.pos_0.append(pos)
+          print l_0, pos
         if l_p1 in ins_kmers:
           curr.pos_p1.append(pos)
         if l_m1 in del_kmers:
@@ -99,6 +105,7 @@ class Kmer():
     self.pos_m1 = []
     self.pos_m2 = []
     self.pos_true = -1
+    self._t = 1
 
   def __str__(self):
     all_pos = [] + self.pos_p1 + self.pos_p2 + self.pos_0 + self.pos_m1 + self.pos_m2
