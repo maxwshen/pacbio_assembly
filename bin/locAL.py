@@ -40,25 +40,32 @@ bt_diag = 3
 
 def main():
   if len(sys.argv) < 3 or len(sys.argv) % 2 == 0:
-    print 'Usage: python locAL.py <seq file1> <seq file2> -m <match> -s <mismatch> -go <gap-open> -ge gap-extend'
+    print 'Usage: python locAL.py <seq file1> <seq file2>'
+    print 'Optional Flags: -m <match> -s <mismatch> -go <gap-open> -ge <gap-extend>'
     sys.exit(0)
 
   # Default values
   ms = 1
-  mms = -2
-  go = -2
-  ge = -1
+  mms = -1
+  go = -1
+  ge = -0.5
+
+  h1, r1 = read_fasta(sys.argv[1])
+  h2, r2 = read_fasta(sys.argv[2])
+  seq1 = r1[0]
+  seq2 = r2[0]
 
   # Detect flags and change parameters
-  for param in sys.argv[3:]:
-    if param == '-m':
-      ms = float(sys.argv[sys.argv.index('-m') + 1])
-    if param == '-s':
-      mms = float(sys.argv[sys.argv.index('-s') + 1])
-    if param == '-go':
-      go = float(sys.argv[sys.argv.index('-go') + 1])
-    if param == '-ge':
-      ge = float(sys.argv[sys.argv.index('-ge') + 1])
+  if len(sys.argv) > 3:
+    for param in sys.argv[3:]:
+      if param == '-m':
+        ms = float(sys.argv[sys.argv.index('-m') + 1])
+      if param == '-s':
+        mms = float(sys.argv[sys.argv.index('-s') + 1])
+      if param == '-go':
+        go = float(sys.argv[sys.argv.index('-go') + 1])
+      if param == '-ge':
+        ge = float(sys.argv[sys.argv.index('-ge') + 1])
 
   print 'Match = ', ms, '\tMismatch = ', mms
   print 'Gap Open = ', go, '\t\tGap Extend = ', ge
@@ -68,15 +75,10 @@ def main():
     print 'ERROR: Bad scoring parameter values'
     sys.exit(0)
   if ms + 3 * mms > 0:
-    print 'ERROR: Positive expected score for background'
+    print 'ERROR: Positive expected score for random DNA sequences'
     print ms - 3*mms
     sys.exit(0)
 
-  h1, r1 = read_fasta(sys.argv[1])
-  h2, r2 = read_fasta(sys.argv[2])
-
-  seq1 = r1[0]
-  seq2 = r2[0]
 
   return locAL(seq1, seq2, ms, mms, go, ge, silenced = False, bestseq1 = True)
 
@@ -114,7 +116,6 @@ def external_bestseq1(seq1, seq2, mscore, mmscore, goscore, gescore):
 
 def locAL(seq1, seq2, ms, mms, go, ge, silenced = True, bestseq1 = False):
   # bestseq1 will force all of seq1 to be in the alignment
-  # s is 2d array of size (seq1 + 1 by seq2 + 1), init. to 0's
   s_mat = [[0]*(len(seq2) + 1) for i in range(len(seq1) + 1)]
   d_mat = [[0]*(len(seq2) + 1) for i in range(len(seq1) + 1)]
   bt_mat = [[0]*(len(seq2) + 1) for i in range(len(seq1) + 1)]
@@ -137,9 +138,7 @@ def locAL(seq1, seq2, ms, mms, go, ge, silenced = True, bestseq1 = False):
 
   if not silenced:
     print 'Generating alignment... Sequence len:', len(seq1)
-  # Generate local alignment
   for i in xrange(1, len(seq1) + 1):
-    # print i # track progress
     for j in xrange(1, len(seq2) + 1):
       diag = s_mat[i - 1][j - 1] + score(seq1[i - 1], seq2[j - 1], ms, mms, go, ge)
 
@@ -189,6 +188,8 @@ def locAL(seq1, seq2, ms, mms, go, ge, silenced = True, bestseq1 = False):
   (alignLen, matches, mismatches, numgaps, numGapExtends) = printAlignment(seq1, seq2, bt_mat, best[1:], silenced)
   if not silenced: 
     print 'Score =', best[0]
+    if best[0] == 0:
+      print 'SUGGESTION: Use different scoring parameters. No positive scoring alignment was found.'
   # print s_mat, '\n'
   # print bt_mat, '\n'
   # print d_mat, '\n'
@@ -198,8 +199,6 @@ def locAL(seq1, seq2, ms, mms, go, ge, silenced = True, bestseq1 = False):
 
 def printAlignment(seq1, seq2, btMatrix, best_xy, silenced = True):
   # Given the backtracking matrix, prints out the best local alignment
-  if not silenced:
-    print 'Printing alignment...'
   (i, j) = best_xy
   query = ''
   db = ''
@@ -232,29 +231,53 @@ def printAlignment(seq1, seq2, btMatrix, best_xy, silenced = True):
   query = query[::-1]
   db = db[::-1]
 
-  numGapExtends = printSeqs(query, db, silenced)
+  (dels, ins) = printSeqs(query, db, silenced)
+  totalnumgaps = dels[0] + ins[0]
+  totalgap_positions = dels[1] + ins[1]
+  numGapExtends = totalgap_positions - totalnumgaps
+  avg_gap_len = 0
+  avg_ins_len = 0
+  avg_del_len = 0
+  if totalnumgaps > 0:
+    avg_gap_len = float(totalgap_positions) / float(totalnumgaps)
+  if ins[0] > 0:
+    avg_ins_len = float(ins[1]) / float(ins[0])
+  if dels[0] > 0:
+    avg_del_len = float(dels[1])/ float(dels[0])
+
   if not silenced:
-    print 'Alignment Length:', len(query), '\nMatches:', matches, '\tMismatches:', mismatches
-    print 'Total Gaps:', numgaps, '\tGap Opens:', numgaps - numGapExtends, '\tGap Extends:', numGapExtends
+    print 'Alignment Len:', len(query), '\nMatches:', matches, '\tMismatches:', mismatches
+    print 'Gaps:', totalnumgaps, '\tAvg Gap Len:', avg_gap_len
+    print 'Ins:', ins[0], ' \tAvg Ins Len:', avg_ins_len
+    print 'Del:', dels[0], ' \tAvg Del Len:', avg_del_len
 
   return (len(query), matches, mismatches, numgaps, numGapExtends)
 
 def printSeqs(query, db, silenced = True):
-  # Returns the number of gap extensions
+  # Returns information about gaps
   m = ''
+  dels = [0, 0]   # starts, total
+  ins = [0, 0]    # starts, total
   numGapExtends = 0
   for i in range(len(query)):
     if query[i] == db[i]:
       m += '|'
-    elif query[i] == '-' or db[i] == '-':
-      m += ' '
-      if query[i-1] == '-' or db[i-1] == '-':
-        numGapExtends += 1
     else:
+      if query[i] == '-':
+        m += ' '
+        dels[1] += 1
+        if query[i-1] != '-':
+          dels[0] += 1
+      if db[i] == '-':
+        m += ' '
+        ins[1] += 1
+        if db[i-1] != '-':
+          ins[0] += 1
+    if query[i] != db[i] and query[i] != '-' and db[i] != '-':
       m += '*'
   if not silenced:
     print query, '\n', m, '\n', db
-  return numGapExtends
+  return (dels, ins)
 
 def score(base1, base2, ms, mms, go, ge):
   # Returns the numeric alignment score between the input bases
