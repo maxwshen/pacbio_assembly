@@ -26,9 +26,9 @@ def main():
   reads_file = sys.argv[1]
   genome_file = sys.argv[2]
   _k = int(sys.argv[3])
-  cutoff = int(sys.argv[4])
+  cutoff = int(sys.argv[4])     # Number of k-mers to output, ordered from highest deg
   t_atleast = int(sys.argv[5])
-  if sys.argv[6] == 'True':
+  if sys.argv[6] == 'True':     # Filter neighbor flag
     fn = True
   else:
     fn = False
@@ -113,9 +113,11 @@ def find_neighbors(degrees, kmer):
   del_ins = set()
   for dk in del_kmers:
     for i in GenerateIndelKmers.genInsKmers(dk, 1)[1]:
+      # if dk != i[:-1] and dk != i[1:]:
       del_ins.add(i)
   for ik in ins_kmers:
     for i in GenerateIndelKmers.genDelKmers(ik, 1)[1]:
+      # if i != ik[:-1] and i != ik[1:]:
       del_ins.add(i)
 
   del_ins.remove(kmer)
@@ -148,9 +150,9 @@ def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff, fn):
   _kminus = _k - 1
   isdna = False
   readcount = 0
-  kmers = dict()
-  kplusmers = dict()
-  kminusmers = dict()
+  kmers = dict()        # Key = kmer string, value = degree int
+  kplusmers = dict()    # Key = kmer string, value = degree int
+  kminusmers = dict()   # Key = kmer string, value = degree int
 
   with open(reads_file) as f:
     for i, line in enumerate(f):
@@ -212,29 +214,11 @@ def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff, fn):
 
     degrees[kmer] = degree + kmers[kmer]
 
-  # Generate degrees by finding all possible deletions of (k+1)-mers
-  # for kplusmer in kplusmers:
-  #   normal_kmers = GenerateIndelKmers.genDelKmers(kplusmer, 1)[1]
-  #   for kmer in normal_kmers:
-  #     if kmer != kplusmer[:-1] and kmer != kplusmer[1:]:
-  #       if kmer in degrees:
-  #         degrees[kmer] += kplusmers[kplusmer]
-  #       else:
-  #         degrees[kmer] = kplusmers[kplusmer]
-  #       if kmer not in kmers:
-  #         kmers[kmer] = 0
-
   for kmer in degrees:
     degrees[kmer] += kmers[kmer]
   for kmer in kmers:
     if kmer not in degrees:
       degrees[kmer] = kmers[kmer]
-
-  # for n in find_neighbors(degrees, 'ATGCACTGGGCATAC'):
-  #   print n, degrees[n]
-
-  # consensus(find_neighbors(degrees, 'ATGCACTGGGCATAC'))
-  # return
 
   if fn:
     degrees = filter_neighbors(degrees, cutoff)
@@ -282,104 +266,6 @@ def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff, fn):
 
   print 't-cutoff:', t_cutoff, 'Incorrect:', numincorrect, 'Total:', cutoff - num
   return
-
-  # print numoft
-  total = float(numToOutput)
-  t2orhigher = 0
-  t3orhigher = 0
-  t4orhigher = 0
-  for key in numoft.keys():
-    if key >= 2:
-      t2orhigher += numoft[key]
-  t3orhigher = t2orhigher - numoft[2]
-  t4orhigher = t3orhigher - numoft[3]
-
-  # Generate incorrect kmers that do not exist in genome
-  numIncorrectKmers = 5000
-  genomeKmers = set()
-  for i in range(len(genome) - _k + 1):
-    genomeKmers.add(genome[i:i+_k])
-  wrongKmers = set()
-  while len(wrongKmers) < numIncorrectKmers:
-    randKmer = generateRandomKmer(_k)
-    if randKmer not in genomeKmers:
-      wrongKmers.add(randKmer)
-
-  # Find degree of incorrect kmers
-  degreesWrong = dict()
-  for kmer in wrongKmers:
-    del_kmers = GenerateIndelKmers.genDelKmers(kmer, 1)[1]
-    degree = 0
-    for del_kmer in del_kmers:
-      if del_kmer in kminusmers:
-        degree += 1
-
-    ins_kmers = GenerateIndelKmers.genInsKmers(kmer, 1)[1]
-    for ins_kmer in ins_kmers:
-      if ins_kmer in kplusmers:
-        degree += 1 
-
-    degreesWrong[kmer] = degree
-
-  print '\n', numIncorrectKmers, 'Incorrect kmers, sorted\n', 
-  for key in sorted(degreesWrong, key=degrees.get, reverse=True):
-    # print key, 'Deg =', degreesWrong[key]
-    pass
-
-  # return
-
-  print _k
-
-  numPerfect = 0
-  matchScores = []
-  perfectStarts = []
-  perfectLens = []
-  for kmer in best:
-    (alignLen, matches, mismatches, numgaps, numGapExtends, bestxy) = locAL.external_bestseq1(kmer, genome, 1, -1, -1, -0.5)
-    # print 'Range:', bestxy[1] - alignLen, '-', bestxy[1]
-    score = float(matches)/float(alignLen)
-    matchScores.append(score)
-    
-    if score == 1:
-      # Only consider correct kmers as within center 800bp
-      if 100 < bestxy[1] - alignLen < 900: 
-        print kmer, bestxy[1] - alignLen
-        numPerfect += 1
-        perfectStarts.append(bestxy[1] - alignLen)
-        perfectLens.append(alignLen)
-  perfectLens = [x for (y,x) in sorted(zip(perfectStarts, perfectLens))]
-  perfectStarts = sorted(perfectStarts)
-
-  # for score in matchScores:
-  #   print str(score) + '\t',
-  # print '\n'
-
-  perfectRanges = [] # stores tuples
-  start = -1
-  end = -1
-  for i in range(len(genome)):
-    if i in perfectStarts:
-      if end < i + perfectLens[perfectStarts.index(i)]:
-        end = i + perfectLens[perfectStarts.index(i)]
-      if start == -1:
-        start = i
-    if i == end:
-      perfectRanges.append((start, end))
-      start = -1
-      end = -1
-
-  totalCovered = 0
-  for (x, y) in perfectRanges:
-    totalCovered += y - x
-
-  # print '2 or higher t:', t2orhigher, float(t2orhigher)/total
-  # print '3 or higher t:', t3orhigher, float(t3orhigher)/total
-  # print '4 or higher t:', t4orhigher, float(t4orhigher)/total
-  # print '# kmers:', numToOutput
-  # print '# perfect:', numPerfect, '\t', float(numPerfect*100)/float(numToOutput), '%'
-  # print 'Avg. accuracy:', 100*sum(matchScores)/len(matchScores), '%'
-  # print 'Covered ranges:', perfectRanges
-  # print 'Total covered:', totalCovered, '\tPercent:', float(totalCovered)/float(len(genome))
 
 
 if __name__ == '__main__':

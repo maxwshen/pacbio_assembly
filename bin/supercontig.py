@@ -1,14 +1,3 @@
-# findTrueKmer.py
-# 
-# Takes in reads. Attempts to find "true" kmers by 
-# creating a graph where nodes are kmers and edges connect
-# kmers that are 1 insertion or 1 deletion away from each
-# other.
-#
-# Implementated with a table approach
-#
-# Genome file is used to measure accuracy.
-
 import sys
 import string
 import datetime
