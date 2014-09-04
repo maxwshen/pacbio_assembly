@@ -212,33 +212,34 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
             kmers[kmer] += all_kmers_curr[k_word][1:]
 
     if kmer not in degrees:
-      degrees[kmer] = degree # + kmers[kmer][0]
+      degrees[kmer] = degree
     else:
       degrees[kmer] += degree
 
   if fn:
     degrees = filter_neighbors(degrees, cutoff)
 
+  stdev_cutoff = 1000
   numToOutput = cutoff
   numincorrect = 0
   current_deg = 0
   num = copy.copy(numToOutput)
   best = set()
   for key in sorted(degrees, key=degrees.get, reverse=True):
-    if kmers[key] >= t_cutoff:      # Filter by t
-      if num >= 0:
-        current_deg = degrees[key]
-      elif degrees[key] != current_deg:
-        break
+    if kmers[key] >= t_cutoff:                      # Filter low t out
+      if np.std(kmers[key][1:]) <= stdev_cutoff:    # Filter large stdev out    
+        if num >= 0:
+          current_deg = degrees[key]
+        elif degrees[key] != current_deg:
+          break
 
-      if key in genomeKmers:
-        pass
-        print key, 'Deg =', degrees[key], 't =', kmers[key], 'correct'
-      else:
-        print key, 'Deg =', degrees[key], 't =', kmers[key], 'incorrect'
-        numincorrect += 1
-      best.add(key)
-      num -= 1
+        if key in genomeKmers:
+          print key, 'Deg =', degrees[key], 't =', kmers[key][0], 'correct\tpos =', np.mean(kmers[key][1:]), np.std(kmers[key][1:]), kmers[key][1:]
+        else:
+          print key, 'Deg =', degrees[key], 't =', kmers[key][0], 'incorrect\tpos =', np.mean(kmers[key][1:]), np.std(kmers[key][1:]), kmers[key][1:]
+          numincorrect += 1
+        best.add(key)
+        num -= 1
 
 
   # print '\nCorrect Only:'
