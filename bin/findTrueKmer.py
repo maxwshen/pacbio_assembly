@@ -149,8 +149,8 @@ def consensus(reads):
 
 def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
   _krange = range(_k - _d, _k + _d + 1)
-  all_kmers = [dict() for i in range(len(_krange))]   # Key = kmer string, value = degree int
-  kmers = all_kmers[_d] 
+  # all_kmers : Key = kmer string, value = [t, pos1, pos2, ...]
+  all_kmers = [defaultdict(list) for i in range(len(_krange))]   
 
   h_reads, r_reads = rf.read_fasta(reads_file)
   h_gen, r_gen = rf.read_fasta(genome_file)
@@ -161,9 +161,13 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
       for h in range(len(r) - k + 1):
         kmer = r[h:h + k]
         if kmer in all_kmers[j]:
-          all_kmers[j][kmer] += 1
+          all_kmers[j][kmer][0] += 1
+          all_kmers[j][kmer].append(h)
         else:
-          all_kmers[j][kmer] = 1
+          all_kmers[j][kmer].append(1)
+          all_kmers[j][kmer].append(h)
+
+  kmers = copy.deepcopy(all_kmers[_d])
 
   genome = r_gen[0]
   genomeKmers = set()
@@ -172,7 +176,7 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
 
   for kmer in genomeKmers:
     if kmer not in kmers:
-      kmers[kmer] = 0
+      kmers[kmer] = [0]
 
   # Find degrees of all kmers
   degrees = dict()    # Key = kmer string, Value = degree int
@@ -196,14 +200,19 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
       related_kmers.append(ins_kmers)
       related_kmers.insert(0, del_kmers)
 
+    central_t_multiplier = 2
     for i in range(len(related_kmers)):
       all_kmers_curr = all_kmers[i]
       for k_word in related_kmers[i]:
         if k_word in all_kmers_curr:
-          degree += all_kmers_curr[k_word]
+          if len(k_word) == _k:
+            degree += all_kmers_curr[k_word][0] * central_t_multiplier
+          else:
+            degree += all_kmers_curr[k_word][0]
+            kmers[kmer] += all_kmers_curr[k_word][1:]
 
     if kmer not in degrees:
-      degrees[kmer] = degree + kmers[kmer]
+      degrees[kmer] = degree # + kmers[kmer][0]
     else:
       degrees[kmer] += degree
 
@@ -215,7 +224,6 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
   current_deg = 0
   num = copy.copy(numToOutput)
   best = set()
-  numoft = dict()
   for key in sorted(degrees, key=degrees.get, reverse=True):
     if kmers[key] >= t_cutoff:      # Filter by t
       if num >= 0:
@@ -229,10 +237,6 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
       else:
         print key, 'Deg =', degrees[key], 't =', kmers[key], 'incorrect'
         numincorrect += 1
-      if kmers[key] in numoft:
-        numoft[kmers[key]] += 1
-      else:
-        numoft[kmers[key]] = 1
       best.add(key)
       num -= 1
 
@@ -260,4 +264,4 @@ if __name__ == '__main__':
   # print 'Start:', start, '\n'
   main()
   end = datetime.datetime.now()
-  # print '\n\nEnd:', end, '\nTotal:', end - start
+  print '\n\nEnd:', end, '\nTotal:', end - start
