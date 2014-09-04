@@ -19,6 +19,7 @@ import numpy as np
 
 import GenerateIndelKmers
 import locAL
+import read_fasta as rf
 
 from collections import defaultdict
 
@@ -26,14 +27,15 @@ def main():
   reads_file = sys.argv[1]
   genome_file = sys.argv[2]
   _k = int(sys.argv[3])
-  cutoff = int(sys.argv[4])     # Number of k-mers to output, ordered from highest deg
-  t_atleast = int(sys.argv[5])
-  if sys.argv[6] == 'True':     # Filter neighbor flag
+  _d = int(sys.argv[4])
+  cutoff = int(sys.argv[5])     # Number of k-mers to output, ordered from highest deg
+  t_atleast = int(sys.argv[6])
+  if sys.argv[7] == 'True':     # Filter neighbor flag
     fn = True
   else:
     fn = False
 
-  findTrueKmer(reads_file, genome_file, _k, cutoff, t_atleast, fn)
+  findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_atleast, fn)
   return 
 
   # Batch
@@ -145,51 +147,26 @@ def consensus(reads):
   for m in mat:
     print m
 
-def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff, fn):
-  _kplus = _k + 1
-  _kminus = _k - 1
-  isdna = False
-  readcount = 0
-  kmers = dict()        # Key = kmer string, value = degree int
-  kplusmers = dict()    # Key = kmer string, value = degree int
-  kminusmers = dict()   # Key = kmer string, value = degree int
+def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
+  _krange = range(_k - _d, _k + _d + 1)
+  all_kmers = [dict() for i in range(len(_krange))]   # Key = kmer string, value = degree int
+  kmers = all_kmers[_d] 
 
-  with open(reads_file) as f:
-    for i, line in enumerate(f):
-      if isdna:
-        isdna = False
-        dna = line.strip()
-        for j in range(len(dna) - _k + 1):
-          kmer = dna[j:j+_k]
-          if kmer in kmers:
-            kmers[kmer] += 1
-          else:
-            kmers[kmer] = 1
-        for j in range(len(dna) - _kminus + 1):
-          kmer = dna[j:j+_kminus]
-          if kmer in kminusmers:
-            kminusmers[kmer] += 1
-          else:
-            kminusmers[kmer] = 1
-        for j in range(len(dna) - _kplus + 1):
-          kmer = dna[j:j+_kplus]
-          if kmer in kplusmers:
-            kplusmers[kmer] += 1
-          else:
-            kplusmers[kmer] = 1
-      if line[0] == '>' or line[0] == '@':
-        readcount += 1
-        isdna = True
+  h_reads, r_reads = rf.read_fasta(reads_file)
+  h_gen, r_gen = rf.read_fasta(genome_file)
 
-  # Generate kmers from the genome
-  with open(genome_file) as f:
-    lines = f.readlines()
-    genome = lines[1].strip()
-    middleGenome = genome[100:900]
+  for r in r_reads:
+    for j in range(len(_krange)):
+      k = _krange[j]
+      for h in range(len(r) - k + 1):
+        kmer = r[h:h + k]
+        if kmer in all_kmers[j]:
+          all_kmers[j][kmer] += 1
+        else:
+          all_kmers[j][kmer] = 1
+
+  genome = r_gen[0]
   genomeKmers = set()
-  genomeMidKmers = set()
-  for i in range(len(middleGenome) - _k + 1):
-    genomeMidKmers.add(middleGenome[i:i+_k])
   for i in range(len(genome) - _k + 1):
     genomeKmers.add(genome[i:i+_k])
 
@@ -198,27 +175,37 @@ def findTrueKmer(reads_file, genome_file, _k, cutoff, t_cutoff, fn):
       kmers[kmer] = 0
 
   # Find degrees of all kmers
-  degrees = dict()    # Key = kmer, Value = degree
+  degrees = dict()    # Key = kmer string, Value = degree int
   for kmer in kmers:
     degree = 0
-    for del_kmer in GenerateIndelKmers.genDelKmers(kmer, 1)[1]:
-      if del_kmer in kminusmers:
-        if del_kmer != kmer[:-1] and del_kmer != kmer[1:]:
-          # degree += 1
-          degree += kminusmers[del_kmer]
+    related_kmers = [[kmer]]
+    for i in range(_d):
+      first = related_kmers[0]
+      del_kmers = []
+      for j in first:
+        for k in GenerateIndelKmers.genDelKmers(j, 1)[1]:
+          if k != j[:-1] and k != j[1:]:
+            del_kmers.append(k)
 
-    for ins_kmer in GenerateIndelKmers.genInsKmers(kmer, 1)[1]:
-      if ins_kmer in kplusmers:
-        if kmer != ins_kmer[:-1] and kmer != ins_kmer[1:]:
-          degree += kplusmers[ins_kmer]
+      last = related_kmers[-1]
+      ins_kmers = []
+      for j in last:
+        for k in GenerateIndelKmers.genInsKmers(j, 1)[1]:
+          if j != k[:-1] and j != k[1:]:
+            ins_kmers.append(k)
+      related_kmers.append(ins_kmers)
+      related_kmers.insert(0, del_kmers)
 
-    degrees[kmer] = degree + kmers[kmer]
+    for i in range(len(related_kmers)):
+      all_kmers_curr = all_kmers[i]
+      for k_word in related_kmers[i]:
+        if k_word in all_kmers_curr:
+          degree += all_kmers_curr[k_word]
 
-  for kmer in degrees:
-    degrees[kmer] += kmers[kmer]
-  for kmer in kmers:
     if kmer not in degrees:
-      degrees[kmer] = kmers[kmer]
+      degrees[kmer] = degree + kmers[kmer]
+    else:
+      degrees[kmer] += degree
 
   if fn:
     degrees = filter_neighbors(degrees, cutoff)
