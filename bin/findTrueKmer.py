@@ -158,6 +158,9 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
   for i in range(len(r_reads)):
     r = r_reads[i]
     header = h_reads[i]
+    if len(header.split('$')) < 4:
+      print 'ERROR: Irregular $ format. Needs to be /$start$end$/'
+      sys.exit(0)
     startpos = int(header.split('$')[-3])
     for j in range(len(_krange)):
       k = _krange[j]

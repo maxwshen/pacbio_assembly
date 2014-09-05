@@ -71,7 +71,8 @@ def main():
   # checkAccuracy([bestpath], genome_file)
 
 def find_location(super_contigs, nodes, _k):
-  positional_multiplier = 0.916
+  positional_multiplier = 0.916     # Found empirically
+  # positional_multiplier = 1
   klen = _k - 1
   for contig in super_contigs:
     start = contig[:klen]

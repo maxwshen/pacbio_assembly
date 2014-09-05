@@ -56,15 +56,15 @@ def assemble_contigs(contigs_file, highdegnodes_file):
       lenkmer = len(kmer)
 
   while True:
-    if find_overlap(contigs) != None:
-      overlap, c1, c2 = find_overlap(contigs)
+    ans, overlap, c1, c2 = find_overlap(contigs, lenkmer)
+    if ans != False:
       c1kmer = c1[2]
       c2kmer = c2[2]
     else:
       break
 
     if overlap > lenkmer:
-      print 'Overlap > lenkmer:', overlap, c1kmer, c2kmer
+      print 'Overlap > lenkmer:', overlap, c1, c2
       sys.exit(0)
 
     print overlap
@@ -95,7 +95,10 @@ def assemble_contigs(contigs_file, highdegnodes_file):
       else:
         new_contig = c1kmer[:-overlap] + c2kmer
 
-    print c1[0], c2[1], new_contig
+    print c1, c2
+    print c1[2] + '-' * (len(c2[2]) - overlap)
+    print '-' * (len(c1[2]) - overlap) + c2[2]
+    print new_contig 
     contigs.append((c1[0], c2[1], new_contig))
     del contigs[contigs.index(c1)]
     del contigs[contigs.index(c2)]
@@ -120,10 +123,22 @@ def checkAccuracy(seq, genome_file):
 
   return score, alignLen
 
-def find_overlap(contigs):
+def find_overlap(contigs, lenkmer):
   if len(contigs) == 1:
-    return None
-  remove_list = []
+    return (False, -1, None, None)
+
+  # Remove supercontigs inside of others
+  remove_set = set()
+  for i in range(len(contigs)):
+    c1 = contigs[i]
+    for c2 in [c for c in contigs if c != c1]:
+      c1start, c1end, c1kmer = c1
+      c2start, c2end, c2kmer = c2
+      if c1start < c2start < c2end < c1end:
+        remove_set.add(c2)
+  for r in remove_set:
+    del contigs[contigs.index(r)]   
+
   for i in range(len(contigs)):
     c1 = contigs[i]
     for c2 in [c for c in contigs if c != c1]:
@@ -132,14 +147,9 @@ def find_overlap(contigs):
       if c1start < c2start < c1end < c2end:
         # +1 because the ending position is 1 less than it should be. BUG to fix
         # +1 because there are 2 nucleotides between positions 1 and 2
-        for r in remove_list:
-          del contigs[contigs.index(r)]
-        return int(c1end - c2start + 1), c1, c2
-      if c1start < c2start < c2end < c1end:
-        remove_list.append(c2)
-  for r in remove_list:
-    del contigs[contigs.index(r)]      
-  return None
+        if int(c1end - c2start + 1) <= lenkmer:
+          return True, int(c1end - c2start + 1), c1, c2   
+  return (False, -1, None, None)
 
 if __name__ == '__main__':
   # Initiates program and records total time
