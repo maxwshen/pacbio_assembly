@@ -71,12 +71,21 @@ def main():
   # checkAccuracy([bestpath], genome_file)
 
 def find_location(super_contigs, nodes, _k):
-  positional_multiplier = 0.9
+  positional_multiplier = 0.916
   klen = _k - 1
   for contig in super_contigs:
     start = contig[:klen]
     end = contig[-klen:]
-    print nodes[start].pos * positional_multiplier, (nodes[end].pos * positional_multiplier) + _k, contig
+    startpos = nodes[start].pos * positional_multiplier
+    endpos = nodes[end].pos * positional_multiplier + _k
+    print '[' + str(startpos) + '] [' + str(endpos) + '] ' + contig
+
+  for contig in super_contigs:
+    sum_deg = 0
+    for i in range(len(contig) - klen + 1):
+      kmer = contig[i : i + klen]
+      sum_deg += nodes[kmer].tval
+    print contig, float(sum_deg) / (len(contig) - klen)
 
 
 

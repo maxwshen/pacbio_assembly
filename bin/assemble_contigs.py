@@ -19,8 +19,9 @@ def main():
   highdegnodes_file = sys.argv[2] 
   genome_file = sys.argv[3]
 
-  supercontig = assemble_contigs(contigs_file, highdegnodes_file)
-  checkAccuracy(supercontig, genome_file)
+  supercontigs = assemble_contigs(contigs_file, highdegnodes_file)
+  for supercontig in supercontigs:
+    checkAccuracy(supercontig[2], genome_file)
   return
 
   # Batch
@@ -30,8 +31,9 @@ def main():
     highdegnodes_file = '/home/mshen/research/highdegassembly_stats/highcov__fold_s' + _i + '.t1.15.L0/highdegnodes.15.s' + _i + '.t1.kmers.out'
     genome_file = '/home/mshen/research/data/high_cov/ec_genome_rh_hc_n' + _i + '.fasta'
 
-    supercontig = assemble_contigs(contigs_file, highdegnodes_file)
-    checkAccuracy(supercontig, genome_file)
+    supercontigs = assemble_contigs(contigs_file, highdegnodes_file)
+    for supercontig in supercontigs:
+      checkAccuracy(supercontig[2], genome_file)
 
 def assemble_contigs(contigs_file, highdegnodes_file):
   length_cutoff = 0
@@ -42,7 +44,7 @@ def assemble_contigs(contigs_file, highdegnodes_file):
         line = line.translate(None, '[]')
         words = line.split()
         if len(words) == 3 and len(words[2]) > length_cutoff:
-          contigs.append((int(words[0]), int(words[1]), words[2]))
+          contigs.append((float(words[0]), float(words[1]), words[2]))
 
   nodes = dict()  # Keys = kmers, Values = degree
   with open(highdegnodes_file) as f:
@@ -65,7 +67,7 @@ def assemble_contigs(contigs_file, highdegnodes_file):
       print 'Overlap > lenkmer:', overlap, c1kmer, c2kmer
       sys.exit(0)
 
-    # print overlap
+    print overlap
     # print c1kmer[-lenkmer:], nodes[c1kmer[-lenkmer:]], c2kmer[:lenkmer], nodes[c2kmer[:lenkmer]]
     # First by t, then by degree if t's are equal
     if c1kmer[-lenkmer:] not in nodes.keys():
@@ -93,12 +95,12 @@ def assemble_contigs(contigs_file, highdegnodes_file):
       else:
         new_contig = c1kmer[:-overlap] + c2kmer
 
-    # print c1[0], c2[1], new_contig
+    print c1[0], c2[1], new_contig
     contigs.append((c1[0], c2[1], new_contig))
     del contigs[contigs.index(c1)]
     del contigs[contigs.index(c2)]
 
-  return contigs[0][2]
+  return contigs
 
 def checkAccuracy(seq, genome_file):
   # Check the accuracy of the super contig
@@ -121,15 +123,22 @@ def checkAccuracy(seq, genome_file):
 def find_overlap(contigs):
   if len(contigs) == 1:
     return None
+  remove_list = []
   for i in range(len(contigs)):
     c1 = contigs[i]
     for c2 in [c for c in contigs if c != c1]:
       c1start, c1end, c1kmer = c1
       c2start, c2end, c2kmer = c2
-      if c1start < c2start < c1end:
+      if c1start < c2start < c1end < c2end:
         # +1 because the ending position is 1 less than it should be. BUG to fix
         # +1 because there are 2 nucleotides between positions 1 and 2
-        return c1end - c2start + 1, c1, c2
+        for r in remove_list:
+          del contigs[contigs.index(r)]
+        return int(c1end - c2start + 1), c1, c2
+      if c1start < c2start < c2end < c1end:
+        remove_list.append(c2)
+  for r in remove_list:
+    del contigs[contigs.index(r)]      
   return None
 
 if __name__ == '__main__':
