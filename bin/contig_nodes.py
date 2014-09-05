@@ -53,7 +53,7 @@ def main():
     kmers = []
     with open(reads_file) as f:
       for i, line in enumerate(f):
-        kmers.append((line.split()[0], int(line.split()[3])))
+        kmers.append((line.split()[0], int(line.split()[3]), float(line.split()[10])))
   else:
     kmers = findKTmers(reads_file, kparam, tparam)
 
@@ -64,45 +64,20 @@ def main():
   nodes = trimdebruijn(nodes, trimparam)
   contigs = contig(nodes, genome_file, gvname, kparam, lparam)
   supercontigs = findPathsNew(nodes, kparam)
-  find_location(supercontigs, genome_file, kparam, lparam)
+  find_location(supercontigs, nodes, kparam)
   checkAccuracy(supercontigs, genome_file)
 
   # bestpath = findPaths(nodes)
   # checkAccuracy([bestpath], genome_file)
 
-def find_location(super_contigs, genome_file, kparam, lparam):
-  # Input: List of strings
-  # Finds the starting and ending locations of super contigs
-  # This works by finding the first and last kmer in each super contig
-  # and finding their position in the genome.
-  with open(genome_file) as f:
-    genome = f.readlines()[1]
-  genome_kminusmers = defaultdict(list)
-  for i in range(len(genome) - kparam - lparam):
-    kmer = genome[i : i + kparam - lparam - 1]
-    genome_kminusmers[kmer].append(i)
-
-  contigs_pos = []
+def find_location(super_contigs, nodes, _k):
+  positional_multiplier = 0.9
+  klen = _k - 1
   for contig in super_contigs:
-    start_pos = []
-    end_pos = []
-    for i in range(len(contig) - kparam + lparam):
-      test_kmer = contig[i : i + kparam - lparam - 1]
-      if test_kmer in genome_kminusmers:
-        start_pos = [e for e in genome_kminusmers[test_kmer]]
-        break
-    for i in range(len(contig) - kparam + lparam, 0, -1):
-      test_kmer = contig[i : i + kparam - lparam - 1]
-      if test_kmer in genome_kminusmers:
-        end_pos = [e + kparam - lparam - 1 for e in genome_kminusmers[test_kmer]]
-        break
-    # print start_pos, end_pos, contig
-    contigs_pos.append((start_pos, end_pos, contig))
+    start = contig[:klen]
+    end = contig[-klen:]
+    print nodes[start].pos * positional_multiplier, (nodes[end].pos * positional_multiplier) + _k, contig
 
-  contigs_pos.sort(key=lambda x: x[0])
-  print '\n'
-  for c in contigs_pos:
-    print c[0], c[1], c[2]
 
 
 def test_canonical_paths(reads, genome_file, _k, _t, gvname, _l, _trim, ktmers, silenceFlag = True):
@@ -598,15 +573,11 @@ def contig(nodes, genome_file, gvname, kparam, lparam):
 
   # Visualize graph. Black edges = true, red edges = erroneous
   genome_kmers = set()
-  genome_kminusmers = defaultdict(list)
   with open(genome_file) as f:
     lines = f.readlines()
     genome = lines[1]
   for i in range(len(genome) - kparam + lparam + 1):
     genome_kmers.add(genome[i : i + kparam - lparam])
-  for i in range(len(genome) - kparam + lparam):
-    kmer = genome[i : i + kparam - lparam - 1]
-    genome_kminusmers[kmer].append(i)
 
   try:
     open(gvname, 'w').close()
@@ -616,25 +587,13 @@ def contig(nodes, genome_file, gvname, kparam, lparam):
     f.write('digraph G {\n')
     for n in nodes.values():
       for neighbor in n.outedges:
-        if n.kmer in genome_kminusmers:
-          f.write('"' + n.kmer + '\\n' + str(genome_kminusmers[n.kmer]).strip('[]') + '" -> ')
-        else:
-          f.write('"' + n.kmer + '" -> ')
-        if neighbor.kmer in genome_kminusmers:
-          f.write('"' + neighbor.kmer + '\\n' + str(genome_kminusmers[neighbor.kmer]).strip('[]') + '"')
-        else:
-          f.write('"' + neighbor.kmer + '"')
+        f.write('"' + n.kmer + '\\n' + str(n.pos) + '" -> ')
+        f.write('"' + neighbor.kmer + '\\n' + str(neighbor.pos) + '"')
         if n.kmer + neighbor.kmer[-1] in genome_kmers:
           f.write(';\n')
         else:
           f.write(' [color = "red"];\n')        
-
-        # if n.kmer + neighbor.kmer[-1] in genome_kmers:
-        #   f.write(n.kmer + ' -> ' + neighbor.kmer + ';\n')
-        # else:
-        #   f.write(n.kmer + ' -> ' + neighbor.kmer + ' [color = "red"];\n')
     f.write('}')
-
 
   # Get contigs
   separated_parts = []
@@ -718,85 +677,24 @@ def checkAccuracy(seqs, genome_file):
 
   return score, alignLen
 
-def checkAccuracy2(contigs, genome_file):
-  # Check the accuracy of the contigs by aligning to the genome file
-  # Makes ranges too
-  # THIS IS THE OLD ONE. THIS SHOULD BE REWRITTEN IF IT IS TO BE USED: 7/29/14
-  print 'Aligning to genome...'
-  with open(genome_file) as f:
-    lines = f.readlines()
-    genome = lines[1]
-
-  numPerfect = 0
-  matchScores = []
-  perfectStarts = []
-  perfectLens = []
-  for i in range(len(contigs)):
-    print contigs[i]
-    (alignLen, matches, mismatches, numgaps, numGapExtends, bestxy) = locAL.external_bestseq1(c[i], genome, 1, -1, -1, -0.5)
-    print 'Range:', bestxy[1] - alignLen, '-', bestxy[1]
-    if alignLen != 0:
-      score = float(matches)/float(alignLen)
-      print 'ERROR: Divide by Zero! Alignment Length = 0'
-    else:
-      score = 0
-    matchScores.append(score)
-    if score == 1:
-      numPerfect += 1
-      perfectStarts.append(bestxy[1] - alignLen)
-      perfectLens.append(alignLen)
-  perfectLens = [x for (y,x) in sorted(zip(perfectStarts, perfectLens))]
-  perfectStarts = sorted(perfectStarts)
-
-  # for score in matchScores:
-  #   print str(score) + '\t',
-  # print '\n'
-
-  perfectRanges = [] # stores tuples
-  start = -1
-  end = -1
-  for i in range(len(genome)):
-    if i in perfectStarts:
-      if end < i + perfectLens[perfectStarts.index(i)]:
-        end = i + perfectLens[perfectStarts.index(i)]
-      if start == -1:
-        start = i
-    if i == end:
-      perfectRanges.append((start, end))
-      start = -1
-      end = -1
-
-  totalCovered = 0
-  for (x, y) in perfectRanges:
-    totalCovered += y - x
-
-  print 'k =', kparam, ', t =', tparam, ', l =', lparam, ', #trims =', trimparam
-  print '# contigs:', len(c)
-  print '# bp total:', totalbp
-  print '# avg contig len:', float(totalbp)/float(len(c))
-  print '# perfect:', numPerfect, '\t', float(numPerfect*100)/float(len(c)), '%'
-  print 'Avg. accuracy:', 100*sum(matchScores)/len(matchScores), '%'
-  print 'Perfectly Covered Ranges:', perfectRanges
-  print 'Total covered perfectly:', totalCovered, '\tPercent:', float(totalCovered)/float(len(genome))
-
 def deBruijnkmers(kmers_in):
   # Input:
-  #   A list of kmers
+  #   A list of kmers (kmer, _t, pos)
   # Output:
-  #   Dictionary. Keys = (k-1)mers. 1 Value per Key, = Node object
+  #   Dictionary. Keys = (k-1)mers, Values = Node object
 
   existing_kmers = set()
   nodes = dict() # Key = kmer, Value = Node object
-  for (kmer, _t) in kmers_in:
+  for (kmer, _t, pos) in kmers_in:
     prefix = kmer[:len(kmer)-1]
     suffix = kmer[1:]
     if prefix not in nodes.keys():
-      curr_node = Node(prefix, _t)
+      curr_node = Node(prefix, _t, pos)
       nodes[prefix] = curr_node
     else:
       nodes[prefix].addT(_t)
     if suffix not in nodes.keys():
-      next_node = Node(suffix, _t)
+      next_node = Node(suffix, _t, pos)
       nodes[suffix] = next_node
     else:
       nodes[suffix].addT(_t)
@@ -834,9 +732,10 @@ def splitKTmers(kmers, l):
 
 
 class Node():
-  def __init__(self, kmer, tval):
+  def __init__(self, kmer, tval, pos):
     self.kmer = kmer
     self.tval = tval
+    self.pos = pos
     self.outedges = list()
     self.inedges = list()
     self.degree = 0     # Out edges are positive, in edges are negative
