@@ -19,7 +19,8 @@ def main():
   reads = sys.argv[1]
   genome = sys.argv[2]
   # genome = '/home/mshen/research/sim/sim_genome_1kb_noshift.fasta'
-  _k = str( 10 )
+  _k = str( 15 )
+  _d = str( 1 )
   cutoff_deg_nodes = str( 1000 )
   t_greater_than_cutoff = str( 1 )
   filter_neighbors = 'True'
@@ -43,8 +44,8 @@ def main():
 
       # E. coli reads
       # j range from 35 to 5, i range 12
-      reads = '/home/mshen/research/data/all_cov/ec_reads_rh_hc_n' + _i + '_cov' + _j + '.fasta'
-      genome = '/home/mshen/research/data/all_cov/ec_genome_rh_hc_n' + _i + '.fasta'
+      # reads = '/home/mshen/research/data/all_cov/ec_reads_rh_hc_n' + _i + '_cov' + _j + '.fasta'
+      # genome = '/home/mshen/research/data/all_cov/ec_genome_rh_hc_n' + _i + '.fasta'
 
       # print 'Reads:', reads
       # print 'Genome:', genome
@@ -54,8 +55,8 @@ def main():
       # print 'l:', _l
       # print 'Trim num:', trim_num, '\n'
 
-      fold = name_base + '_fold_s' + _i + '.cov' + _j + '.t' + t_atleast_cutoff + '.' + _k + '.L' + _l + '/'
-      # fold = name_base + '_fold_s' + _i + '.t' + t_atleast_cutoff + '.' + _k + '.L' + _l + '/'
+      # fold = name_base + '_fold_s' + _i + '.cov' + _j + '.t' + t_atleast_cutoff + '.' + _k + '.L' + _l + '/'
+      fold = name_base + '_fold_s' + _i + '.t' + t_atleast_cutoff + '.' + _k + '.L' + _l + '/'
       highdegnodes_outfile = fold + 'highdegnodes.' + _k + '.s' + _i + '.t' + t_atleast_cutoff + '.out'
       highdegnodes_kmers_outfile = fold + 'highdegnodes.' + _k + '.s' + _i + '.t' + t_atleast_cutoff + '.kmers.out'
       contigs_outfile = fold + 'contigsout.s' + _i + '.t' + t_atleast_cutoff + '.' + _k + '.L' + _l + '.txt'
@@ -69,7 +70,7 @@ def main():
 
       # Find high degree nodes in reads
       with open(highdegnodes_outfile, 'w') as f:
-        call(python_ver + ' ' + findTrueKmer + ' ' + reads + ' ' + genome + ' ' + _k + ' ' + cutoff_deg_nodes + ' ' + t_atleast_cutoff + ' ' + filter_neighbors, stdout = f, shell = True)
+        call(python_ver + ' ' + findTrueKmer + ' ' + reads + ' ' + genome + ' ' + _k + ' ' + _d + ' ' + cutoff_deg_nodes + ' ' + t_atleast_cutoff + ' ' + filter_neighbors, stdout = f, shell = True)
       with open(highdegnodes_outfile) as f:
         with open(highdegnodes_kmers_outfile, 'w') as g:
           for i, line in enumerate(f):

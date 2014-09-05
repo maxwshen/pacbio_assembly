@@ -155,17 +155,20 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
   h_reads, r_reads = rf.read_fasta(reads_file)
   h_gen, r_gen = rf.read_fasta(genome_file)
 
-  for r in r_reads:
+  for i in range(len(r_reads)):
+    r = r_reads[i]
+    header = h_reads[i]
+    startpos = int(header.split('$')[-3])
     for j in range(len(_krange)):
       k = _krange[j]
       for h in range(len(r) - k + 1):
         kmer = r[h:h + k]
         if kmer in all_kmers[j]:
           all_kmers[j][kmer][0] += 1
-          all_kmers[j][kmer].append(h)
+          all_kmers[j][kmer].append(h + startpos)
         else:
           all_kmers[j][kmer].append(1)
-          all_kmers[j][kmer].append(h)
+          all_kmers[j][kmer].append(h + startpos)
 
   kmers = copy.deepcopy(all_kmers[_d])
 
@@ -265,4 +268,4 @@ if __name__ == '__main__':
   # print 'Start:', start, '\n'
   main()
   end = datetime.datetime.now()
-  print '\n\nEnd:', end, '\nTotal:', end - start
+  # print '\n\nEnd:', end, '\nTotal:', end - start
