@@ -36,7 +36,7 @@ def main():
       checkAccuracy(supercontig[2], genome_file)
 
 def assemble_contigs(contigs_file, highdegnodes_file):
-  length_cutoff = 0
+  length_cutoff = 18
   contigs = [] # List of tuples (start, end, contig)
   with open(contigs_file) as f:
     for i, line in enumerate(f):

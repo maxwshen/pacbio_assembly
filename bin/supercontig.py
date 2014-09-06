@@ -20,7 +20,7 @@ def main():
   genome = sys.argv[2]
   # genome = '/home/mshen/research/sim/sim_genome_1kb_noshift.fasta'
   _k = str( 15 )
-  _d = str( 2 )
+  _d = str( 1 )
   cutoff_deg_nodes = str( 1000 )
   t_greater_than_cutoff = str( 1 )
   filter_neighbors = 'True'
