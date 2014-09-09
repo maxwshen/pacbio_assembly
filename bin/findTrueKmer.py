@@ -20,6 +20,7 @@ import numpy as np
 import GenerateIndelKmers
 import locAL
 import read_fasta as rf
+import spec_multi_align as sma
 
 from collections import defaultdict
 
@@ -115,16 +116,26 @@ def find_neighbors(degrees, kmer):
   del_ins = set()
   for dk in del_kmers:
     for i in GenerateIndelKmers.genInsKmers(dk, 1)[1]:
-      # if dk != i[:-1] and dk != i[1:]:
       del_ins.add(i)
+      # if dk != i[:-1] and dk != i[1:]:
+        # del_ins.add(i)
+
   for ik in ins_kmers:
     for i in GenerateIndelKmers.genDelKmers(ik, 1)[1]:
+      del_ins.add(i)  
       # if i != ik[:-1] and i != ik[1:]:
-      del_ins.add(i)
+        # del_ins.add(i)
 
-  del_ins.remove(kmer)
+  # del_ins.remove(kmer)
 
   neighbors = [i for i in del_ins if i in degrees]
+  # if len(neighbors) > 2:
+  #   consensus = sma.spec_multi_align(neighbors)
+  #   print 'actual kmer:', kmer, consensus == kmer
+  # else:
+  #   for n in neighbors:
+  #     print n
+  #   print 'insufficient num of neighbors'
   return neighbors
 
 def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
@@ -146,7 +157,7 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
       k = _krange[j]
       for h in range(len(r) - k + 1):
         kmer = r[h:h + k]
-        if kmer in all_kmers[j]:
+        if kmer in all_kmers[j].keys():
           all_kmers[j][kmer][0] += 1
           all_kmers[j][kmer].append(h + startpos)
         else:
@@ -156,41 +167,61 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
   kmers = copy.deepcopy(all_kmers[_d])
 
   genome = r_gen[0]
+  all_genomekmers = set()
   genomeKmers = set()
-  for i in range(len(genome) - _k + 1):
-    genomeKmers.add(genome[i:i+_k])
-
-  for kmer in genomeKmers:
-    if kmer not in kmers:
-      kmers[kmer] = [0]
+  for i in range(len(_krange)):
+    k = _krange[i]
+    curr = set()
+    for i in range(len(genome) - k + 1):
+      all_genomekmers.add(genome[i:i+k])
+      if k == _k:
+        genomeKmers.add(genome[i:i+k])
 
   # Find degrees of all kmers
   degrees = dict()    # Key = kmer string, Value = degree int
   for kmer in kmers:
     degree = 0
-    related_kmers = [[kmer]]
+    related_kmers = [set([kmer])]
     for i in range(_d):
       first = related_kmers[0]
-      del_kmers = []
+      del_kmers = set()
       for j in first:
         for k in GenerateIndelKmers.genDelKmers(j, 1)[1]:
-          if k != j[:-1] and k != j[1:]:
-            del_kmers.append(k)
+          # if k != j[:-1] and k != j[1:]:
+            # del_kmers.add(k)
+          del_kmers.add(k)
 
       last = related_kmers[-1]
-      ins_kmers = []
+      ins_kmers = set()
       for j in last:
         for k in GenerateIndelKmers.genInsKmers(j, 1)[1]:
-          if j != k[:-1] and j != k[1:]:
-            ins_kmers.append(k)
+          # if j != k[:-1] and j != k[1:]:
+            # ins_kmers.add(k)
+          ins_kmers.add(k)
       related_kmers.append(ins_kmers)
       related_kmers.insert(0, del_kmers)
+
+    # # Ensure that d=2 away still removes trivial indels on ends
+    # remove_list = set()
+    # for word in related_kmers[0]:
+    #   if kmer[-_k + _d:] == word or kmer[:_k - _d] == word:
+    #     remove_list.add(word)
+    # for word in remove_list:    
+    #   related_kmers[0].remove(word)
+    # remove_list = set()
+    # for word in related_kmers[-1]:
+    #   if word[-_k:] == kmer or word[:_k] == kmer:
+    #     remove_list.add(word)
+    # for word in remove_list:
+    #   related_kmers[-1].remove(word)
+
 
     central_t_multiplier = 2
     for i in range(len(related_kmers)):
       all_kmers_curr = all_kmers[i]
       for k_word in related_kmers[i]:
         if k_word in all_kmers_curr:
+          print ' ', k_word, '\tdeg:', all_kmers_curr[k_word][0], '\t', k_word in all_genomekmers
           if len(k_word) == _k:
             degree += all_kmers_curr[k_word][0] * central_t_multiplier
           else:
@@ -201,6 +232,8 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
       degrees[kmer] = degree
     else:
       degrees[kmer] += degree
+
+    print kmer, degrees[kmer]
 
   if fn:
     degrees = filter_neighbors(degrees, cutoff)

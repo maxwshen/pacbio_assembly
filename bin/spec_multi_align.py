@@ -57,6 +57,7 @@ def spec_multi_align(seqs):
   for a in final_align:
     print a
   print consensus, len(consensus)
+  return consensus
 
 def adjust_alignment(alignment, mas):
   for i in range(len(mas)):
@@ -103,12 +104,12 @@ def align(q1, q2):
       s[i][j] = max(ups, lefts, diags)
 
       # Update bt
-      if s[i][j] == ups:
-        bt[i][j] = 'up'
+      if s[i][j] == diags:
+        bt[i][j] = 'diag'
       elif s[i][j] == lefts:
         bt[i][j] = 'left'
-      elif s[i][j] == diags:
-        bt[i][j] = 'diag'
+      elif s[i][j] == ups:
+        bt[i][j] = 'up'
 
   best = {'i': len(q2) - 1, 'j': len(q1) - 1, 'score': s[len(q2) - 1][len(q1) - 1]}
 
