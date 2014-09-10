@@ -27,6 +27,28 @@ def cluster_reads(reads_file):
   len_cutoff = 1000
   r = filter_by_len(r, len_cutoff)
 
+  clusters = []
+
+  while len(r) > 0:
+    r1 = r[0]
+    curr_cluster = [h[0], r1]
+    for j in range(1, len(r)):
+      r2 = r[j]
+      (alignLen, matches, mismatches, numgaps, numGapExtends, bestxy) = locAL.external(r1, r2, 1, -2, -2, -1)
+      print j, alignLen
+      if alignLen > len_cutoff:
+        curr_cluster.append(h[j])
+        curr_cluster.append(r[j])
+    clusters.append(curr_cluster)
+    for item in curr_cluster:
+      if item[0] == '>':
+        del r[h.index(item)]
+        del h[h.index(item)]
+    print curr_cluster, '\n', len(curr_cluster)
+    print len(r), len(h)    
+
+  return
+
   for i in range(len(r)):
     mat[i][i] = 1
     for j in range(i + 1, len(r)):
@@ -34,15 +56,19 @@ def cluster_reads(reads_file):
       r2 = r[j]
       # call('/home/mshen/research/bin/getlcs ' + r1 + ' ' + r2, shell = True)
       # (alignLen, matches, mismatches, numgaps, numGapExtends, bestxy) = locAL.external_bestseq1(r1, r2, 1, -1, -1, -0.5)
-      lcs = longest_common_substring(r1, r2)
-      mat[i][j] = len(lcs)
-      mat[j][i] = len(lcs)
+      # (alignLen, matches, mismatches, numgaps, numGapExtends, bestxy) = locAL.external(r1, r2, 1, -2, -2, -1)
+      
+      # lcs = longest_common_substring(r1, r2)
+      # mat[i][j] = len(lcs)
+      # mat[j][i] = len(lcs)
+
       # accuracy = 0
       # if alignLen > 0:
       #   accuracy = float(matches) / float(alignLen)
       # mat[i][j] = accuracy
       # mat[j][i] = accuracy
-      print len(lcs)
+      # print i, j, accuracy, alignLen
+      # print i, j, len(lcs)
   for a in mat:
     print a
 

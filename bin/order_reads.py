@@ -30,9 +30,9 @@ def order_reads(reads_file, sam_file):
     new_h.append(header[1:])
   for o in order:
     curr = o[0]
-    print curr
-    print new_h[0]
-    new_reads.append(curr)
+    # print curr
+    # print new_h[0]
+    new_reads.append('>' + curr)
     new_reads.append(r[new_h.index(curr)])
 
   for line in new_reads:
@@ -41,7 +41,7 @@ def order_reads(reads_file, sam_file):
 if __name__ == '__main__':
   # Initiates program and records total time
   start = datetime.datetime.now()
-  print 'Start:', start, '\n'
+  # print 'Start:', start, '\n'
   main()
   end = datetime.datetime.now()
-  print '\n\nEnd:', end, '\nTotal:', end - start
+  # print '\n\nEnd:', end, '\nTotal:', end - start
