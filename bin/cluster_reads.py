@@ -32,13 +32,17 @@ def cluster_reads(reads_file):
     for j in range(i + 1, len(r)):
       r1 = r[i]
       r2 = r[j]
-      call('/home/mshen/research/bin/getlcs ' + r1 + ' ' + r2, shell = True)
+      # call('/home/mshen/research/bin/getlcs ' + r1 + ' ' + r2, shell = True)
       # (alignLen, matches, mismatches, numgaps, numGapExtends, bestxy) = locAL.external_bestseq1(r1, r2, 1, -1, -1, -0.5)
+      lcs = longest_common_substring(r1, r2)
+      mat[i][j] = len(lcs)
+      mat[j][i] = len(lcs)
       # accuracy = 0
       # if alignLen > 0:
       #   accuracy = float(matches) / float(alignLen)
       # mat[i][j] = accuracy
       # mat[j][i] = accuracy
+      print len(lcs)
   for a in mat:
     print a
 
@@ -48,6 +52,20 @@ def filter_by_len(reads, cutoff):
     if len(r) > cutoff:
       new_r.append(r)
   return new_r
+
+def longest_common_substring(s1, s2):
+   m = [[0] * (1 + len(s2)) for i in xrange(1 + len(s1))]
+   longest, x_longest = 0, 0
+   for x in xrange(1, 1 + len(s1)):
+       for y in xrange(1, 1 + len(s2)):
+           if s1[x - 1] == s2[y - 1]:
+               m[x][y] = m[x - 1][y - 1] + 1
+               if m[x][y] > longest:
+                   longest = m[x][y]
+                   x_longest = x
+           else:
+               m[x][y] = 0
+   return s1[x_longest - longest: x_longest]
 
 if __name__ == '__main__':
   # Initiates program and records total time

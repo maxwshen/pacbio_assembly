@@ -25,7 +25,8 @@ def plot_1group(input_file):
     data.append(int(words[0]))
 
   largest = max(data)
-  step = int(np.log2(largest))
+  # step = int(np.log2(largest))
+  step = 1
   binrange = range(0, largest, step)
 
   plt.hist(data, color = 'green', bins = binrange)
