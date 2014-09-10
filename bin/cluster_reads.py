@@ -12,6 +12,7 @@ import locAL
 import read_fasta
 
 from collections import defaultdict
+from subprocess import call
 
 def main():
   reads_file = sys.argv[1]
@@ -31,7 +32,7 @@ def cluster_reads(reads_file):
     for j in range(i + 1, len(r)):
       r1 = r[i]
       r2 = r[j]
-      call(['/home/mshen/research/bin/getlcs ' + r1 + ' ' + r2], shell = True)
+      call('/home/mshen/research/bin/getlcs ' + r1 + ' ' + r2, shell = True)
       # (alignLen, matches, mismatches, numgaps, numGapExtends, bestxy) = locAL.external_bestseq1(r1, r2, 1, -1, -1, -0.5)
       # accuracy = 0
       # if alignLen > 0:

@@ -12,9 +12,29 @@ import random
 
 def main():
   input_file = sys.argv[1]
-  plot(input_file)
+  plot_1group(input_file)
+  # plot_2groups(input_file)
 
-def plot(input_file):
+def plot_1group(input_file):
+  data = []
+
+  fileh = open(input_file, 'r')
+  for i, line in enumerate(fileh):  
+    words = line.strip().split()
+
+    data.append(int(words[0]))
+
+  largest = max(data)
+  step = int(np.log2(largest))
+  binrange = range(0, largest, step)
+
+  plt.hist(data, color = 'green', bins = binrange)
+
+  plt.xlabel('Length of LCS')
+  plt.ylabel('Quantity')
+  plt.show()
+
+def plot_2groups(input_file):
   data1 = []
   data2 = []
 
