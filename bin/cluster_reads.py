@@ -24,7 +24,7 @@ def cluster_reads(reads_file):
   h, r = read_fasta.read_fasta(reads_file)
   mat = [[0] * len(r) for i in range(len(r))]
 
-  len_cutoff = 1000
+  len_cutoff = 400
   r = filter_by_len(r, len_cutoff)
 
   clusters = []

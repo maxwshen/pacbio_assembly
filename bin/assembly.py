@@ -61,7 +61,7 @@ def assembly(reads, genome_file, _k, _t, gvname):
       if i > 0:
         genome += line.strip()
 
-  starting_pos = 0            # 625
+  starting_pos = 250          # 625
   jump_length = 400           # 1250
   neighborhood_width = 500    # 1250
   neighborhood_margin = 500   # 0
