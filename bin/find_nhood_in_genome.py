@@ -24,15 +24,16 @@ def batch(directory, genome_file):
 
   files = os.listdir(directory)
   for fil in files:
-    clusters = find_nhood_in_genome(fil, genome_file)
+    clusters = find_nhood_in_genome(directory + fil, genome_file)
     with open(cluster_sizes_file, 'a') as f:
       for c in clusters:
-        f.write(str(c))
+        f.write(str(c) + '\n')
     with open(clusters_per_read_file, 'a') as f:
-      f.write(str(len(c)))
+      f.write(str(len(clusters)) + '\n')
 
 
 def find_nhood_in_genome(read_file, genome_file):
+  print read_file
   region_width = 1000
   blasr = '/home/jeyuan/blasr/alignment/bin/blasr'
   sam = commands.getstatusoutput(blasr + ' ' + read_file + ' ' + genome_file + ' -bestn 1')[1]
