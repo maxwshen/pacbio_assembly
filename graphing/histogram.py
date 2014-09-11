@@ -22,16 +22,17 @@ def plot_1group(input_file):
   for i, line in enumerate(fileh):  
     words = line.strip().split()
 
-    data.append(int(words[0]))
+    if int(words[0]) > 0:
+      data.append(int(words[0]))
 
   largest = max(data)
   # step = int(np.log2(largest))
-  step = 1
+  step = 100
   binrange = range(0, largest, step)
 
   plt.hist(data, color = 'green', bins = binrange)
 
-  plt.xlabel('Length of LCS')
+  plt.xlabel('Length of Read')
   plt.ylabel('Quantity')
   plt.show()
 

@@ -61,10 +61,10 @@ def assembly(reads, genome_file, _k, _t, gvname):
       if i > 0:
         genome += line.strip()
 
-  starting_pos = 0    # 625
-  jump_length = 1     # 1250
-  neighborhood_width = 1250
-  neighborhood_margin = 0
+  starting_pos = 0            # 625
+  jump_length = 400           # 1250
+  neighborhood_width = 500    # 1250
+  neighborhood_margin = 500   # 0
   position = starting_pos
   while position < len(genome) - _k + 1:
     seedktmer = genome[position : position + _k]
@@ -233,7 +233,7 @@ def neighborhood(reads, centerNode, dist, margin, position):
         else:
           seqs.append(line[0:startpos + dist].strip())
 
-  nhood_filename = 'nhood_nh' + str(position) + '_' + centerNode.ktmer + '.fasta'
+  nhood_filename = 'e_coli_nhoods_500/nhood_nh' + str(position) + '_' + centerNode.ktmer + '.fasta'
   try:
     open(nhood_filename, 'w').close()
   except:
