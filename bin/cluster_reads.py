@@ -15,10 +15,19 @@ from collections import defaultdict
 from subprocess import call
 
 def main():
-  reads_file = sys.argv[1]
-  
-  cluster_reads(reads_file)
+  # reads_file = sys.argv[1]
+  directory = sys.argv[1]
+
+  batch(directory)
+
+  # cluster_reads(reads_file)
   return
+
+def batch(directory):
+  files = os.listdir(directory)
+  for fil in files:
+    print directory + fil
+    cluster_reads(directory + fil)
 
 def cluster_reads(reads_file):
   h, r = read_fasta.read_fasta(reads_file)
@@ -35,7 +44,7 @@ def cluster_reads(reads_file):
     for j in range(1, len(r)):
       r2 = r[j]
       (alignLen, matches, mismatches, numgaps, numGapExtends, bestxy) = locAL.external(r1, r2, 1, -2, -2, -1)
-      print j, alignLen
+      # print j, alignLen
       if alignLen > len_cutoff:
         curr_cluster.append(h[j])
         curr_cluster.append(r[j])
@@ -44,33 +53,17 @@ def cluster_reads(reads_file):
       if item[0] == '>':
         del r[h.index(item)]
         del h[h.index(item)]
-    print curr_cluster, '\n', len(curr_cluster)
-    print len(r), len(h)    
+    # print curr_cluster, '\n', len(curr_cluster)
+    # print len(r), len(h)    
+
+  for i in range(len(clusters)):
+    out_file = 'clusters/nhood_' + reads_file.split('_')[4] + '_cluster_' + str(i) + '.fasta'
+    with open(out_file, 'w') as f:
+      for line in clusters[i]:
+        f.write(line + '\n')
 
   return
 
-  for i in range(len(r)):
-    mat[i][i] = 1
-    for j in range(i + 1, len(r)):
-      r1 = r[i]
-      r2 = r[j]
-      # call('/home/mshen/research/bin/getlcs ' + r1 + ' ' + r2, shell = True)
-      # (alignLen, matches, mismatches, numgaps, numGapExtends, bestxy) = locAL.external_bestseq1(r1, r2, 1, -1, -1, -0.5)
-      # (alignLen, matches, mismatches, numgaps, numGapExtends, bestxy) = locAL.external(r1, r2, 1, -2, -2, -1)
-      
-      # lcs = longest_common_substring(r1, r2)
-      # mat[i][j] = len(lcs)
-      # mat[j][i] = len(lcs)
-
-      # accuracy = 0
-      # if alignLen > 0:
-      #   accuracy = float(matches) / float(alignLen)
-      # mat[i][j] = accuracy
-      # mat[j][i] = accuracy
-      # print i, j, accuracy, alignLen
-      # print i, j, len(lcs)
-  for a in mat:
-    print a
 
 def filter_by_len(reads, cutoff):
   new_r = []
