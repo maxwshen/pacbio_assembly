@@ -27,13 +27,13 @@ def plot_1group(input_file):
 
   largest = max(data)
   # step = int(np.log2(largest))
-  step = 100
+  step = 1
   binrange = range(0, largest, step)
 
   plt.hist(data, color = 'green', bins = binrange)
 
-  plt.xlabel('Length of Read')
-  plt.ylabel('Quantity')
+  plt.xlabel('Size of Cluster')
+  plt.ylabel('Quantity of Clusters')
   plt.show()
 
 def plot_2groups(input_file):
