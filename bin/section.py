@@ -6,11 +6,15 @@ import copy
 from collections import defaultdict
 
 def main():
-  if len(sys.argv) != 7:
-    print 'Usage: python section <blasrOutputFile> <readsFile> <outFile> <startpos> <endpos> <threshold>'
-    sys.exit(0)
+  blasrOutputFile = sys.argv[1]
+  readsFile = sys.argv[2]
+  outFile = sys.argv[3]
+  startpos = int(sys.argv[4])
+  endpos = int(sys.argv[5])
+  threshold = float(sys.argv[6])
 
-  section(sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), int(sys.argv[5]), float(sys.argv[6]))
+  section(blasrOutputFile, readsFile, outFile, startpos, endpos, threshold)
+  return
 
 def section(blasrOut, reads, outFile, start, end, thresholdPct):
   threshold = thresholdPct
