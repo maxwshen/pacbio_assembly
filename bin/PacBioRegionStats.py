@@ -1217,90 +1217,28 @@ def testKmer(genome,kmer):
 
 if __name__ == "__main__":
     start_time = time.time()
-    #Define parameters and file names
-    m5_file = 'blasr_all_m5.out'
-    #m5_file = 'aligned_corr_reads/align_c3005150_s1000_orig.out'
-    k = 24
-    t = 4
-    size = 1250
-    #center = 3005150
-    center = 3042848
-    min_overlap = 150
-    del_size = 1
-    #ins_size = 3
-    indel_size = 1
-    #sub_k = 15
-    offset = 50
-    r_size = 100
-    num_iter = 10
-    read_file = 'PacBio_10kb_CLR.fasta'
-    genome_file = 'e_coli_genome.fasta'
-    #genome_file = 'extracted_genome_c3003000_s1000.fasta'
-    read_out = 'extracted_reads_c%d_s%d.fasta' % (center,size)
-    genome_out = 'extracted_genome_c%d_s%d.fasta' % (center,size)
+    main()
+    print 'Total time',time.time()-start_time
+    
+def main():
+    center = int(sys.argv[1])
+    size = int(sys.argv[2])
+    min_overlap = size - 100
+    read_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_whole_removed_homopolymer.fasta'
+    genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
+
+    extract(center, size, min_overlap)
+    return
+
+def extract(center, size, min_overlap, read_file, genome_file):
+    m5_file = '/home/mshen/research/data/blasr_all_m5.out'
+    read_out = '/home/mshen/research/extracts/extracted_reads_c%d_s%d.fasta' % (center,size)
+    genome_out = '/home/mshen/research/extracts/extracted_genome_c%d_s%d.fasta' % (center,size)
     write_out = True
-    ktmer_out = 'k%dt%d-mer_genome_indices.txt' % (k,t)
-    del_out = 'del_check_all_c%d_s%d_d%d.txt' % (center,r_size,del_size)
-    #del_fix_out = 'del_fix_c%d_s%d_d%d_i%d.txt' % (center,size,del_size,num_iter)
-    #corr_read_out = 'corrected_reads_c%d_s%d_d%d_i%d.fasta' % (center,size,del_size,num_iter)
-    indel_state = -1
-    indel_fix_out = 'indel_fix_c%d_s%d_ind%d_sta%d_i%d.txt' % (center,size,indel_size,indel_state,num_iter)
-    indel_corr_read_out = 'corrected_reads_c%d_s%d_ind%d_sta%d_i%d.fasta' % (center,size,indel_size,indel_state,num_iter)
-    fixIncorrect = True
-    #kmer_file = '15merDegreeNode_all.txt'
-    #kmer_fix_out = 'kmer_fix_sta%d_ind%d_i%d_all.txt' % (indel_state,indel_size,num_iter)
-    #kmer_read_out = 'corrected_read_kmers_sta%d_ind%d_i%d_perfect.fasta' % (indel_state,indel_size,num_iter)
-    
-    
-    #Count homopolymers in genome
-    #genome = readGenome(genome_file)
-    #checkHomopolymers(genome)
-    #Find the indices of all solid KTmers in a genome and where they map
-    #genome = readGenome(genome_file)
-    #print 'Got genome',time.time()-start_time
-    #headers,reads = readFASTA(read_file)
-    #print 'Got reads',time.time()-start_time
-    #findKTmers(k,t,reads,genome,ktmer_out)
-    
-    fold = 'simulation/'
-    center_file = 'nhood_file_names.txt'
-    genome_file = 'sim_genome_1m.fasta'
-    size = 1250
-    genome_out = 'sim_genome_1m_region_c%d_s%d.fasta'
-    write_out = True
-    centers,kmers = readCenters(fold+center_file)
-    header = '>simulated_genome_1m/%d_%d/%d_%s'
-    
-    for i in range(len(centers)):
-        start = centers[i]-(size//2)
-        end = centers[i]+(size//2)
-        if start < 0:
-            start = 0
-        #No end condition check
-        genome = extractGenome(fold+genome_file,size,centers[i],fold+(genome_out % (centers[i],size)),write_out,header % (start,end,centers[i],kmers[i]))
     
     #Extract the genome and reads mapping to the genome at a center and size
-    #read_dict = getGenomicRegion(m5_file,size,center,min_overlap)
-    #headers,reads = extractReads(read_dict,read_file,read_out,write_out)
-    #genome = extractGenome(fold+genome_file,size,center,fold+genome_out,write_out)
+    read_dict = getGenomicRegion(m5_file,size,center,min_overlap)
+    headers,reads = extractReads(read_dict,read_file,read_out,write_out)
+    genome = extractGenome(fold+genome_file,size,center,fold+genome_out,write_out)
     
-    #Perform delCheck on that region on a range of del_size
-    #headers,reads = readFASTA(read_out)
-    #genome = readGenome(genome_out)
-    #delCheck(reads,genome,k,del_size,offset,del_out)
-    #indelCheck(reads,genome,k,ins_size,offset,'try_dels.txt',True)
-    #indelCheck(reads,genome,k,ins_size,offset,'try_ins.txt',False)
-    #subCheck(reads,genome,k,sub_k,offset,'try_sub.txt')
-    
-    #delCheckRange(m5_file,read_file,genome_file,ktmer_out,r_size,center,size,min_overlap,k,del_size,offset,del_out)
-    
-    #delFixIterate(m5_file,read_file,genome_file,size,center,min_overlap,k,t,del_size,offset,num_iter,del_fix_out,corr_read_out)
-    #for indel_size in [5,7]:
-        #for num_iter in [1,5,10,20]:
-            #indel_fix_out = 'indel_fix_c%d_s%d_ind%d_sta%d_i%d.txt' % (center,size,indel_size,indel_state,num_iter)
-            #indel_corr_read_out = 'corrected_reads_c%d_s%d_ind%d_sta%d_i%d.fasta' % (center,size,indel_size,indel_state,num_iter)
-    #indelFixIterate(m5_file,read_file,genome_file,size,center,min_overlap,k,t,indel_size,offset,num_iter,indel_fix_out,indel_corr_read_out,indel_state,fixIncorrect)
-        
-    #fixKmerIter(kmer_file,headers,reads,k,indel_size,num_iter,kmer_fix_out,kmer_read_out,indel_state)
-    
-    print 'Total time',time.time()-start_time
+    return read_out, genome_out

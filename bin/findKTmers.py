@@ -21,7 +21,7 @@ def main():
   _t = int(sys.argv[4])
 
   # If two consecutive kt-mers are not within *width*, the region in between is uncovered
-  width = 400     # Twice of 200, which is almost the one-side width of 250 in 500bp nhood
+  width = 1000     # Twice of 200, which is almost the one-side width of 250 in 500bp nhood
 
   # genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
   ktmers = findKTmers(reads, _k, _t)
