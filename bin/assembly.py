@@ -161,7 +161,7 @@ def neighborhood(reads, centerNode, dist, margin, position):
   #   dist: Integer
   # Output:
   #   A set of sequences corresponding to the neighborhood of dist/2 around node
-  # Margin is deprecated, but refers to searching for nodes within the neighborhood by
+  # Margin refers to searching for nodes within the neighborhood by
   #   exploring farther outside and then back in.
   # Position is the true genomic position.
 
