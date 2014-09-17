@@ -233,7 +233,7 @@ def neighborhood(reads, centerNode, dist, margin, position):
         else:
           seqs.append(line[0:startpos + dist].strip())
 
-  nhood_filename = 'e_coli_nhoods_500/nhood_nh' + str(position) + '_' + centerNode.ktmer + '.fasta'
+  nhood_filename = 'e_coli_nhoods_500_22.4/nhood_nh' + str(position) + '_' + centerNode.ktmer + '.fasta'
   try:
     open(nhood_filename, 'w').close()
   except:

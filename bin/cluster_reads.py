@@ -26,7 +26,7 @@ def main():
 def batch(directory):
   files = os.listdir(directory)
   for fil in files:
-    print directory + fil
+    print directory + fil, datetime.datetime.now()
     cluster_reads(directory + fil)
 
 def cluster_reads(reads_file):
