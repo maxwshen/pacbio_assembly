@@ -23,17 +23,17 @@ def plot_1group(input_file):
     words = line.strip().split()
 
     if int(words[0]) > 0:
-      data.append(int(words[0]))
+      data.append(int(words[0]) / 2)
 
   largest = max(data)
   # step = int(np.log2(largest))
-  step = 1
+  step = 5
   binrange = range(0, largest, step)
 
-  plt.hist(data, color = 'green', bins = binrange)
+  plt.hist(data, color = 'green', bins = binrange, log = True)
 
-  plt.xlabel('Size of Cluster')
-  plt.ylabel('Quantity of Clusters')
+  plt.xlabel('Reads in neighborhood')
+  plt.ylabel('Quantity of neighborhoods')
   plt.show()
 
 def plot_2groups(input_file):

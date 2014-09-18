@@ -19,8 +19,8 @@ def main():
   return
 
 def batch(directory, genome_file):
-  clusters_per_read_file = 'clusters_per_read.out'
-  cluster_sizes_file = 'cluster_sizes.out'
+  clusters_per_read_file = 'clusters_per_read_22.4.out'
+  cluster_sizes_file = 'cluster_sizes_22.4.out'
 
   files = os.listdir(directory)
   for fil in files:
