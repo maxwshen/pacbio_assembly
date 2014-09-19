@@ -233,7 +233,10 @@ def neighborhood(reads, centerNode, dist, margin, position):
         else:
           seqs.append(line[0:startpos + dist].strip())
 
-  nhood_filename = 'e_coli_nhoods_500_22.4/nhood_nh' + str(position) + '_' + centerNode.ktmer + '.fasta'
+  fold = '/home/mshen/research/e_coli_nhoods_500_24.4/'
+  if not os.path.exists(fold):
+    os.makedirs(fold)
+  nhood_filename = fold + 'nhood_nh' + str(position) + '_' + centerNode.ktmer + '.fasta'
   try:
     open(nhood_filename, 'w').close()
   except:
