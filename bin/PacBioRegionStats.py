@@ -5,7 +5,7 @@ Created on Sat May 03 18:37:57 2014
 @author: Jeffrey
 """
 
-import time
+import sys, time
 
 def getGenomicRegion(m5_file_str,size,center,min_overlap):
     '''Takes a blasr -m 5 output file and a region defined by
