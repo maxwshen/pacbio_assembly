@@ -63,13 +63,35 @@ def findKTgapmers(reads, _k, _t, gap_len):
   counts = defaultdict(list)   # Key = kmer, Value = [(read header, pos)]
   h, r = read_fasta.read_fasta(reads)
   for j in range(len(r)):
+    print j
     read = r[j]
     header = h[j]
     for i in range(len(read) - _k + 1):
       kmer = read[i : i + _k]
       counts[kmer].append((header, i))
 
-  print counts
+  ktgapmers = []
+  for key in counts.keys():
+    print key
+    if len(counts[key]) >= _t:
+      next = defaultdict(list)  # Key = kmer, Value = [(read header, pos)]
+      for (h_name, pos) in counts[key]:
+        read = r[h.index(h_name)]
+        next_pos = pos + _k + gap_len
+        kmer = read[next_pos : next_pos + _k]
+        next[kmer].append((h_name, next_pos))
+      for key2 in next.keys():
+        if len(next[key2]) >= _t:
+          ktgapmers.append((key, gap_len, key2))
+          print len(ktgapmers)
+
+  for k in ktgapmers:
+    print k
+  print len(ktgapmers)
+  return
+
+  # For each kt-mer, look at all reads (gap) positions ahead and see if kt-mer exists
+  # output all gap-ktmers
 
 def find_genomic_positions(ktmers, genome_file, _k):
   # Used to find blind spots
