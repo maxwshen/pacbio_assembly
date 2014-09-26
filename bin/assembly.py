@@ -166,7 +166,7 @@ def neighborhood(reads, centerNode, dist, margin, position):
   # Position is the true genomic position.
 
   nodes = dict()        # Keys are nodes, values are position, 0 = starting pt
-  traversed = set()     # Set of nodes
+  traversed = set()     # Set of ktmers
   collected = dict()    # Keys are nodes, values are position, 0 = starting pt
   distmin = (dist * -1)/2
   distmax = dist / 2
@@ -178,11 +178,11 @@ def neighborhood(reads, centerNode, dist, margin, position):
     # Add all neighboring nodes if not traversed already
     for i in range(len(current.outnodes)):
       nextNode = current.outnodes[i]
-      if nextNode not in traversed and nextNode not in nodes.keys():
+      if nextNode.ktmer not in traversed and nextNode not in nodes.keys():
         nodes[nextNode] = currpos + current.outedges[i]
     for i in range(len(current.innodes)):
       nextNode = current.innodes[i]
-      if nextNode not in traversed and nextNode not in nodes.keys():
+      if nextNode.ktmer not in traversed and nextNode not in nodes.keys():
         nodes[nextNode] = currpos - current.inedges[i]
     
     # Remove nodes that are outside of alloted distance
@@ -192,7 +192,7 @@ def neighborhood(reads, centerNode, dist, margin, position):
         tempdict[key] = nodes[key]
     nodes = tempdict
 
-    traversed.add(current)
+    traversed.add(current.ktmer)
     if distmin < currpos < distmax:
       collected[current] = currpos
 
