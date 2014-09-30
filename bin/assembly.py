@@ -70,7 +70,7 @@ def assembly(reads, genome_file, _k, _t, gvname):
     seedktmer = genome[position : position + _k]
     if seedktmer in allnodes:
       seednode = allnodes[seedktmer]
-      neighborhood(reads, seednode, neighborhood_width, neighborhood_margin, position)
+      neighborhood(reads, seednode, neighborhood_width, neighborhood_margin, position, allnodes)
       print '... Done.', position, datetime.datetime.now()
       position += jump_length
     else:
@@ -155,7 +155,7 @@ def assembly(reads, genome_file, _k, _t, gvname):
     print 'Avg. kt-mer len for combined nodes: N/A'
 
 
-def neighborhood(reads, centerNode, dist, margin, position):
+def neighborhood(reads, centerNode, dist, margin, position, allnodes):
   # Input:
   #   node: A node in the A-bruijn graph
   #   dist: Integer
@@ -164,10 +164,11 @@ def neighborhood(reads, centerNode, dist, margin, position):
   # Margin refers to searching for nodes within the neighborhood by
   #   exploring farther outside and then back in.
   # Position is the true genomic position.
+  # allnodes is a dictionary of all nodes, Keys = kmers, Values = Nodes
 
-  nodes = dict()        # Keys are nodes, values are position, 0 = starting pt
+  nodes = dict()        # Keys are node indices, values are position, 0 = starting pt
   traversed = set()     # Set of ktmers
-  collected = dict()    # Keys are nodes, values are position, 0 = starting pt
+  collected = dict()    # Keys are node indices, values are position, 0 = starting pt
   distmin = (dist * -1)/2
   distmax = dist / 2
 
@@ -179,11 +180,11 @@ def neighborhood(reads, centerNode, dist, margin, position):
     for i in range(len(current.outnodes)):
       nextNode = current.outnodes[i]
       if nextNode.ktmer not in traversed and nextNode not in nodes.keys():
-        nodes[nextNode] = currpos + current.outedges[i]
+        nodes[allnodes.index(nextNode)] = currpos + current.outedges[i]
     for i in range(len(current.innodes)):
       nextNode = current.innodes[i]
       if nextNode.ktmer not in traversed and nextNode not in nodes.keys():
-        nodes[nextNode] = currpos - current.inedges[i]
+        nodes[allnodes.index(nextNode)] = currpos - current.inedges[i]
     
     # Remove nodes that are outside of alloted distance
     tempdict = dict()
@@ -194,16 +195,16 @@ def neighborhood(reads, centerNode, dist, margin, position):
 
     traversed.add(current.ktmer)
     if distmin < currpos < distmax:
-      collected[current] = currpos
+      collected[allnodes.index(current)] = currpos
 
     if len(nodes) == 0:
       break
     else:
-      current = nodes.keys()[0]
-      currpos = nodes[current]
-      del nodes[current]
+      current = allnodes[nodes.keys()[0]]
+      currpos = nodes[nodes.keys()[0]]
+      del nodes[nodes.keys()[0]]
 
-    print len(nodes)
+    print len(nodes), '\tNodes:', nodes, '\tCollected:',collected
 
   # Find starting position and read for regions in neighborhood
   hoodReads = []
