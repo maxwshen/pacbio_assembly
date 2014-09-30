@@ -209,7 +209,8 @@ def neighborhood(reads, centerNode, dist, margin, position, allnodes):
   # Find starting position and read for regions in neighborhood
   hoodReads = []
   hoodStartPos = []
-  for n in collected:
+  for n_tag in collected:
+    n = allnodes[n_tag]
     print n.ktmer, n.reads, n.pos, collected[n]
     for i in range(len(n.reads)):
       if n.reads[i] not in hoodReads:
