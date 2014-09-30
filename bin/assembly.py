@@ -46,14 +46,15 @@ def assembly(reads, genome_file, _k, _t, gvname):
           f.write(str(item) + '\t')
 
   print 'Generating graph...', datetime.datetime.now()
-  headNode, allnodes = aBruijn(cReads)
+  graph = A_Bruijn_Graph(cReads)
   print '... Done.', datetime.datetime.now()
 
   print 'Joining nodes with 1 indegree/outdegree and low edge dist...'
   numJoined = 0
-  numJoined = joinInOutDeg1Edges(headNode, _k)
+  numJoined = graph.joinInOutDeg1Edges(_k)
   print '... Done.', datetime.datetime.now()
 
+  print graph.allnodes
 
   print 'Finding many neighborhoods...'
   genome = ''
@@ -69,9 +70,12 @@ def assembly(reads, genome_file, _k, _t, gvname):
   position = starting_pos
   while position < len(genome) - _k + 1:
     seedktmer = genome[position : position + _k]
-    if seedktmer in allnodes:
-      seednode = allnodes[seedktmer]
-      neighborhood(reads, seednode, neighborhood_width, neighborhood_margin, position, allnodes)
+    if seedktmer in [g[:_k] for g in graph.allnodes]:
+      for g in graph.allnodes:
+        if genome[position : position + len(g)] == g:
+          curr_ktmer = g
+      seednode = graph.allnodes[curr_ktmer]
+      neighborhood(reads, seednode, neighborhood_width, neighborhood_margin, position, graph)
       print '... Done.', position, datetime.datetime.now()
       position += jump_length
     else:
@@ -156,7 +160,7 @@ def assembly(reads, genome_file, _k, _t, gvname):
     print 'Avg. kt-mer len for combined nodes: N/A'
 
 
-def neighborhood(reads, centerNode, dist, margin, position, allnodes):
+def neighborhood(reads, centerNode, dist, margin, position, graph):
   # Input:
   #   node: A node in the A-bruijn graph
   #   dist: Integer
@@ -167,6 +171,7 @@ def neighborhood(reads, centerNode, dist, margin, position, allnodes):
   # Position is the true genomic position.
   # allnodes is a dictionary of all nodes, Keys = kmers, Values = Nodes
 
+  allnodes = graph.allnodes
   nodes = dict()        # Keys are ktmers, values are position, 0 = starting pt
   traversed = set()     # Set of ktmers
   collected = dict()    # Keys are ktmers, values are position, 0 = starting pt
@@ -213,11 +218,11 @@ def neighborhood(reads, centerNode, dist, margin, position, allnodes):
   hoodStartPos = []
   for n_tag in collected:
     n = allnodes[n_tag]
-    print n.ktmer, n.reads, n.pos, collected[n]
+    print n.ktmer, n.reads, n.pos, collected[n.ktmer]
     for i in range(len(n.reads)):
       if n.reads[i] not in hoodReads:
         hoodReads.append(n.reads[i])
-        hoodStartPos.append(n.pos[i] + distmin - collected[n])
+        hoodStartPos.append(n.pos[i] + distmin - collected[n.ktmer])
 
   print hoodReads, hoodStartPos
 
@@ -328,90 +333,86 @@ def convertReads(reads, ktmers, _k):
   return cReads
 
 
-def aBruijn(cReads):
-  # Input:
-  #   Reads stored as kt-mers and distances b/w kt-mers
-  # Output:
-  #   Builds a graph of nodes. Returns head node, an invisible node
-  #   storing no information with edges to the first kt-mer in all reads.
-  # This graph assembly glues nodes together simultaneously.
+#################
+###  CLASSES  ###
+#################
 
-  head = Node('head')
-  allnodes = dict()   # Keys = kmers, Values = Nodes
+class A_Bruijn_Graph():
+  def __init__(self, c_reads):
+    # Input:
+    #   Reads stored as kt-mers and distances b/w kt-mers
+    # Output:
+    #   Builds a graph of nodes. Inits head node and allnodes
+    # This graph assembly glues nodes together simultaneously.
+    self.headNode = Node('head')
+    self.allnodes = dict()      # Keys = kmers, Values = Nodes
 
-  # Build graph
-  for j in range(len(cReads)):
-    read = cReads[j]
-    # print j, read
-    ktmer = read[0]
-    dist = read[1]
-    current = head
-    for i in range(len(ktmer)):
-      if ktmer[i] in allnodes.keys():
-        next = allnodes[ktmer[i]]
+    for j in range(len(c_reads)):
+      read = c_reads[j]
+      # print j, read
+      ktmer = read[0]
+      dist = read[1]
+      current = self.headNode
+      for i in range(len(ktmer)):
+        if ktmer[i] in self.allnodes.keys():
+          next = self.allnodes[ktmer[i]]
+        else:
+          next = Node(ktmer[i])
+          self.allnodes[ktmer[i]] = next
+        current.addOutEdge(dist[i], next)
+        next.addInEdge(dist[i], current)
+        next.reads.append(j)
+        next.pos.append(sum(read[1][:i+1]))
+        # print read[1][:i+1]
+        # print next.ktmer, next.reads, next.pos
+        current = next
+
+  def joinInOutDeg1Edges(self, _k):
+    # Joins two nodes linked by exactly 1 edge of length 1
+
+    numJoined = 0
+    traversed = set()
+    nodes = set()
+    for n in self.headNode.outnodes:
+      nodes.add(n)
+    
+    while len(nodes) > 0:
+      # print len(nodes)
+      n = nodes.pop()
+      traversed.add(n)
+      # print n.ktmer, n.outDegree, n.inDegree
+
+      # Only join nodes with indegree/outdegree of 1 and low edge distance
+      if n.outDegree == 1 and n.outnodes[0].inDegree == 1 and n.outedges[0] < len(n.ktmer)/2:
+        nextNode = n.outnodes[0]
+        dist = n.outedges[0]
+        # print dist
+        # print n.ktmer[dist:], nextNode.ktmer[:len(n.ktmer)-dist]
+        # Ensure that kt-mers align. Fix edges b/w nodes
+        if n.ktmer[dist:] == nextNode.ktmer[:len(n.ktmer)-dist]:
+          del self.allnodes[n.ktmer]
+          del self.allnodes[nextNode.ktmer]
+          # print n.ktmer, nextNode.ktmer,
+          n.ktmer += nextNode.ktmer[len(n.ktmer)-dist:]
+          # print n.ktmer
+          numJoined += 1
+          for i in range(len(nextNode.outnodes)):
+            # if nextNode.outnodes[i] not in traversed:
+            #   nodes.add(nextNode.outnodes[i])
+            n.addOutEdge(nextNode.outedges[i] + dist, nextNode.outnodes[i])
+            nextNode.outnodes[i].addInEdge(nextNode.outedges[i] + dist, n)
+            nextNode.outnodes[i].removeInEdge(nextNode.outedges[i], nextNode)
+          n.removeOutEdge(n.outedges[0], nextNode)
+          nextNode.removeInEdge(nextNode.inedges[0], n)
+          nodes.add(n)
+          self.allnodes[n.ktmer] = n
+        else:
+          print 'ERROR:', n.ktmer, nextNode.ktmer
       else:
-        next = Node(ktmer[i])
-        allnodes[ktmer[i]] = next
-      current.addOutEdge(dist[i], next)
-      next.addInEdge(dist[i], current)
-      next.reads.append(j)
-      next.pos.append(sum(read[1][:i+1]))
-      # print read[1][:i+1]
-      # print next.ktmer, next.reads, next.pos
-      current = next
-  return head, allnodes
-
-
-def joinInOutDeg1Edges(headNode, _k):
-  # Joins two nodes linked by exactly 1 edge of length 1
-  #
-  # TODO: Currently doesn't join all nodes w/ exactly 1 edge, dist 1
-  #   Find out why and fix
-  # TODO: Check that node has 1 outdegree, receiving node has 1 indegree,
-  #   and edge has dist 1  
-
-  numJoined = 0
-  traversed = set()
-  nodes = set()
-  for n in headNode.outnodes:
-    nodes.add(n)
-  
-  while len(nodes) > 0:
-    # print len(nodes)
-    n = nodes.pop()
-    traversed.add(n)
-    # print n.ktmer, n.outDegree, n.inDegree
-
-    # Only join nodes with indegree/outdegree of 1 and low edge distance
-    if n.outDegree == 1 and n.outnodes[0].inDegree == 1 and n.outedges[0] < len(n.ktmer)/2:
-      nextNode = n.outnodes[0]
-      dist = n.outedges[0]
-      # print dist
-      # print n.ktmer[dist:], nextNode.ktmer[:len(n.ktmer)-dist]
-      # Ensure that kt-mers align. Fix edges b/w nodes
-      if n.ktmer[dist:] == nextNode.ktmer[:len(n.ktmer)-dist]:
-        # print n.ktmer, nextNode.ktmer,
-        n.ktmer += nextNode.ktmer[len(n.ktmer)-dist:]
-        # print n.ktmer
-        numJoined += 1
-        for i in range(len(nextNode.outnodes)):
-          # if nextNode.outnodes[i] not in traversed:
-          #   nodes.add(nextNode.outnodes[i])
-          n.addOutEdge(nextNode.outedges[i] + dist, nextNode.outnodes[i])
-          nextNode.outnodes[i].addInEdge(nextNode.outedges[i] + dist, n)
-          nextNode.outnodes[i].removeInEdge(nextNode.outedges[i], nextNode)
-        n.removeOutEdge(n.outedges[0], nextNode)
-        nextNode.removeInEdge(nextNode.inedges[0], n)
-        nodes.add(n)
-      else:
-        print 'ERROR:', n.ktmer, nextNode.ktmer
-    else:
-      for i in range(len(n.outedges)):
-        if n.outnodes[i] not in traversed:
-          nodes.add(n.outnodes[i])
-
-  return numJoined
-
+        for i in range(len(n.outedges)):
+          if n.outnodes[i] not in traversed:
+            nodes.add(n.outnodes[i])
+    return numJoined
 
 class Node():
   def __init__(self, ktmer):

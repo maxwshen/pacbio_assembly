@@ -20,11 +20,20 @@ def main():
   _k = int(sys.argv[3])
   _t = int(sys.argv[4])
   gap_len = int(sys.argv[5])
+  # genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
 
   ktgapmers = findKTgapmers(reads, _k, _t, gap_len)
-
-  # genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
   ktmers = findKTmers(reads, _k * 2, _t)
+
+  # print ktgapmers, '\n', ktmers
+  num_overlap = 0
+  print 'Overlap:'
+  for (k1, gap_len, k2) in ktgapmers:
+    for ktmer in ktmers:
+      if k1 == ktmer[:_k] and k2[:-1] == ktmer[-_k + 1:]:
+        num_overlap += 1
+        # print (k1, gap_len, k2), ktmer
+  print num_overlap
   return
 
   # If two consecutive kt-mers are not within *width*, the region in between is uncovered
@@ -39,41 +48,60 @@ def main():
 
 def findKTmers(reads, _k, _t):
   # Returns a set of strings
-  counts = dict()   # Key = kmer, Value = t
-  h, r = read_fasta.read_fasta(reads)
-  for read in r:
-    for i in range(len(read) - _k + 1):
-      kmer = read[i : i + _k]
-      if kmer in counts:
-        counts[kmer] += 1
-      else:
-        counts[kmer] = 1
+  isdna = False
+  counts = dict()
+  r = 0
+  with open(reads) as f:
+    for i, line in enumerate(f):
+      # print i
+      if isdna:
+        isdna = False
+        dna = line.strip()
+        for j in range(len(dna) - _k + 1):
+          kmer = dna[j:j+_k]
+          # print kmer
+          if kmer in counts:
+            counts[kmer] = counts[kmer] + 1
+          else:
+            counts[kmer] = 1
+      if line[0] == '>' or line[0] == '@':
+        r += 1
+        isdna = True
 
   ans = set()
   for key, val in counts.iteritems():
     if val >= _t:
       ans.add(key)
       # print key, val
-  print 'Found ' + str(len(ans)) + ' (' + str(_k) + ',' + str(_t) + ')-mers in ' + str(len(r)) + ' reads'
+  print 'Found ' + str(len(ans)) + ' (' + str(_k) + ',' + str(_t) + ')-mers in ' + str(r) + ' reads'
   return ans
 
 def findKTgapmers(reads, _k, _t, gap_len):
   # Finds [ (k,t)-mer - gap - (k,t)-mer ]
-  counts = defaultdict(list)   # Key = kmer, Value = [(read header, pos)]
-  h, r = read_fasta.read_fasta(reads)
-  for j in range(len(r)):
-    read = r[j]
-    header = h[j]
-    for i in range(len(read) - _k + 1):
-      kmer = read[i : i + _k]
-      counts[kmer].append((header, i))
+  isdna = False
+  counts = defaultdict(list)
+  r = 0
+  header = ''
+  with open(reads) as f:
+    for i, line in enumerate(f):
+      if isdna:
+        isdna = False
+        dna = line.strip()
+        for j in range(len(dna) - _k + 1):
+          kmer = dna[j:j+_k]
+          counts[kmer].append((header, i))
+      if line[0] == '>' or line[0] == '@':
+        r += 1
+        isdna = True
+        header = line
+
 
   ktgapmers = []
   for key in counts.keys():
     if len(counts[key]) >= _t:
       next = defaultdict(list)  # Key = kmer, Value = [(read header, pos)]
       for (h_name, pos) in counts[key]:
-        read = r[h.index(h_name)]
+        read = find_read(reads, h_name)
         next_pos = pos + _k + gap_len
         kmer = read[next_pos : next_pos + _k]
         if len(kmer) == _k:
@@ -83,12 +111,21 @@ def findKTgapmers(reads, _k, _t, gap_len):
         if len(next[key2]) >= _t:
           ktgapmers.append((key, gap_len, key2))
 
-  print len(ktgapmers)
   print ktgapmers
-  return
+  print 'Found ' + str(len(ktgapmers)) + ' (' + str(_k) + ',' + str(_t) + ',' + str(gap_len) + ')-mers in ' + str(r) + ' reads'
+  return ktgapmers
 
   # For each kt-mer, look at all reads (gap) positions ahead and see if kt-mer exists
   # output all gap-ktmers
+
+def find_read(reads_file, header):
+  found = False
+  with open(reads_file) as f:
+    for i, line in enumerate(f):
+      if found:
+        return line.strip()
+      if line == header:
+        found = True
 
 def find_genomic_positions(ktmers, genome_file, _k):
   # Used to find blind spots
