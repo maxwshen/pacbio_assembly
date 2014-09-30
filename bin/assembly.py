@@ -383,17 +383,19 @@ class A_Bruijn_Graph():
       # print n.ktmer, n.outDegree, n.inDegree
 
       # Only join nodes with indegree/outdegree of 1 and low edge distance
-      if n.outDegree == 1 and n.outnodes[0].inDegree == 1 and n.outedges[0] < len(n.ktmer)/2:
+      if n.outDegree == 1 and n.outnodes[0].inDegree == 1 and n.outedges[0] < len(n.ktmer) / 2:
         nextNode = n.outnodes[0]
         dist = n.outedges[0]
         # print dist
-        # print n.ktmer[dist:], nextNode.ktmer[:len(n.ktmer)-dist]
+        # print n.ktmer[dist:], nextNode.ktmer[:len(n.ktmer) - dist]
         # Ensure that kt-mers align. Fix edges b/w nodes
-        if n.ktmer[dist:] == nextNode.ktmer[:len(n.ktmer)-dist]:
-          del self.allnodes[n.ktmer]
-          del self.allnodes[nextNode.ktmer]
+        if n.ktmer[dist:] == nextNode.ktmer[:len(n.ktmer) - dist]:
+          if n.ktmer in self.allnodes:
+            del self.allnodes[n.ktmer]
+          if nextNode.ktmer in self.allnodes:
+            del self.allnodes[nextNode.ktmer]
           # print n.ktmer, nextNode.ktmer,
-          n.ktmer += nextNode.ktmer[len(n.ktmer)-dist:]
+          n.ktmer += nextNode.ktmer[len(n.ktmer) - dist:]
           # print n.ktmer
           numJoined += 1
           for i in range(len(nextNode.outnodes)):

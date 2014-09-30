@@ -89,7 +89,7 @@ def findKTgapmers(reads, _k, _t, gap_len):
         dna = line.strip()
         for j in range(len(dna) - _k + 1):
           kmer = dna[j:j+_k]
-          counts[kmer].append((header, i))
+          counts[kmer].append((header, j))
       if line[0] == '>' or line[0] == '@':
         r += 1
         isdna = True
@@ -106,7 +106,7 @@ def findKTgapmers(reads, _k, _t, gap_len):
         kmer = read[next_pos : next_pos + _k]
         if len(kmer) == _k:
           next[kmer].append((h_name, next_pos))
-      print key, next
+      # print key, next
       for key2 in next.keys():
         if len(next[key2]) >= _t:
           ktgapmers.append((key, gap_len, key2))
