@@ -19,17 +19,16 @@ def main():
   genome_file = sys.argv[2]
   _k = int(sys.argv[3])
   _t = int(sys.argv[4])
+  gap_len = int(sys.argv[5])
 
-  gap_len = 1
-  findKTgapmers(reads, _k, _t, gap_len)
+  ktgapmers = findKTgapmers(reads, _k, _t, gap_len)
+
+  # genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
+  ktmers = findKTmers(reads, _k * 2, _t)
   return
 
   # If two consecutive kt-mers are not within *width*, the region in between is uncovered
   width = 1000     # Twice of 200, which is almost the one-side width of 250 in 500bp nhood
-
-  # genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
-  ktmers = findKTmers(reads, _k, _t)
-
   # Find blind spots
   pos, genome_len = find_genomic_positions(ktmers, genome_file, _k)
   gaps, total = find_gaps(pos, genome_len, width)
@@ -63,7 +62,6 @@ def findKTgapmers(reads, _k, _t, gap_len):
   counts = defaultdict(list)   # Key = kmer, Value = [(read header, pos)]
   h, r = read_fasta.read_fasta(reads)
   for j in range(len(r)):
-    print j
     read = r[j]
     header = h[j]
     for i in range(len(read) - _k + 1):
@@ -72,22 +70,21 @@ def findKTgapmers(reads, _k, _t, gap_len):
 
   ktgapmers = []
   for key in counts.keys():
-    print key
     if len(counts[key]) >= _t:
       next = defaultdict(list)  # Key = kmer, Value = [(read header, pos)]
       for (h_name, pos) in counts[key]:
         read = r[h.index(h_name)]
         next_pos = pos + _k + gap_len
         kmer = read[next_pos : next_pos + _k]
-        next[kmer].append((h_name, next_pos))
+        if len(kmer) == _k:
+          next[kmer].append((h_name, next_pos))
+      print key, next
       for key2 in next.keys():
         if len(next[key2]) >= _t:
           ktgapmers.append((key, gap_len, key2))
-          print len(ktgapmers)
 
-  for k in ktgapmers:
-    print k
   print len(ktgapmers)
+  print ktgapmers
   return
 
   # For each kt-mer, look at all reads (gap) positions ahead and see if kt-mer exists

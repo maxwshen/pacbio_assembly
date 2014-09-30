@@ -15,6 +15,7 @@ def main():
   _t = int(sys.argv[4])
   gv_file = sys.argv[5]
   assembly(reads_file, genome_file, _k, _t, gv_file)
+  return
 
 def assembly(reads, genome_file, _k, _t, gvname):
   # Given input reads in fasta format, assemble the genome
@@ -166,9 +167,9 @@ def neighborhood(reads, centerNode, dist, margin, position, allnodes):
   # Position is the true genomic position.
   # allnodes is a dictionary of all nodes, Keys = kmers, Values = Nodes
 
-  nodes = dict()        # Keys are node indices, values are position, 0 = starting pt
+  nodes = dict()        # Keys are ktmers, values are position, 0 = starting pt
   traversed = set()     # Set of ktmers
-  collected = dict()    # Keys are node indices, values are position, 0 = starting pt
+  collected = dict()    # Keys are ktmers, values are position, 0 = starting pt
   distmin = (dist * -1)/2
   distmax = dist / 2
 
@@ -180,11 +181,11 @@ def neighborhood(reads, centerNode, dist, margin, position, allnodes):
     for i in range(len(current.outnodes)):
       nextNode = current.outnodes[i]
       if nextNode.ktmer not in traversed and nextNode not in nodes.keys():
-        nodes[allnodes.index(nextNode)] = currpos + current.outedges[i]
+        nodes[nextNode.ktmer] = currpos + current.outedges[i]
     for i in range(len(current.innodes)):
       nextNode = current.innodes[i]
       if nextNode.ktmer not in traversed and nextNode not in nodes.keys():
-        nodes[allnodes.index(nextNode)] = currpos - current.inedges[i]
+        nodes[nextNode.ktmer] = currpos - current.inedges[i]
     
     # Remove nodes that are outside of alloted distance
     tempdict = dict()
@@ -195,14 +196,15 @@ def neighborhood(reads, centerNode, dist, margin, position, allnodes):
 
     traversed.add(current.ktmer)
     if distmin < currpos < distmax:
-      collected[allnodes.index(current)] = currpos
+      collected[current.ktmer] = currpos
 
     if len(nodes) == 0:
       break
     else:
-      current = allnodes[nodes.keys()[0]]
-      currpos = nodes[nodes.keys()[0]]
-      del nodes[nodes.keys()[0]]
+      curr_ktmer = nodes.keys()[0]
+      current = allnodes[curr_ktmer]
+      currpos = nodes[curr_ktmer]
+      del nodes[curr_ktmer]
 
     print len(nodes), '\tNodes:', nodes, '\tCollected:',collected
 
@@ -235,7 +237,7 @@ def neighborhood(reads, centerNode, dist, margin, position, allnodes):
         else:
           seqs.append(line[0:startpos + dist].strip())
 
-  fold = '/home/mshen/research/e_coli_nhoods_500_22.4_unwhole2/'
+  fold = '/home/mshen/research/e_coli_nhoods_500_24.4_whole_sept30/'
   if not os.path.exists(fold):
     os.makedirs(fold)
   nhood_filename = fold + 'nhood_nh' + str(position) + '_' + centerNode.ktmer + '.fasta'
