@@ -245,7 +245,7 @@ def neighborhood(reads, centerNode, dist, margin, position, graph):
         else:
           seqs.append(line[0:startpos + dist].strip())
 
-  fold = '/home/mshen/research/e_coli_nhoods_500_24.4_whole_sept30/'
+  fold = '/home/mshen/research/e_coli_nhoods_500_15.6/'
   if not os.path.exists(fold):
     os.makedirs(fold)
   nhood_filename = fold + 'nhood_nh' + str(position) + '_' + centerNode.ktmer + '.fasta'
