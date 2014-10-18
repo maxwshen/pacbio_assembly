@@ -53,7 +53,6 @@ def findKTmers(reads, _k, _t):
   r = 0
   with open(reads) as f:
     for i, line in enumerate(f):
-      # print i
       if isdna:
         isdna = False
         dna = line.strip()
@@ -81,35 +80,40 @@ def findKTgapmers(reads, _k, _t, gap_len):
   isdna = False
   counts = defaultdict(list)
   r = 0
-  header = ''
   with open(reads) as f:
     for i, line in enumerate(f):
       if isdna:
         isdna = False
         dna = line.strip()
         for j in range(len(dna) - _k + 1):
-          kmer = dna[j:j+_k]
-          counts[kmer].append((header, j))
+          kmer = dna[j:j + _k]
+          kmer2 = dna[j + _k + gap_len : j + 2 * _k + gap_len]
+          if len(kmer2) == _k:
+            counts[kmer].append(kmer2)
       if line[0] == '>' or line[0] == '@':
         r += 1
         isdna = True
-        header = line
 
 
-  ktgapmers = []
-  for key in counts.keys():
-    if len(counts[key]) >= _t:
-      next = defaultdict(list)  # Key = kmer, Value = [(read header, pos)]
-      for (h_name, pos) in counts[key]:
-        read = find_read(reads, h_name)
-        next_pos = pos + _k + gap_len
-        kmer = read[next_pos : next_pos + _k]
-        if len(kmer) == _k:
-          next[kmer].append((h_name, next_pos))
-      # print key, next
-      for key2 in next.keys():
-        if len(next[key2]) >= _t:
-          ktgapmers.append((key, gap_len, key2))
+  ktgapmers = set()
+  for kmer in counts.keys():
+    for kmer2 in counts[kmer]:
+      if counts[kmer].count(kmer2) >= _t:
+        ktgapmers.add((kmer, gap_len, kmer2))
+
+  # for key in counts.keys():
+  #   if len(counts[key]) >= _t:
+  #     next = defaultdict(list)  # Key = kmer, Value = [(read header, pos)]
+  #     for (h_name, pos) in counts[key]:
+  #       read = find_read(reads, h_name)
+  #       next_pos = pos + _k + gap_len
+  #       kmer = read[next_pos : next_pos + _k]
+  #       if len(kmer) == _k:
+  #         next[kmer].append((h_name, next_pos))
+  #     # print key, next
+  #     for key2 in next.keys():
+  #       if len(next[key2]) >= _t:
+  #         ktgapmers.append((key, gap_len, key2))
 
   print ktgapmers
   print 'Found ' + str(len(ktgapmers)) + ' (' + str(_k) + ',' + str(_t) + ',' + str(gap_len) + ')-mers in ' + str(r) + ' reads'

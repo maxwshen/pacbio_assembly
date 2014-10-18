@@ -181,7 +181,8 @@ def neighborhood(reads, centerNode, dist, margin, position, graph):
   current = centerNode
   currpos = 0
 
-  while True:
+  nhood_size_limit = 100
+  while True and len(collected) < nhood_size_limit:
     # Add all neighboring nodes if not traversed already
     for i in range(len(current.outnodes)):
       nextNode = current.outnodes[i]
@@ -211,7 +212,9 @@ def neighborhood(reads, centerNode, dist, margin, position, graph):
       currpos = nodes[curr_ktmer]
       del nodes[curr_ktmer]
 
-    print len(nodes), '\tNodes:', nodes, '\tCollected:',collected
+    # print len(nodes), '\tNodes:', nodes, '\tCollected:',collected
+    print len(nodes)
+
 
   # Find starting position and read for regions in neighborhood
   hoodReads = []
