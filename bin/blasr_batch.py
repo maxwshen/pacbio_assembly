@@ -14,7 +14,7 @@ def main():
   input_folder = '/home/lin/pb/nhood_files/'
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
   e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
-  blasr_options = '-bestn 1 -m 1'
+  blasr_options = '-bestn 1 -m 0'
   for name in os.listdir(input_folder):
     print commands.getstatusoutput(blasr_exe + ' ' + input_folder + '/' + name + ' ' + e_coli_genome + ' ' + blasr_options)[1]
   return
