@@ -20,6 +20,9 @@ def main():
   highdegnodes_stats(reads_file, genome_file, _k)
 
 def highdegnodes_stats(reads_file, genome_file, _k):
+  # Finds the average position of k-mers in the genome, given reads
+  # Uses Hammer graph approach
+
   h_reads, r_reads = read_fasta(reads_file)
   h_genome, r_genome = read_fasta(genome_file)
   genome = r_genome[0]

@@ -16,6 +16,7 @@ import numpy as np
 
 import GenerateIndelKmers
 import locAL
+import read_fasta
 
 from collections import defaultdict
 
@@ -24,7 +25,7 @@ def main():
     print 'Usage: python findHighDegreeKmers <reads_file> <k> <cutoff>'
     sys.exit(0)
 
-  findHighDegreeKmers(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]))
+  findHighDegreeKmers(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), check_correctness = True)
 
 def generateRandomKmer(_k):
   nt = ['A', 'C', 'T', 'G']
@@ -34,7 +35,10 @@ def generateRandomKmer(_k):
     kmer += nt[r]
   return kmer
 
-def findHighDegreeKmers(reads_file, _k, cutoff):
+def findHighDegreeKmers(reads_file, _k, cutoff, check_correctness = False):
+  genome_file = '/home/mshen/research/extracts_100k/extracted_genome_c2500000_s100000.fasta'
+  # genome_file = '/home/mshen/research/data/high_cov/ec_genome_rh_hc_n0.fasta'
+
   _kplus = _k + 1
   _kminus = _k - 1
   isdna = False
@@ -78,22 +82,36 @@ def findHighDegreeKmers(reads_file, _k, cutoff):
       if del_kmer in kminusmers:
         # degree += 1
         degree += kminusmers[del_kmer]
-
     ins_kmers = GenerateIndelKmers.genInsKmers(kmer, 1)[1]
     for ins_kmer in ins_kmers:
       if ins_kmer in kplusmers:
         # degree += 1 
         degree += kplusmers[ins_kmer]
-
     degrees[kmer] = degree
 
-  numToOutput = cutoff
+  if check_correctness:
+    h, r = read_fasta.read_fasta(genome_file)
+    genome = r[0]
+    genome_kmers = set()
+    for i in range(0, len(genome) - _k + 1):
+      genome_kmers.add(genome[i:i + _k])
+
+  if cutoff == -1:
+    numToOutput = len(degrees)
+  else:
+    numToOutput = cutoff
   num = copy.copy(numToOutput)
   best = set()
   for key in sorted(degrees, key=degrees.get, reverse=True):
     if num == 0:
       break
-    print key, 'Deg =', degrees[key], 't =', kmers[key]
+    if check_correctness:
+      if key in genome_kmers:
+        print key, 'Deg =', degrees[key], 't =', kmers[key], 'True'
+      else:
+        print key, 'Deg =', degrees[key], 't =', kmers[key], 'False'
+    else:
+        print key, 'Deg =', degrees[key], 't =', kmers[key]
     best.add(key)
     num -= 1
 

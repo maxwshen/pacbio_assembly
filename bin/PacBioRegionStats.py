@@ -7,7 +7,7 @@ Created on Sat May 03 18:37:57 2014
 
 import sys, time
 
-def getGenomicRegion(m5_file_str,size,center,min_overlap):
+def getGenomicRegion(m5_file_str, size, center, min_overlap):
     '''Takes a blasr -m 5 output file and a region defined by
     the center genomic index of the region (forward strand), and the size
     of the region, (stretches size/2 in both directions from the center).
@@ -110,27 +110,27 @@ def getGenomicRegion(m5_file_str,size,center,min_overlap):
                 g_end = g_i
                 
 
-            #Debugging
-            '''print 'Genome, %d:%d' % (g_start,g_end)
-            print genome[g_start:g_end]
-            print 'Read %d, %s, %d:%d' % (headers.index('>'+read_header),read_strand,out_read_start,out_read_end)
-            if read_strand == '+':
-                print reads[headers.index('>'+read_header)][out_read_start:out_read_end]
-            else:
-                print revComp(reads[headers.index('>'+read_header)][out_read_start:out_read_end])
-            print
-            print 'Alignment'
-            print genome_align[a_start:a_end]
-            print align[a_start:a_end]
-            print read_align[a_start:a_end]
-            print'''
+            # # Debugging
+            # print 'Genome, %d:%d' % (g_start,g_end)
+            # print genome[g_start:g_end]
+            # print 'Read %d, %s, %d:%d' % (headers.index('>'+read_header),read_strand,out_read_start,out_read_end)
+            # if read_strand == '+':
+            #     print reads[headers.index('>'+read_header)][out_read_start:out_read_end]
+            # else:
+            #     print revComp(reads[headers.index('>'+read_header)][out_read_start:out_read_end])
+            # print
+            # print 'Alignment'
+            # print genome_align[a_start:a_end]
+            # print align[a_start:a_end]
+            # print read_align[a_start:a_end]
+            # print
             
             read_dict[read_header] = (out_read_start,out_read_end,read_strand,flipped,g_start,g_end)
         
     m5_file.close()
     return read_dict
 
-def extractReads(read_dict,fasta_file_str,out_file_str,write_out):
+def extractReads(read_dict, fasta_file_str, out_file_str, write_out):
     fasta_file = open(fasta_file_str,'r')
     if write_out:
         out_file = open(out_file_str,'w')
@@ -264,20 +264,21 @@ def testKmer(genome,kmer):
 def main():
     center = int(sys.argv[1])
     size = int(sys.argv[2])
-    min_overlap = size - 100
-    read_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_whole_removed_homopolymers.fasta'
+    # min_overlap = size - 100
+    min_overlap = 1000
+    read_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
     genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
 
     extract(center, size, min_overlap, read_file, genome_file)
     return
 
 def extract(center, size, min_overlap, read_file, genome_file):
-    m5_file = '/home/mshen/research/data/blasr_whole_reads_m5.out'
+    m5_file = '/home/jeyuan/blasr_orig_all_m5.out'
     read_out = 'extracted_reads_c%d_s%d.fasta' % (center,size)
     genome_out = 'extracted_genome_c%d_s%d.fasta' % (center,size)
     write_out = True
     
-    fold = '/home/mshen/research/extracts/'
+    fold = '/home/mshen/research/extracts_100k/'
     header = '>ec_genome_region_c%d_s%d/ex_%d_%d/' % (center,size,center-(size//2),center+(size//2))
 
     #Extract the genome and reads mapping to the genome at a center and size
