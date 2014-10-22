@@ -57,7 +57,7 @@ def cluster_reads(reads_file):
     # print len(r), len(h)    
 
   for i in range(len(clusters)):
-    out_file = 'clusters/nhood_' + reads_file.split('_')[4] + '_cluster_' + str(i) + '.fasta'
+    out_file = 'clusters_15.6/nhood_' + reads_file.split('_')[4] + '_cluster_' + str(i) + '.fasta'
     with open(out_file, 'w') as f:
       for line in clusters[i]:
         f.write(line + '\n')
