@@ -91,10 +91,10 @@ def filter_neighbors(degrees, cutoff):
         removed.add(n)
     else:
       count += 1
-    if len(new_degrees) > cutoff:
+    if len(new_degrees) >= cutoff:
       break
 
-  # print 'Filtered', count, 'kmers'
+  print 'Filtered', count, 'kmers'
   return new_degrees
 
 def find_neighbors(degrees, kmer):
@@ -152,7 +152,8 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
     if len(header.split('$')) < 4:
       print 'ERROR: Irregular $ format. Needs to be /$start$end$/'
       sys.exit(0)
-    startpos = int(header.split('$')[-3])
+    # startpos = int(header.split('$')[-3])
+    startpos = int(header.split('$')[-4])
     for j in range(len(_krange)):
       k = _krange[j]
       for h in range(len(r) - k + 1):
@@ -235,11 +236,15 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
 
     print kmer, degrees[kmer]
 
+  if cutoff == -1:
+    numToOutput = len(degrees)
+  else:
+    numToOutput = cutoff
+
   if fn:
     degrees = filter_neighbors(degrees, cutoff)
 
   stdev_cutoff = 1000
-  numToOutput = cutoff
   numincorrect = 0
   current_deg = 0
   num = copy.copy(numToOutput)
@@ -268,7 +273,7 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
   #     genomeKmers.remove(key)
   # print 'Missing:', genomeKmers
 
-  graphviz(genomeKmers, degrees, kmers, cutoff)
+  # graphviz(genomeKmers, degrees, kmers, cutoff)
 
   # print '\nIncorrect'
   # for key in sorted(degrees, key=degrees.get, reverse=True):
