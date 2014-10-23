@@ -146,14 +146,16 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
   h_reads, r_reads = rf.read_fasta(reads_file)
   h_gen, r_gen = rf.read_fasta(genome_file)
 
+  print 'Finding k-mers...'
   for i in range(len(r_reads)):
     r = r_reads[i]
     header = h_reads[i]
-    if len(header.split('$')) < 4:
-      print 'ERROR: Irregular $ format. Needs to be /$start$end$/'
-      sys.exit(0)
+    # if len(header.split('$')) < 4:
+    #   print 'ERROR: Irregular $ format. Needs to be /$start$end$/'
+    #   sys.exit(0)
     # startpos = int(header.split('$')[-3])
-    startpos = int(header.split('$')[-4])
+    # startpos = int(header.split('$')[-4])
+    startpos = 0
     for j in range(len(_krange)):
       k = _krange[j]
       for h in range(len(r) - k + 1):
@@ -203,6 +205,7 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
       related_kmers.insert(0, del_kmers)
 
     # # Ensure that d=2 away still removes trivial indels on ends
+    # # Commented out because this reduces effectiveness I think?
     # remove_list = set()
     # for word in related_kmers[0]:
     #   if kmer[-_k + _d:] == word or kmer[:_k - _d] == word:
@@ -217,7 +220,7 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
     #   related_kmers[-1].remove(word)
 
 
-    central_t_multiplier = 2
+    central_t_multiplier = 1
     for i in range(len(related_kmers)):
       all_kmers_curr = all_kmers[i]
       for k_word in related_kmers[i]:
@@ -237,20 +240,21 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
     print kmer, degrees[kmer]
 
   if cutoff == -1:
-    numToOutput = len(degrees)
+    numToOutput = len(degrees.keys())
   else:
     numToOutput = cutoff
 
   if fn:
     degrees = filter_neighbors(degrees, cutoff)
 
-  stdev_cutoff = 1000
+  # stdev_cutoff = 1000
+  stdev_cutoff = 1000000
   numincorrect = 0
   current_deg = 0
   num = copy.copy(numToOutput)
   best = set()
   for key in sorted(degrees, key=degrees.get, reverse=True):
-    if kmers[key] >= t_cutoff:                      # Filter low t out
+    if kmers[key] >= t_cutoff:     # Filter low t out
       if np.std(kmers[key][1:]) <= stdev_cutoff:    # Filter large stdev out    
         if num >= 0:
           current_deg = degrees[key]
@@ -280,13 +284,13 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
   #   if key not in genomeKmers:
   #     print key, 'Deg =', degrees[key], 't =', kmers[key]
 
-  print 't-cutoff:', t_cutoff, 'Incorrect:', numincorrect, 'Total:', cutoff - num
+  print 't-cutoff:', t_cutoff, 'Incorrect:', numincorrect, 'Total:', numToOutput - num
   return
 
 
 if __name__ == '__main__':
   start = datetime.datetime.now()
-  # print 'Start:', start, '\n'
+  print 'Start:', start, '\n'
   main()
   end = datetime.datetime.now()
-  # print '\n\nEnd:', end, '\nTotal:', end - start
+  print '\n\nEnd:', end, '\nTotal:', end - start

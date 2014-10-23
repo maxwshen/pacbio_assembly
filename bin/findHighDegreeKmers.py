@@ -87,7 +87,7 @@ def findHighDegreeKmers(reads_file, _k, cutoff, check_correctness = False):
       if ins_kmer in kplusmers:
         # degree += 1 
         degree += kplusmers[ins_kmer]
-    degrees[kmer] = degree
+    degrees[kmer] = degree + kmers[kmer]
 
   if check_correctness:
     h, r = read_fasta.read_fasta(genome_file)
