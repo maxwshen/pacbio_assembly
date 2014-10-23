@@ -36,7 +36,7 @@ def kmer_matching(ec_seq_file, read_file, _k):
   for i in range(len(rr)):
     r = rr[i]
     h = hr[i]
-    score = float(sum([1 if r[i:i + _k] in kmers else 0 for i in range(len(r) - _k + 1)])) / float(len(r))
+    score = sum([1 if r[i:i + _k] in kmers else 0 for i in range(len(r) - _k + 1)])
     reads[h] = score
 
   for key in sorted(reads, key = reads.get, reverse = True):
