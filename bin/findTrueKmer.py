@@ -143,32 +143,42 @@ def findTrueKmer(reads_file, genome_file, _k, _d, cutoff, t_cutoff, fn):
   # all_kmers : Key = kmer string, value = [t, pos1, pos2, ...]
   all_kmers = [defaultdict(list) for i in range(len(_krange))]   
 
-  h_reads, r_reads = rf.read_fasta(reads_file)
-  h_gen, r_gen = rf.read_fasta(genome_file)
-
+  # WHY IS THIS SO SLOW? 30x slower than findHighDegreeKmers
+  # Maybe because it needs to access a list of dicts everytime instead of just a dict?
   print 'Finding k-mers...'
-  for i in range(len(r_reads)):
-    r = r_reads[i]
-    header = h_reads[i]
-    # if len(header.split('$')) < 4:
-    #   print 'ERROR: Irregular $ format. Needs to be /$start$end$/'
-    #   sys.exit(0)
-    # startpos = int(header.split('$')[-3])
-    # startpos = int(header.split('$')[-4])
-    startpos = 0
-    for j in range(len(_krange)):
-      k = _krange[j]
-      for h in range(len(r) - k + 1):
-        kmer = r[h:h + k]
-        if kmer in all_kmers[j].keys():
-          all_kmers[j][kmer][0] += 1
-          all_kmers[j][kmer].append(h + startpos)
-        else:
-          all_kmers[j][kmer].append(1)
-          all_kmers[j][kmer].append(h + startpos)
+  isdna = False
+  with open(reads_file) as f:
+    for i, line in enumerate(f):
+      print i
+      if isdna:
+        isdna = False
+        dna = line.strip()
 
+        # if len(curr_header.split('$')) < 4:
+        #   print 'ERROR: Irregular $ format. Needs to be /$start$end$/'
+        #   sys.exit(0)
+        # startpos = int(curr_header.split('$')[-3])
+        # startpos = int(curr_header.split('$')[-4])
+        startpos = 0
+        for j in range(len(_krange)):
+          k = _krange[j]
+          for h in range(len(dna) - k + 1):
+            kmer = dna[h:h + k]
+            if kmer in all_kmers[j].keys():
+              all_kmers[j][kmer][0] += 1
+              all_kmers[j][kmer].append(h + startpos)
+            else:
+              all_kmers[j][kmer].append(1)
+              all_kmers[j][kmer].append(h + startpos)
+      if line[0] == '>' or line[0] == '@':
+        curr_header = line.strip()
+        isdna = True
+
+  print 'Making copy...'
   kmers = copy.deepcopy(all_kmers[_d])
 
+  print 'Reading genome...'
+  h_gen, r_gen = rf.read_fasta(genome_file)
   genome = r_gen[0]
   all_genomekmers = set()
   genomeKmers = set()

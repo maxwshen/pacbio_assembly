@@ -21,11 +21,14 @@ import read_fasta
 from collections import defaultdict
 
 def main():
-  if len(sys.argv) != 4:
-    print 'Usage: python findHighDegreeKmers <reads_file> <k> <cutoff>'
-    sys.exit(0)
+  reads_file = sys.argv[1]
+  genome_file = sys.argv[2]
+  _k = int(sys.argv[3])
+  _d = int(sys.argv[4])                   # 1 or 2
+  cutoff = int(sys.argv[5])               # Set as -1 to print all
+  check_correctness_flag = sys.argv[6]
 
-  findHighDegreeKmers(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), check_correctness = True)
+  findHighDegreeKmers(reads_file, genome_file, _k, _d, cutoff, check_correctness = check_correctness_flag)
 
 def generateRandomKmer(_k):
   nt = ['A', 'C', 'T', 'G']
@@ -35,17 +38,22 @@ def generateRandomKmer(_k):
     kmer += nt[r]
   return kmer
 
-def findHighDegreeKmers(reads_file, _k, cutoff, check_correctness = False):
-  genome_file = '/home/mshen/research/extracts_100k/extracted_genome_c2500000_s100000.fasta'
+def findHighDegreeKmers(reads_file, genome_file, _k, _d, cutoff, check_correctness = False):
+  # genome_file = '/home/mshen/research/extracts/extracted_genome_c3005150_s1000.fasta'
+  # genome_file = '/home/mshen/research/extracts_100k/extracted_genome_c2500000_s100000.fasta'
   # genome_file = '/home/mshen/research/data/high_cov/ec_genome_rh_hc_n0.fasta'
 
   _kplus = _k + 1
   _kminus = _k - 1
+  _kminus2 = _k - 2
+  _kplus2 = _k + 2
   isdna = False
   readcount = 0
   kmers = dict()
   kplusmers = dict()
   kminusmers = dict()
+  kminus2mers = dict()
+  kplus2mers = dict()
 
   with open(reads_file) as f:
     for i, line in enumerate(f):
@@ -70,12 +78,28 @@ def findHighDegreeKmers(reads_file, _k, cutoff, check_correctness = False):
             kplusmers[kmer] += 1
           else:
             kplusmers[kmer] = 1
+        if _d == 2:
+          for j in range(len(dna) - _kplus2 + 1):
+            kmer = dna[j:j+_kplus2]
+            if kmer in kplus2mers:
+              kplus2mers[kmer] += 1
+            else:
+              kplus2mers[kmer] = 1
+          for j in range(len(dna) - _kminus2 + 1):
+            kmer = dna[j:j+_kminus2]
+            if kmer in kminus2mers:
+              kminus2mers[kmer] += 1
+            else:
+              kminus2mers[kmer] = 1
       if line[0] == '>' or line[0] == '@':
         readcount += 1
         isdna = True
 
   degrees = dict()
+  counter = 0
   for kmer in kmers:
+    counter += 1
+    print counter, len(kmers)
     del_kmers = GenerateIndelKmers.genDelKmers(kmer, 1)[1]
     degree = 0
     for del_kmer in del_kmers:
@@ -87,6 +111,17 @@ def findHighDegreeKmers(reads_file, _k, cutoff, check_correctness = False):
       if ins_kmer in kplusmers:
         # degree += 1 
         degree += kplusmers[ins_kmer]
+    if _d == 2:
+      for dk in del_kmers:
+        del2_kmers = GenerateIndelKmers.genDelKmers(dk, 1)[1]
+        for dk2 in del2_kmers:
+          if dk2 in kminus2mers:
+            degree += kminus2mers[dk2]
+      for ik in ins_kmers:
+        ins2_kmers = GenerateIndelKmers.genInsKmers(ik, 1)[1]
+        for ik2 in ins2_kmers:
+          if ik2 in kplus2mers:
+            degree += kplus2mers[ik2]
     degrees[kmer] = degree + kmers[kmer]
 
   if check_correctness:

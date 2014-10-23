@@ -278,7 +278,7 @@ def extract(center, size, min_overlap, read_file, genome_file):
     genome_out = 'extracted_genome_c%d_s%d.fasta' % (center,size)
     write_out = True
     
-    fold = '/home/mshen/research/extracts_100k/'
+    fold = '/home/mshen/research/extracts/'
     header = '>ec_genome_region_c%d_s%d/ex_%d_%d/' % (center,size,center-(size//2),center+(size//2))
 
     #Extract the genome and reads mapping to the genome at a center and size
