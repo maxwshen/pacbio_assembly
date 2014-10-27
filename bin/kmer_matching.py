@@ -19,7 +19,10 @@ def main():
   read_file = sys.argv[2]
   _k = int(sys.argv[3])
 
-  kmer_matching(ec_seq_file, read_file, _k)
+  fold = '/home/mshen/research/yu/N250_4/'
+  for name in os.listdir(input_folder):
+    ec_seq_file = name
+    kmer_matching(fold + ec_seq_file, read_file, _k)
   return
 
 def kmer_matching(ec_seq_file, read_file, _k):
@@ -41,13 +44,13 @@ def kmer_matching(ec_seq_file, read_file, _k):
     reads[h] = score
 
   headers = []
-  cutoff = 5
+  cutoff = 3
   for key in sorted(reads, key = reads.get, reverse = True):
     if reads[key] < cutoff:
       break
     headers.append(key)
 
-  print len(headers)
+  print '\n' + len(headers)
 
   new_ec_seq = ec_seq_file.translate(None, '/')
   out_file = 'km_' + new_ec_seq + '.fasta'
@@ -60,9 +63,10 @@ def kmer_matching(ec_seq_file, read_file, _k):
 
   for line in blasr_out.splitlines():
     head = '>' + '/'.join(line.split()[0].split('/')[:-1])
-    start_pos = str(line.split()[6])
-    end_pos = str(line.split()[7])
-    print head + '\n' + str(reads[head]) + '\t' + start_pos + '\t' + end_pos + '\t' 
+    start_pos = line.split()[6]
+    end_pos = line.split()[7]
+    length = int(end_pos) - int(start_pos)
+    print head + '\n' + str(reads[head]) + '\t' + start_pos + '\t' + end_pos + '\t' + str(length)
 
   return
 
