@@ -7,6 +7,7 @@ import datetime
 import random
 import copy
 import os
+import commands
 import numpy as np
 
 import read_fasta as rf
@@ -39,9 +40,41 @@ def kmer_matching(ec_seq_file, read_file, _k):
     score = sum([1 if r[i:i + _k] in kmers else 0 for i in range(len(r) - _k + 1)])
     reads[h] = score
 
+  headers = []
+  cutoff = 5
   for key in sorted(reads, key = reads.get, reverse = True):
-    print key, reads[key]
+    if reads[key] < cutoff:
+      break
+    headers.append(key)
 
+  print len(headers)
+
+  new_ec_seq = ec_seq_file.translate(None, '/')
+  out_file = 'km_' + new_ec_seq + '.fasta'
+  get_reads_from_headers(headers, read_file, out_file)
+
+  blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
+  e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
+  blasr_options = '-bestn 1'
+  blasr_out = commands.getstatusoutput(blasr_exe + ' ' + out_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+
+  for line in blasr_out.splitlines():
+    head = '>' + '/'.join(line.split()[0].split('/')[:-1])
+    start_pos = str(line.split()[6])
+    end_pos = str(line.split()[7])
+    print head + '\n' + str(reads[head]) + '\t' + start_pos + '\t' + end_pos + '\t' 
+
+  return
+
+def get_reads_from_headers(headers, read_file, out_file):
+  # headers_file should have exact full headers as the first "word" on each line 
+  reads = ''
+  h, r = rf.read_fasta(read_file)
+  for i in range(len(h)):
+    if h[i] in headers:
+      reads += h[i] + '\n' + r[i] + '\n'
+  with open(out_file, 'w') as f:
+    f.write(reads)
   return
 
 if __name__ == '__main__':
