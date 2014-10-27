@@ -99,7 +99,7 @@ def findHighDegreeKmers(reads_file, genome_file, _k, _d, cutoff, check_correctne
   counter = 0
   for kmer in kmers:
     counter += 1
-    print counter, len(kmers)
+    # print counter, len(kmers)
     del_kmers = GenerateIndelKmers.genDelKmers(kmer, 1)[1]
     degree = 0
     for del_kmer in del_kmers:
@@ -131,11 +131,18 @@ def findHighDegreeKmers(reads_file, genome_file, _k, _d, cutoff, check_correctne
     for i in range(0, len(genome) - _k + 1):
       genome_kmers.add(genome[i:i + _k])
 
+
+
   if cutoff == -1:
     numToOutput = len(degrees)
   else:
     numToOutput = cutoff
   num = copy.copy(numToOutput)
+
+  fn = True
+  if fn:
+    degrees = filter_neighbors(degrees, numToOutput)
+
   best = set()
   for key in sorted(degrees, key=degrees.get, reverse=True):
     if num == 0:
@@ -151,6 +158,66 @@ def findHighDegreeKmers(reads_file, genome_file, _k, _d, cutoff, check_correctne
     num -= 1
 
   return best
+
+def filter_neighbors(degrees, cutoff):
+  # Input: Dict, keys = kmers, values = degrees
+  new_degrees = dict()
+  removed = set()
+  count = 0
+  for key in sorted(degrees, key=degrees.get, reverse=True):
+    if key not in removed:
+      new_degrees[key] = degrees[key]
+      neighbors = find_neighbors(degrees, key)
+      for n in [i for i in neighbors if i in degrees]:
+        removed.add(n)
+    else:
+      count += 1
+    if len(new_degrees) >= cutoff:
+      break
+
+  print 'Filtered', count, 'kmers'
+  return new_degrees
+
+def find_neighbors(degrees, kmer):
+  del_kmers = GenerateIndelKmers.genDelKmers(kmer, 1)[1]
+  remove_list = []
+  for dk in del_kmers:
+    if dk == kmer[:-1] or dk == kmer[1:]:
+      remove_list.append(dk)
+  for dk in remove_list:
+    del_kmers.remove(dk)
+  remove_list = []
+  ins_kmers = GenerateIndelKmers.genInsKmers(kmer, 1)[1]
+  for ik in ins_kmers:
+    if kmer == ik[:-1] or kmer == ik[1:]:
+      remove_list.append(ik)
+  for ik in remove_list:
+    ins_kmers.remove(ik)
+
+  del_ins = set()
+  for dk in del_kmers:
+    for i in GenerateIndelKmers.genInsKmers(dk, 1)[1]:
+      del_ins.add(i)
+      # if dk != i[:-1] and dk != i[1:]:
+        # del_ins.add(i)
+
+  for ik in ins_kmers:
+    for i in GenerateIndelKmers.genDelKmers(ik, 1)[1]:
+      del_ins.add(i)  
+      # if i != ik[:-1] and i != ik[1:]:
+        # del_ins.add(i)
+
+  # del_ins.remove(kmer)
+
+  neighbors = [i for i in del_ins if i in degrees]
+  # if len(neighbors) > 2:
+  #   consensus = sma.spec_multi_align(neighbors)
+  #   print 'actual kmer:', kmer, consensus == kmer
+  # else:
+  #   for n in neighbors:
+  #     print n
+  #   print 'insufficient num of neighbors'
+  return neighbors
 
 
 if __name__ == '__main__':

@@ -1,5 +1,3 @@
-# Runs de Bruijn assembly on many simulated reads
-
 import sys
 import string
 import datetime

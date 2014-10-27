@@ -55,6 +55,7 @@ def highdegnodes_stats(reads_file, genome_file, _k):
         del_ins.add(i)
     del_ins.remove(kmer)
 
+    # d = 2
     ins_ins = set()
     del_del = set()
     for ik in ins_kmers:
