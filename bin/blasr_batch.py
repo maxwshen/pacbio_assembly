@@ -11,12 +11,13 @@ import commands
 from collections import defaultdict
 
 def main():
-  input_folder = '/home/lin/pb/nhood_files/'
+  input_folder = '/home/lin/nhood_files/'
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
   e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
   blasr_options = '-bestn 1 -m 0'
   for name in os.listdir(input_folder):
-    print commands.getstatusoutput(blasr_exe + ' ' + input_folder + '/' + name + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+    if name[:5] == 'N250_':
+      print commands.getstatusoutput(blasr_exe + ' ' + input_folder + '/' + name + ' ' + e_coli_genome + ' ' + blasr_options)[1]
   return
 
 if __name__ == '__main__':
