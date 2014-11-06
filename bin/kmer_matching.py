@@ -16,16 +16,22 @@ from collections import defaultdict
 
 def main():
   ec_seq_file = sys.argv[1]
-  read_file = sys.argv[2]
-  _k = int(sys.argv[3])
+  _k = int(sys.argv[2])
+  cutoff = int(sys.argv[3])
+  read_file = sys.argv[4]
+  # read_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
 
-  fold = '/home/mshen/research/yu/N250_4/'
-  for name in os.listdir(input_folder):
-    ec_seq_file = name
-    kmer_matching(fold + ec_seq_file, read_file, _k)
+  kmer_matching(ec_seq_file, read_file, _k, cutoff)
   return
 
-def kmer_matching(ec_seq_file, read_file, _k):
+  # Batch
+  fold = '/home/mshen/research/yu/N250_4/'
+  for name in os.listdir(fold):
+    ec_seq_file = name
+    kmer_matching(fold + ec_seq_file, read_file, _k, cutoff)
+  return
+
+def kmer_matching(ec_seq_file, read_file, _k, cutoff):
   # ec_seq_file should be a fasta file with only one sequence
 
   hs, rs = rf.read_fasta(ec_seq_file)
@@ -44,13 +50,12 @@ def kmer_matching(ec_seq_file, read_file, _k):
     reads[h] = score
 
   headers = []
-  cutoff = 3
   for key in sorted(reads, key = reads.get, reverse = True):
     if reads[key] < cutoff:
       break
     headers.append(key)
 
-  print '\n' + len(headers)
+  print '\n' + ec_seq_file + '\n' + str(len(headers))
 
   new_ec_seq = ec_seq_file.translate(None, '/')
   out_file = 'km_' + new_ec_seq + '.fasta'
@@ -61,12 +66,18 @@ def kmer_matching(ec_seq_file, read_file, _k):
   blasr_options = '-bestn 1'
   blasr_out = commands.getstatusoutput(blasr_exe + ' ' + out_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
 
+  to_print = []
   for line in blasr_out.splitlines():
     head = '>' + '/'.join(line.split()[0].split('/')[:-1])
     start_pos = line.split()[6]
     end_pos = line.split()[7]
     length = int(end_pos) - int(start_pos)
-    print head + '\n' + str(reads[head]) + '\t' + start_pos + '\t' + end_pos + '\t' + str(length)
+    info = (head, str(reads[head]), start_pos, end_pos, str(length))
+    to_print.append(info)
+
+  for t in sorted(to_print, key = lambda tup: int(tup[1]), reverse = True):
+    print t[0]
+    print '\t'.join(t[1:])
 
   return
 
