@@ -245,7 +245,7 @@ def neighborhood(reads, centerNode, dist, margin, position, graph):
         else:
           seqs.append(line[0:startpos + dist].strip())
 
-  fold = '/home/mshen/research/e_coli_nhoods_500_15.6/'
+  fold = '/home/mshen/research/nhoods_2.5m_d1_100k_24.4/'
   if not os.path.exists(fold):
     os.makedirs(fold)
   nhood_filename = fold + 'nhood_nh' + str(position) + '_' + centerNode.ktmer + '.fasta'
@@ -312,6 +312,8 @@ def convertReads(reads, ktmers, _k):
   cReads = []
   count = 0
 
+  d1 = True
+
   with open(reads) as f:
     for i, line in enumerate(f):
       count = 0
@@ -322,12 +324,27 @@ def convertReads(reads, ktmers, _k):
         tempDist = []
         for j in range(len(dna) - _k + 1):
           kmer = dna[j:j+_k]
-          if kmer in ktmers:
-            tempDist.append(count)
-            tempKmers.append(kmer)
-            count = 1
-          else:
-            count += 1
+          if not d1:
+            if kmer in ktmers:
+              tempDist.append(count)
+              tempKmers.append(kmer)
+              count = 1
+            else:
+              count += 1
+          # If we're looking for hamming dist 1 away k-mers
+          if d1:
+            found = False
+            for kt in ktmers:
+              if hamming_dist(kt, kmer) <= 1:
+                tempDist.append(count)
+
+                # We found a d=1 away kmer, we record it as the true kmer
+                tempKmers.append(kt)    
+                count = 1
+                found = True
+                break
+            if not found:
+              count += 1
         cReads.append((tempKmers, tempDist))
       if line[0] == '>' or line[0] == '@':
         isdna = True
@@ -335,6 +352,10 @@ def convertReads(reads, ktmers, _k):
   # print cReads
   return cReads
 
+def hamming_dist(s1, s2):
+  if len(s1) != len(s2):
+    return -1
+  return sum([s1[i] != s2[i] for i in range(len(s1))])
 
 #################
 ###  CLASSES  ###
