@@ -21,11 +21,12 @@ def main():
   read_file = sys.argv[4]
   # read_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
 
-  kmer_matching(ec_seq_file, read_file, _k, cutoff)
-  return
+  # kmer_matching(ec_seq_file, read_file, _k, cutoff)
+  # return
 
   # Batch
-  fold = '/home/mshen/research/yu/N250_4/'
+  # fold = '/home/mshen/research/yu/N250_4/'
+  fold = '/home/mshen/research/e_coli_nh_ec_22.4_unwhole_100k/'
   for name in os.listdir(fold):
     ec_seq_file = name
     kmer_matching(fold + ec_seq_file, read_file, _k, cutoff)
