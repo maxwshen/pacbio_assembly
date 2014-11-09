@@ -30,6 +30,7 @@ def black_holes(km_out_file):
   pos = [0 for i in range(100001)]
   collected_headers = set()
 
+  total = 0
   with open(km_out_file) as f:
     for i, line in enumerate(f):
       if grab_pos:
@@ -37,6 +38,8 @@ def black_holes(km_out_file):
         small = int(line.split()[1])
         large = int(line.split()[2])
         if small < currpos < large:
+          # print large, small, large - small
+          total += large - small
           for j in range(small, min(large + 1, 1100000)):
             pos[j - 1000000] += 1
       if line[0] == '/':
@@ -57,6 +60,9 @@ def black_holes(km_out_file):
   print above
   print 'min cov', min(pos), ', max cov', max(pos)
   print len(collected_headers), 'unique reads found'
+  print total, 'total bp found'
+  print float(total) / float(len(collected_headers)), 'avg read len'
+  print float(total) / float(100000), 'avg cov'
   print pos.index(min(pos)), 'is a position of lowest cov'
 
 

@@ -264,8 +264,8 @@ def testKmer(genome,kmer):
 def main():
     center = int(sys.argv[1])
     size = int(sys.argv[2])
-    min_overlap = size - 100
-    # min_overlap = 1000
+    # min_overlap = size - 100
+    min_overlap = 1000
     read_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
     genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
 
