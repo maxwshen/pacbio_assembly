@@ -26,7 +26,7 @@ def main():
 
   # Batch
   # fold = '/home/mshen/research/yu/N250_4/'
-  fold = '/home/mshen/research/e_coli_nh_ec_22.4_unwhole_100k/'
+  fold = '/home/mshen/research/yu_ec_22.4_500_nhoods/'
   for name in os.listdir(fold):
     ec_seq_file = name
     kmer_matching(fold + ec_seq_file, read_file, _k, cutoff)
