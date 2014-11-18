@@ -25,10 +25,12 @@ def main():
   return
 
 def black_holes(km_out_file):
+  len_genome = 4641652
   grab_pos = False
   currpos = None
-  pos = [0 for i in range(100001)]
+  pos = [0 for i in range(len_genome + 1)]
   collected_headers = set()
+
 
   total = 0
   with open(km_out_file) as f:
@@ -40,10 +42,10 @@ def black_holes(km_out_file):
         if small < currpos < large:
           # print large, small, large - small
           total += large - small
-          for j in range(small, min(large + 1, 1100000)):
-            pos[j - 1000000] += 1
+          for j in range(small, large):
+            pos[j] += 1
       if line[0] == '/':
-        currpos = int(line.split('_')[7][2:])
+        currpos = int(line.split('_')[5][2:])
       if line[0] == '>':
         if line not in collected_headers:
           collected_headers.add(line)
