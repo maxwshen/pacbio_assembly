@@ -10,7 +10,7 @@ from collections import defaultdict
 
 def main():
   # input_folder = '/home/lin/nhood_files/'
-  input_folder = '/home/mshen/research/e_coli_nh_ec_22.4_unwhole_100k/'
+  input_folder = '/home/mshen/research/yu_ec_22.4_500_nhoods/'
 
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
   e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'

@@ -26,16 +26,16 @@ def plot_1group(input_file):
       data.append(int(words[0]))
 
   largest = max(data)
-  # step = int(np.log2(largest))
-  step = 1
-  binrange = range(0, largest, step)
+  step = int(np.log2(largest))
+  # step = 1
+  binrange = range(0, largest + stepcz, step)
 
-  # plt.hist(data, color = 'green', bins = binrange, log = True)
-  plt.hist(data, color = 'green', bins = binrange)
+  plt.hist(data, color = 'green', bins = binrange, log = True)
+  # plt.hist(data, color = 'green', bins = binrange)
 
 
-  plt.xlabel('Clusters Size')
-  plt.ylabel('Quantity of Clusters')
+  plt.xlabel('Distance between (22,4)-mer nhoods')
+  plt.ylabel('Quantity')
   plt.show()
 
 def plot_2groups(input_file):
