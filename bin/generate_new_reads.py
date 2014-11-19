@@ -16,7 +16,7 @@ from collections import defaultdict
 def main():
   replace_reads_output = '/home/mshen/research/nohup_replacereads_22.4_fullgenome.out'
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
-  new_reads_file = 'NEWREADS_22.4_rmhomo.fasta'
+  new_reads_file = 'NEWREADS2_22.4_rmhomo.fasta'
 
   generate_new_reads(replace_reads_output, reads_file, new_reads_file)
   return
@@ -39,6 +39,7 @@ def generate_new_reads(rr_file, reads_file, new_reads_file):
         found_header = False
         read = line.strip()
         readl = list(read)
+        log = dict()    # Key = pos, value = offset
         for info in lib[h]:
           sinfo = info.split()
           read_beg = int(sinfo[0])
@@ -48,7 +49,12 @@ def generate_new_reads(rr_file, reads_file, new_reads_file):
           ec_end = int(sinfo[4])
           with open(ec_file) as ec_f:
             ec_read = ec_f.readlines()[1].strip()
-          readl[read_beg : read_end + 1] = ec_read[ec_beg : ec_end + 1]
+          offset = 0
+          for key in log.keys():
+            if read_beg > key:
+              offset += log[key]
+          readl[read_beg - offset: read_end + 1 - offset] = ec_read[ec_beg : ec_end + 1]
+          log[read_beg + ec_end - ec_beg] = read_end - read_beg - ec_end + ec_beg
         with open(new_reads_file, 'a') as f:
           f.write(h + '\n' + ''.join(readl) + '\n')
       if line[0] == '>':

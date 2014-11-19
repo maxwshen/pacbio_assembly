@@ -10,7 +10,8 @@ from collections import defaultdict
 
 def main():
   header = sys.argv[1]
-  reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
+  # reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
+  reads_file = '/home/mshen/research/NEWREADS_22.4_rmhomo.fasta'
   read = find_read('>' + header, reads_file)
   print read
 
