@@ -1,3 +1,9 @@
+# replace_reads.py is a program that finds where in each read (header) a nhood should be replaced in
+#
+# Output Format:
+# >m120114_011938_42177_c100247042550000001523002504251220_s1_p0/71370/0_3131/0_3131 1643 2157 /home/mshen/research/yu_ec_22.4_500_nhoods/nhood_nh2943330_AGTACCATGAACGTTTTTAATCC.fasta_Cov5.fasta 9 485
+# Header, read_start_pos, read_end_pos, ec_nhood_file_name, ec_start, ec_end 
+
 import sys
 import string
 import datetime
