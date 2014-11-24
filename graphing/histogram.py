@@ -12,9 +12,9 @@ import random
 
 def main():
   input_file = sys.argv[1]
-  # plot_1group(input_file)
+  plot_1group(input_file)
   # plot_2groups(input_file)
-  plot_2groups_2files(input_file)
+  # plot_2groups_2files(input_file)
 
 def plot_1group(input_file):
   data = []
@@ -27,12 +27,12 @@ def plot_1group(input_file):
       data.append(int(words[0]))
 
   largest = max(data)
-  step = int(np.log2(largest))
-  # step = 1
-  binrange = range(0, largest + stepcz, step)
+  # step = int(np.log2(largest))
+  step = 500
+  binrange = range(0, largest + step, step)
 
-  plt.hist(data, color = 'green', bins = binrange, log = True)
-  # plt.hist(data, color = 'green', bins = binrange)
+  # plt.hist(data, color = 'green', bins = binrange, log = True)
+  plt.hist(data, color = 'green', bins = binrange)
 
 
   plt.xlabel('Distance between (22,4)-mer nhoods')

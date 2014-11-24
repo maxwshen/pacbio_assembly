@@ -3,9 +3,10 @@
 # 14
 # >m120114_011938_42177_c100247042550000001523002504251220_s1_p0/50279/642_8506/0_7864
 # 166 1076320 1083736 7416
+#
+# Find the size of black holes
+# Input: km_out_file
 
-# Given a single error-corrected read that hopefully corresponds to some genomic region,
-# try to find reads that match this genomic region based on shared k-mers
 
 import sys
 import string
@@ -57,6 +58,16 @@ def black_holes(km_out_file):
     for j in range(len(above)):
       if i >= j:
         above[j] += 1
+
+  lens_4 = []
+  curr = 0
+  for i in pos:
+    if i < 4:
+      curr += 1
+    elif curr > 1:
+      lens_4.append(curr)
+      curr = 0
+  print lens_4
 
   print 'input:', km_out_file
   print above
