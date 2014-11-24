@@ -27,15 +27,15 @@ def plot_1group(input_file):
       data.append(int(words[0]))
 
   largest = max(data)
-  # step = int(np.log2(largest))
-  step = 500
+  step = int(np.log2(largest))
+  # step = 8
   binrange = range(0, largest + step, step)
 
   # plt.hist(data, color = 'green', bins = binrange, log = True)
   plt.hist(data, color = 'green', bins = binrange)
 
 
-  plt.xlabel('Distance between (22,4)-mer nhoods')
+  plt.xlabel('Number of reads in (22,4)-mer nhoods - Bin width is 8')
   plt.ylabel('Quantity')
   plt.show()
 

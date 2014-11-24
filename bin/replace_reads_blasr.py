@@ -28,6 +28,7 @@ def replace_reads_blasr(nhoods_fold, ec_fold):
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
   blasr_options = '-bestn 1 -m 1'
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
+  km_file_name = '/home/mshen/research/nohup_km_22.4_fullgenome.out'
 
   ec_names = os.listdir(ec_fold)
   nh_names = os.listdir(nhoods_fold)
@@ -38,12 +39,8 @@ def replace_reads_blasr(nhoods_fold, ec_fold):
   corrections = []
 
   for key in d:
-    headers = []
-    with open(nhoods_fold + d[key]) as f:
-      lines = f.readlines()
-      for line in lines:
-        if line[0] == '>':
-          headers.append(line.strip())
+    # headers = get_headers_nhood(nhoods_fold + d[key])
+    headers = get_headers_km(km_file_name, key)
     for h in headers:
       full_read = find_read.find_read(h, reads_file)
       with open('temp.txt', 'w+') as f:
@@ -61,6 +58,29 @@ def replace_reads_blasr(nhoods_fold, ec_fold):
           corrections.append(info)
   return corrections
 
+def get_headers_km(km_file_name, ec_name):
+  # Inefficient, opens file every time. But structurally similar to get_headers_nhood
+  get_headers = False
+  headers = []
+  with open(km_file_name) as f:
+    for i, line in enumerate(f):
+      if get_headers:
+        if line[0] == '>':
+          headers.append(line.strip())
+        if len(line.strip()) == 0:
+          break
+      if line.split('/')[-1].strip() == ec_name:
+        get_headers = True
+  return headers
+
+def get_headers_nhood(file_name):
+  headers = []
+  with open(file_name) as f:
+    lines = f.readlines()
+    for line in lines:
+      if line[0] == '>':
+        headers.append(line.strip())
+  return headers
 
 def build_hash(nh_names, ec_names):
   # Builds a dict. Key = ec_file_name. Value = nh_name

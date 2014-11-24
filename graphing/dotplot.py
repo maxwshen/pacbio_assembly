@@ -12,9 +12,27 @@ import random
 
 def main():
   input_file = sys.argv[1]
-  plot(input_file)
+  plot_1group(input_file)
 
-def plot(input_file):
+def plot_1group(input_file):
+  x1 = []
+  y1 = []
+
+  fileh = open(input_file, 'r')
+  data = fileh.readlines()[0].split(', ')
+  for i in range(len(data)):
+    x1.append(i)
+    y1.append(int(data[i]))
+    print i
+
+  for i in range(len(x1)):
+    plt.plot(x1, y1, 'go')
+
+  plt.xlabel('time')
+  plt.ylabel('likeliest hidden state')
+  plt.show()
+
+def plot_2groups(input_file):
   x1 = []
   y1 = []
   x2 = []
