@@ -26,6 +26,7 @@ def plot_1group(input_file):
     print i
 
   for i in range(len(x1)):
+    print i
     plt.plot(x1, y1, 'go')
 
   plt.xlabel('time')

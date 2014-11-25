@@ -16,10 +16,45 @@ from collections import defaultdict
 def main():
   replace_reads_output = '/home/mshen/research/nohup_replacereads_22.4_fullgenome.out'
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
-  new_reads_file = 'NEWREADS2_22.4_rmhomo.fasta'
+  new_reads_file = 'NEXT500_3276526_22.4.fasta'
 
-  generate_new_reads(replace_reads_output, reads_file, new_reads_file)
+  rr_km_file = '/home/mshen/research/nohup_rr_km_head_22.4.out'
+  get_next_500(rr_km_file, reads_file, new_reads_file)
+  # generate_new_reads(replace_reads_output, reads_file, new_reads_file)
   return
+
+def get_next_500(rr_km_file, reads_file, new_reads_file):
+  # An error-corrected 500bp nhood is aligned to kmer-matching reads
+  # We then grab the next 500bp from these reads and output them
+  threshold = 450
+  dist = 500
+  reads = dict()   # Key = header, value = (beg, end)
+
+  with open(rr_km_file) as f:
+    for i, line in enumerate(f):
+      if line[0] == '>':
+        words = line.split()
+        h = words[0]
+        read_beg = int(words[1])
+        read_end = int(words[2])
+        ec_file = words[3]
+        ec_beg = int(words[4])
+        ec_end = int(words[5])
+        if ec_end - ec_beg > threshold:
+          reads[h] = (read_beg, read_end)
+
+  grab_read = False
+  with open(reads_file) as f:
+    for i, line in enumerate(f):
+      if grab_read:
+        grab_read = False
+        print h + '\n' + line[end - 1000 : end - 500].strip()
+      if line[0] == '>' and line.strip() in reads.keys():
+        grab_read = True
+        h = line.strip()
+        beg = reads[h][0]
+        end = reads[h][1]
+
 
 def generate_new_reads(rr_file, reads_file, new_reads_file):
   lib = defaultdict(list)
