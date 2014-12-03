@@ -20,14 +20,36 @@ def plot_1group(input_file):
 
   fileh = open(input_file, 'r')
   data = fileh.readlines()[0].split(', ')
+  quantities = []
+  quantity = 0
+  for i in range(len(data)):
+    letter = int(data[i]) + 1
+    if len(y1) == 0:
+      y1.append(letter)
+      quantity += 1
+    if len(y1) > 0 and letter == y1[-1]:
+      quantity += 1
+    if len(y1) > 0 and letter != y1[-1]:
+      y1.append(letter)
+      quantities.append(quantity)
+      quantity = 0
+
+  print y1, '\n', quantities
+
+  x1 = range(1, 34)
+  y1 = [3, 15, 4, 5, 14, 5, 22, 5, 18, 12, 9, 5, 19, 2, 21, 20, 3, 15, 13, 13, 5, 14, 20, 19, 19, 15, 13, 5, 20, 9, 13, 5, 19, 4, 15]
+  x1 = []
+  y1 = []
+
   for i in range(len(data)):
     x1.append(i)
-    y1.append(int(data[i]))
+    y1.append(int(data[i]) + 1)
     print i
 
-  for i in range(len(x1)):
-    print i
-    plt.plot(x1, y1, 'go')
+  # for i in range(len(x1)):
+    # print i
+    # plt.plot(x1[i], y1[i], 'go')
+  plt.plot(x1, y1, 'go')
 
   plt.xlabel('time')
   plt.ylabel('likeliest hidden state')
