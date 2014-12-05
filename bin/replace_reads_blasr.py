@@ -4,13 +4,7 @@
 # >m120114_011938_42177_c100247042550000001523002504251220_s1_p0/71370/0_3131/0_3131 1643 2157 /home/mshen/research/yu_ec_22.4_500_nhoods/nhood_nh2943330_AGTACCATGAACGTTTTTAATCC.fasta_Cov5.fasta 9 485
 # Header, read_start_pos, read_end_pos, ec_nhood_file_name, ec_start, ec_end 
 
-import sys
-import string
-import datetime
-import random
-import copy
-import os
-import commands
+import sys, string, datetime,random, copy, os, commands
 import find_read
 
 from collections import defaultdict
@@ -24,7 +18,12 @@ def main():
   return
 
 
-def replace_reads_blasr(nhoods_fold, ec_fold):
+def replace_reads_blasr(nhoods_fold, ec_fold, folder = False):
+  # nhoods_fold not needed if we're using k-mer matching
+  # Given a set of error corrected consensuses derived from corresponding nhoods
+  # (they share a name), use blasr to align the EC consensus to its nhood and output
+  # in text format the indices that should be used for replacement.
+
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
   blasr_options = '-bestn 1 -m 1'
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'

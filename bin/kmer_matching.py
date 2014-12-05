@@ -1,13 +1,7 @@
 # Given a single error-corrected read that hopefully corresponds to some genomic region,
 # try to find reads that match this genomic region based on shared k-mers
 
-import sys
-import string
-import datetime
-import random
-import copy
-import os
-import commands
+import sys, string, datetime, random, copy, os, commands
 import numpy as np
 
 import read_fasta as rf
@@ -21,8 +15,8 @@ def main():
   read_file = sys.argv[4]
   # read_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
 
-  # kmer_matching(ec_seq_file, read_file, _k, cutoff)
-  # return
+  kmer_matching(ec_seq_file, read_file, _k, cutoff)
+  return
 
   # Batch
   # fold = '/home/mshen/research/yu/N250_4/'

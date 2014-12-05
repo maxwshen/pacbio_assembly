@@ -2,13 +2,7 @@
 # >m120114_011938_42177_c100247042550000001523002504251220_s1_p0/71370/0_3131/0_3131 1643 2157 /home/mshen/research/yu_ec_22.4_500_nhoods/nhood_nh2943330_AGTACCATGAACGTTTTTAATCC.fasta_Cov5.fasta 9 485
 # Header, read_start_pos, read_end_pos, ec_nhood_file_name, ec_start, ec_end 
 
-import sys
-import string
-import datetime
-import random
-import copy
-import os
-import commands
+import sys, string, datetime, random, copy, os, commands
 import find_read
 
 from collections import defaultdict
@@ -48,7 +42,7 @@ def get_next_500(rr_km_file, reads_file, new_reads_file):
     for i, line in enumerate(f):
       if grab_read:
         grab_read = False
-        print h + '\n' + line[end - 1000 : end - 500].strip()
+        print h + '\n' + line[end : end + 500].strip()
       if line[0] == '>' and line.strip() in reads.keys():
         grab_read = True
         h = line.strip()
