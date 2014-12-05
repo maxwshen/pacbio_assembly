@@ -1,12 +1,8 @@
 # A-Bruijn Graph Construction
 
-import sys
-import string
-import datetime
-import random
-import copy
-import os
+import sys, string, datetime, random, copy, os
 from collections import defaultdict
+import find_read
 
 def main():
   reads_file = sys.argv[1]
@@ -53,6 +49,9 @@ def assembly(reads, genome_file, _k, _t, gvname):
   numJoined = 0
   numJoined = graph.joinInOutDeg1Edges(_k)
   print '... Done.', datetime.datetime.now()
+
+  graph.split_large_nodes(reads)
+  sys.exit(0)
 
   print graph.allnodes
 
@@ -312,7 +311,7 @@ def convertReads(reads, ktmers, _k):
   cReads = []
   count = 0
 
-  d1 = True
+  d1 = False    # If TRUE: runs for much longer time
 
   with open(reads) as f:
     for i, line in enumerate(f):
@@ -357,6 +356,25 @@ def hamming_dist(s1, s2):
     return -1
   return sum([s1[i] != s2[i] for i in range(len(s1))])
 
+def kmer_matching(ec_seq, hr, rr, _k, cutoff):
+  kmers = set()
+  for i in range(len(ec_seq) - _k + 1):
+    kmers.add(ec_seq[i:i + _k])
+
+  reads = dict()    # Key = header, value = num shared kmers
+  for i in range(len(rr)):
+    r = rr[i]
+    h = hr[i]
+    score = sum([1 if r[i:i + _k] in kmers else 0 for i in range(len(r) - _k + 1)])
+    reads[h] = score
+
+  headers = []
+  for key in sorted(reads, key = reads.get, reverse = True):
+    if reads[key] < cutoff:
+      break
+    headers.append(key)
+  return headers
+
 #################
 ###  CLASSES  ###
 #################
@@ -390,6 +408,71 @@ class A_Bruijn_Graph():
         # print read[1][:i+1]
         # print next.ktmer, next.reads, next.pos
         current = next
+
+  def split_large_nodes(self, reads_file):
+    large_threshold = 8
+    for n in self.allnodes.keys():
+      node = self.allnodes[n]
+      if len(node.reads) > large_threshold:
+        reads = node.get_reads(reads_file)
+        
+        # Convert fasta to h, r list format
+        h = []
+        r = []
+        for line in reads.splitlines():
+          if line[0] == '>':
+            h.append(line)
+          else:
+            r.append(line)
+
+        clusters = []
+        while len(r) > 0:
+          r1 = r[0]
+          _k = 10
+          cutoff = 5
+          headers = kmer_matching(r1, h[1:], r[1:], _k, cutoff)
+          headers.append(h[0])
+          clusters.append(headers)
+          for item in headers:
+            del r[h.index(item)]
+            del h[h.index(item)]
+          print len(r)
+
+          if len(clusters) == 1:
+            return
+
+          for i in range(len(clusters)):
+            node_name = node.ktmer + str(i + 1)
+            new_node = Node(node_name)
+            for neighbor in node.outnodes:
+              if bool(set(neighbor.reads) & set(clusters[i])):
+                e = node.get_out_edge(neighbor)
+                new_node.addOutEdge(e, neighbor)
+                neighbor.addInEdge(e, new_node)
+                neighbor.removeInEdge(e, node)
+                node.removeOutEdge(e, neighbor)
+            for neighbor in node.innodes:
+              if bool(set(neighbor.reads) & set(clusters[i])):
+                e = node.get_in_edge(neighbor)
+                new_node.addInEdge(e, neighbor)
+                neighbor.addOutEdge(e, new_node)
+                neighbor.removeOutEdge(e, node)
+                node.removeInEdge(e, neighbor)
+            for item in clusters[i]:
+              pos = node.remove_read(item)
+              new_node.add_read(item, pos)
+              # if neighbor.reads shares an element with current cluster,
+              # remove neighbor from node.outnodes,
+              # remove node from neighbor.innodes,
+              # add neighbor to new_node.outnodes
+              # add new_node to neighbor.innodes
+              # ALL OF THE ABOVE also for edge distance
+              # then repeat for all inward neighbors of node
+              # also, copy over appropriate position information to new_node
+              # then, delete position and read info from node
+              # -- check if i'm missing anything else -- 
+    return
+
 
   def joinInOutDeg1Edges(self, _k):
     # Joins two nodes linked by exactly 1 edge of length 1
@@ -453,6 +536,39 @@ class Node():
     self.reads = list()
     self.pos = list()
 
+  def add_read(self, read, position):
+    self.reads.append(read)
+    self.pos.append(position)
+
+  def remove_read(self, target):
+    # reads are stored as numbers
+    pos_in_read = pos[reads.index(target)]
+    del pos[reads.index(target)]
+    del reads[reads.index(target)]
+    return pos_in_read
+
+  def get_reads(self, reads_file):
+    fasta = ''
+    get_line = False    
+    curr_index = -1
+    with open(reads_file) as f:
+      for i, line in enumerate(f):
+        if get_line:
+          get_line = False
+          fasta += line
+        if line[0] == '>':
+          curr_index += 1
+        if curr_index in self.reads:
+          fasta += line
+          get_line = True
+    return fasta
+
+  def get_in_edge(self, node):
+    return self.inedges[self.innodes.index(node)]
+
+  def get_out_edge(self, node):
+    return self.outedges[self.outnodes.index(node)]
+
   def addOutEdge(self, edge, node):
     for i in range(len(self.outedges)):
       if node == self.outnodes[i]:
@@ -470,6 +586,7 @@ class Node():
         if self.outnodes[i] == node and self.outedges[i] == edge:
           del self.outnodes[i]
           del self.outedges[i]
+          del self.outReadCount[i]
           self.outDegree -= 1
           return
 

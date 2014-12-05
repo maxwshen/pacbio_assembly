@@ -1,25 +1,22 @@
 # Clusters reads in a neighborhood
 
-import sys
-import string
-import datetime
-import random
-import copy
-import assembly
-import os
+import sys, string, datetime, random, copy, os, commands
 
+import assembly
 import locAL
 import read_fasta
+import kmer_matching
 
 from collections import defaultdict
 from subprocess import call
 
 def main():
-  # reads_file = sys.argv[1]
-  directory = sys.argv[1]
+  reads_file = sys.argv[1]
+  # directory = sys.argv[1]
 
-  batch(directory)
+  # batch(directory)
 
+  cluster_reads_km(reads_file)
   # cluster_reads(reads_file)
   return
 
@@ -29,9 +26,70 @@ def batch(directory):
     print directory + fil, datetime.datetime.now()
     cluster_reads(directory + fil)
 
+def cluster_reads_km(reads_file):
+  h, r = read_fasta.read_fasta(reads_file)
+  clusters = []
+
+  while len(r) > 0:
+    r1 = r[0]
+    _k = 15
+    cutoff = 5
+    headers = kmer_matching(r1, h[1:], r[1:], _k, cutoff, len(clusters))
+    clusters.append(headers.append(h[0]))
+    for item in headers:
+      del r[h.index(item)]
+      del h[h.index(item)]
+    print len(r)
+
+
+def kmer_matching(ec_seq, hr, rr, _k, cutoff, num):
+  kmers = set()
+  for i in range(len(ec_seq) - _k + 1):
+    kmers.add(ec_seq[i:i + _k])
+
+  reads = dict()    # Key = header, value = num shared kmers
+  for i in range(len(rr)):
+    r = rr[i]
+    h = hr[i]
+    score = sum([1 if r[i:i + _k] in kmers else 0 for i in range(len(r) - _k + 1)])
+    reads[h] = score
+
+  headers = []
+  for key in sorted(reads, key = reads.get, reverse = True):
+    if reads[key] < cutoff:
+      break
+    headers.append(key)
+
+  out_file = 'temp.fasta'
+  to_write = ''
+  for h in headers:
+    to_write += h + '\n' + rr[hr.index(h)]
+  with open(out_file, 'w') as f:
+    f.write(to_write)
+
+  blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
+  e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
+  blasr_options = '-bestn 1'
+  blasr_out = commands.getstatusoutput(blasr_exe + ' ' + out_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+
+  to_print = []
+  for line in blasr_out.splitlines():
+    head = '>' + '/'.join(line.split()[0].split('/')[:-1])
+    start_pos = line.split()[6]
+    end_pos = line.split()[7]
+    length = int(end_pos) - int(start_pos)
+    info = (head, str(reads[head]), start_pos, end_pos, str(length))
+    to_print.append(info)
+
+  for t in sorted(to_print, key = lambda tup: int(tup[1]), reverse = True):
+    print t[0]
+    print str(num) + '\t' + '\t'.join(t[1:])
+
+  return headers
+
+
 def cluster_reads(reads_file):
   h, r = read_fasta.read_fasta(reads_file)
-  mat = [[0] * len(r) for i in range(len(r))]
 
   len_cutoff = 400
   r = filter_by_len(r, len_cutoff)

@@ -16,28 +16,38 @@ from collections import defaultdict
 
 def main():
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
-  consensus_file = sys.argv[1]
+  consensus_fold = sys.argv[1]
 
 
-  iterative_ec(consensus_file, reads_file)
+  iterative_ec(consensus_fold, reads_file)
 
-def iterative_ec(consensus_file, reads_file):
+def iterative_ec(consensus_fold, reads_file):
   reads_h, reads_r = rf.read_fasta(reads_file)
   ec_tool = '/home/mshen/research/bin/error_correction.sh'
   e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
   blasr_options = '-bestn 1'
   _k = 15
-  cutoff = 10
-  extend_len = 1000
+  cutoff = 5
+  extend_len = 500
   
-  build_km_lib(reads_h, reads_r, _k)
-  return
-
-  while True:
+  num_processed = 0
+  for name in os.listdir(consensus_fold):
+    num_processed += 1
+    consensus_file = consensus_fold + '/' + name
+    print consensus_file
     km_outf = 'km_' + consensus_file.translate(None, '/') + '.fasta'
-    kmer_matching.kmer_matching(consensus_file, reads_file, 15, 5, km_outf)
-    print 'kmer matching done'
+    kmer_matching.kmer_matching(consensus_file, reads_file, _k, cutoff, km_outf)
+
+    status = commands.getstatusoutput(ec_tool + ' ' + km_outf)[1]
+    commands.getstatusoutput('rm -rf dir_' + km_outf)
+    consensus_file = 'corrected_' + km_outf
+    print status
+    if 'ERROR' in status:
+      print 'COULD NOT ERROR CORRECT'
+      continue
+    blasr_out = commands.getstatusoutput(blasr_exe + ' ' + consensus_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+    print blasr_out
 
     rr_outf = 'temp_replacereads.txt'
     replace_reads_blasr(consensus_file, km_outf, rr_outf)
@@ -45,15 +55,29 @@ def iterative_ec(consensus_file, reads_file):
 
     next_area_f = 'temp_nextarea.fasta'
     generate_new_reads(rr_outf, reads_h, reads_r, extend_len, next_area_f)
-    print 'found next area'
 
-    status = commands.getstatusoutput(ec_tool + ' ' + next_area_f)[1]
-    print status
-    if 'ERROR' in status:
-      sys.exit(0)
-    consensus_file = 'corrected_temp_nextarea.fasta'    # Based on Yu's ec_tool
-    blasr_out = commands.getstatusoutput(blasr_exe + ' ' + consensus_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
-    print blasr_out
+    if num_processed % 100 == 0:
+      iter_read_file = 'READS_iter_' + str(num_processed) + '.fasta'
+      print 'writing intermediate reads to file'
+      with open(iter_read_file, 'w') as f:
+        for i in range(len(reads_r)):
+          f.write(reads_h[i] + '\n' + reads_r[i] + '\n')
+      print 'aligning intermediate reads to genome'
+      blasr_out = commands.getstatusoutput(blasr_exe + ' ' + iter_read_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+      iter_blasr_out = 'READS_blasr_iter_' + str(num_processed) + '.out'
+      with open(iter_blasr_out, 'w') as f:
+        f.write(blasr_out)
+
+
+    # error correct next 500
+    # status = commands.getstatusoutput(ec_tool + ' ' + next_area_f)[1]
+    # commands.getstatusoutput('rm -rf dir_' + next_area_f)
+    # print status
+    # if 'ERROR' in status:
+    #   sys.exit(0)
+    # consensus_file = 'corrected_temp_nextarea.fasta'    # Based on Yu's ec_tool
+    # blasr_out = commands.getstatusoutput(blasr_exe + ' ' + consensus_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+    # print blasr_out
 
 def build_km_lib(reads_h, reads_r, _k):
   # tooo slowwww. probably due to the large amount of memory necessary
@@ -73,56 +97,34 @@ def build_km_lib(reads_h, reads_r, _k):
   return lib
 
 
-
-def kmer_matching(ec_seq_file, read_file, _k, cutoff, out_file):
-  # ec_seq_file should be a fasta file with only one sequence
-
-  hs, rs = rf.read_fasta(ec_seq_file)
-  ec_seq = rs[0]
-
-  kmers = set()
-  for i in range(len(ec_seq) - _k + 1):
-    kmers.add(ec_seq[i:i + _k])
-
-  reads = dict()    # Key = header, value = num shared kmers
-  hr, rr = rf.read_fasta(read_file)
-  for i in range(len(rr)):
-    r = rr[i]
-    h = hr[i]
-    score = sum([1 if r[i:i + _k] in kmers else 0 for i in range(len(r) - _k + 1)])
-    reads[h] = score
-
-  headers = []
-  for key in sorted(reads, key = reads.get, reverse = True):
-    if reads[key] < cutoff:
-      break
-    headers.append(key)
-
-  print '\n' + ec_seq_file + '\n' + str(len(headers))
-  get_reads_from_headers(headers, read_file, out_file)
-  # return
-  
-
-  # Use blasr to check accuracy of kmer-matching found reads
+def replace_reads_blasr(consensus_file, km_file_name, out_file):
+  # Given a set of error corrected consensuses derived from corresponding nhoods
+  # (they share a name), use blasr to align the EC consensus to its nhood and output
+  # in text format the indices that should be used for replacement.
 
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
-  e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
-  blasr_options = '-bestn 1'
-  blasr_out = commands.getstatusoutput(blasr_exe + ' ' + out_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+  blasr_options = '-bestn 1 -m 1'
+  accuracy_cutoff = 80
+  corrections = []
+  heads, reads = rf.read_fasta(km_file_name)
 
-  to_print = []
-  for line in blasr_out.splitlines():
-    head = '>' + '/'.join(line.split()[0].split('/')[:-1])
-    start_pos = line.split()[6]
-    end_pos = line.split()[7]
-    length = int(end_pos) - int(start_pos)
-    info = (head, str(reads[head]), start_pos, end_pos, str(length))
-    to_print.append(info)
-
-  for t in sorted(to_print, key = lambda tup: int(tup[1]), reverse = True):
-    print t[0]
-    print '\t'.join(t[1:])
-
+  for i in range(len(reads)):
+    h = heads[i]
+    r = reads[i]
+    with open('temp.txt', 'w+') as f:
+      f.write(h + '\n' + r)
+    blasr_out = commands.getstatusoutput(blasr_exe + ' ' + consensus_file + ' ' + 'temp.txt' + ' ' + blasr_options)[1]
+    if len(blasr_out) > 0:
+      accuracy = blasr_out.split()[5]
+      nh_beg = blasr_out.split()[6]
+      nh_end = blasr_out.split()[7]
+      ec_beg = blasr_out.split()[9]
+      ec_end = blasr_out.split()[10]
+      if float(accuracy) > accuracy_cutoff:
+        info = h + ' ' + nh_beg + ' ' + nh_end + ' ' + consensus_file + ' ' + ec_beg + ' ' + ec_end
+        corrections.append(info)
+  with open(out_file, 'w+') as f:
+    f.write('\n'.join(corrections))
   return
 
 
@@ -158,40 +160,6 @@ def generate_new_reads(rr_file, reads_h, reads_r, extend_len, next_area_f):
   with open(next_area_f, 'w+') as f:
     f.write('\n'.join(next_area))
 
-  return
-
-
-def replace_reads_blasr(consensus_file, km_file_name, out_file):
-  # Given a set of error corrected consensuses derived from corresponding nhoods
-  # (they share a name), use blasr to align the EC consensus to its nhood and output
-  # in text format the indices that should be used for replacement.
-
-  blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
-  blasr_options = '-bestn 1 -m 1'
-
-  accuracy_cutoff = 80
-
-  corrections = []
-
-  heads, reads = rf.read_fasta(km_file_name)
-
-  for i in range(len(reads)):
-    h = heads[i]
-    r = reads[i]
-    with open('temp.txt', 'w+') as f:
-      f.write(h + '\n' + r)
-    blasr_out = commands.getstatusoutput(blasr_exe + ' ' + consensus_file + ' ' + 'temp.txt' + ' ' + blasr_options)[1]
-    if len(blasr_out) > 0:
-      accuracy = blasr_out.split()[5]
-      nh_beg = blasr_out.split()[6]
-      nh_end = blasr_out.split()[7]
-      ec_beg = blasr_out.split()[9]
-      ec_end = blasr_out.split()[10]
-      if float(accuracy) > accuracy_cutoff:
-        info = h + ' ' + nh_beg + ' ' + nh_end + ' ' + consensus_file + ' ' + ec_beg + ' ' + ec_end
-        corrections.append(info)
-  with open(out_file, 'w+') as f:
-    f.write('\n'.join(corrections))
   return
 
 
