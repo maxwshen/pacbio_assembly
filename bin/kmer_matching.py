@@ -14,8 +14,8 @@ def main():
   cutoff = int(sys.argv[3])
   read_file = sys.argv[4]
   # read_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
-
-  kmer_matching(ec_seq_file, read_file, _k, cutoff)
+  out_file = 'km_' + ec_seq_file.translate(None, '/') + '.fasta'
+  kmer_matching(ec_seq_file, read_file, _k, cutoff, out_file)
   return
 
   # Batch
@@ -23,10 +23,11 @@ def main():
   fold = '/home/mshen/research/yu_ec_22.4_500_nhoods/'
   for name in os.listdir(fold):
     ec_seq_file = name
-    kmer_matching(fold + ec_seq_file, read_file, _k, cutoff)
+    out_file = 'km_' + ec_seq_file.translate(None, '/') + '.fasta'    
+    kmer_matching(fold + ec_seq_file, read_file, _k, cutoff, out_file)
   return
 
-def kmer_matching(ec_seq_file, read_file, _k, cutoff):
+def kmer_matching(ec_seq_file, read_file, _k, cutoff, out_file):
   # ec_seq_file should be a fasta file with only one sequence
 
   hs, rs = rf.read_fasta(ec_seq_file)
@@ -51,10 +52,11 @@ def kmer_matching(ec_seq_file, read_file, _k, cutoff):
     headers.append(key)
 
   print '\n' + ec_seq_file + '\n' + str(len(headers))
-
-  new_ec_seq = ec_seq_file.translate(None, '/')
-  out_file = 'km_' + new_ec_seq + '.fasta'
   get_reads_from_headers(headers, read_file, out_file)
+  # return
+  
+
+  # Use blasr to check accuracy of kmer-matching found reads
 
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
   e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
