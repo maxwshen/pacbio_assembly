@@ -45,15 +45,11 @@ def assembly(reads, genome_file, _k, _t, gvname):
   graph = A_Bruijn_Graph(cReads)
   print '... Done.', datetime.datetime.now()
 
-  print 'Joining nodes with 1 indegree/outdegree and low edge dist...'
-  numJoined = 0
-  numJoined = graph.joinInOutDeg1Edges(_k)
-  print '... Done.', datetime.datetime.now()
-
+  print graph
   graph.split_large_nodes(reads)
+  print graph
   sys.exit(0)
 
-  print graph.allnodes
 
   print 'Finding many neighborhoods...'
   genome = ''
@@ -373,6 +369,7 @@ def kmer_matching(ec_seq, hr, rr, _k, cutoff):
     if reads[key] < cutoff:
       break
     headers.append(key)
+    print reads[key]
   return headers
 
 #################
@@ -410,7 +407,7 @@ class A_Bruijn_Graph():
         current = next
 
   def split_large_nodes(self, reads_file):
-    large_threshold = 8
+    large_threshold = 4
     for n in self.allnodes.keys():
       node = self.allnodes[n]
       if len(node.reads) > large_threshold:
@@ -421,15 +418,19 @@ class A_Bruijn_Graph():
         r = []
         for line in reads.splitlines():
           if line[0] == '>':
-            h.append(line)
+            if line not in h:
+              h.append(line)
           else:
-            r.append(line)
+            if line not in r:
+              r.append(line)
+        h_master = copy.copy(h)
 
+        # Find clusters
         clusters = []
         while len(r) > 0:
           r1 = r[0]
-          _k = 10
-          cutoff = 5
+          _k = 15
+          cutoff = 30
           headers = kmer_matching(r1, h[1:], r[1:], _k, cutoff)
           headers.append(h[0])
           clusters.append(headers)
@@ -438,44 +439,48 @@ class A_Bruijn_Graph():
             del h[h.index(item)]
           print len(r)
 
-          if len(clusters) == 1:
-            return
+        if len(clusters) == 1:
+          continue
 
-          for i in range(len(clusters)):
-            node_name = node.ktmer + str(i + 1)
-            new_node = Node(node_name)
-            for neighbor in node.outnodes:
-              if bool(set(neighbor.reads) & set(clusters[i])):
-                e = node.get_out_edge(neighbor)
-                new_node.addOutEdge(e, neighbor)
-                neighbor.addInEdge(e, new_node)
-                neighbor.removeInEdge(e, node)
-                node.removeOutEdge(e, neighbor)
-            for neighbor in node.innodes:
-              if bool(set(neighbor.reads) & set(clusters[i])):
-                e = node.get_in_edge(neighbor)
-                new_node.addInEdge(e, neighbor)
-                neighbor.addOutEdge(e, new_node)
-                neighbor.removeOutEdge(e, node)
-                node.removeInEdge(e, neighbor)
-            for item in clusters[i]:
-              pos = node.remove_read(item)
-              new_node.add_read(item, pos)
-              # if neighbor.reads shares an element with current cluster,
-              # remove neighbor from node.outnodes,
-              # remove node from neighbor.innodes,
-              # add neighbor to new_node.outnodes
-              # add new_node to neighbor.innodes
-              # ALL OF THE ABOVE also for edge distance
-              # then repeat for all inward neighbors of node
-              # also, copy over appropriate position information to new_node
-              # then, delete position and read info from node
-              # -- check if i'm missing anything else -- 
+        # Make new nodes for all but one cluster
+        for i in range(len(clusters) - 1):
+          read_indices = [h_master.index(s) for s in clusters[i]]
+          node_name = node.ktmer + '_' + str(i + 1)
+          new_node = Node(node_name)
+          for neighbor in copy.copy(node.outnodes):
+            if bool(set(neighbor.reads) & set(read_indices)):
+              e = node.get_out_edge(neighbor)
+              new_node.addOutEdge(e, neighbor)
+              neighbor.addInEdge(e, new_node)
+              neighbor.removeInEdge(e, node)
+              node.removeOutEdge(e, neighbor)
+          for neighbor in copy.copy(node.innodes):
+            if bool(set(neighbor.reads) & set(read_indices)):
+              e = node.get_in_edge(neighbor)
+              new_node.addInEdge(e, neighbor)
+              neighbor.addOutEdge(e, new_node)
+              neighbor.removeOutEdge(e, node)
+              node.removeInEdge(e, neighbor)
+          for item in read_indices:
+            pos = node.remove_read(item)
+            new_node.add_read(item, pos)
+            # if neighbor.reads shares an element with current cluster,
+            # remove neighbor from node.outnodes,
+            # remove node from neighbor.innodes,
+            # add neighbor to new_node.outnodes
+            # add new_node to neighbor.innodes
+            # ALL OF THE ABOVE also for edge distance
+            # then repeat for all inward neighbors of node
+            # also, copy over appropriate position information to new_node
+            # then, delete position and read info from node
+            # -- check if i'm missing anything else -- 
+        self.allnodes[new_node.ktmer] = new_node
     return
 
 
   def joinInOutDeg1Edges(self, _k):
     # Joins two nodes linked by exactly 1 edge of length 1
+    # Buggy, recommend not to use
 
     numJoined = 0
     traversed = set()
@@ -523,6 +528,14 @@ class A_Bruijn_Graph():
             nodes.add(n.outnodes[i])
     return numJoined
 
+  def __str__(self):
+    rep = ''
+    for key in self.allnodes:
+      n = self.allnodes[key]
+      rep += n.ktmer + ' ' + ' '.join([str(s) for s in n.reads]) + ' ' + ' '.join([s.ktmer for s in n.outnodes]) + ' ' + ' '.join([str(s) for s in n.outedges]) + '\n'
+      print len(n.outnodes), len(n.innodes)
+    return rep
+
 class Node():
   def __init__(self, ktmer):
     self.ktmer = ktmer
@@ -542,10 +555,14 @@ class Node():
 
   def remove_read(self, target):
     # reads are stored as numbers
-    pos_in_read = pos[reads.index(target)]
-    del pos[reads.index(target)]
-    del reads[reads.index(target)]
-    return pos_in_read
+    if target in self.reads:
+      pos_in_read = self.pos[self.reads.index(target)]
+      del self.pos[self.reads.index(target)]
+      del self.reads[self.reads.index(target)]
+      return pos_in_read
+    else:
+      print 'tried to find', target, 'in', self.reads
+      return None
 
   def get_reads(self, reads_file):
     fasta = ''
@@ -581,6 +598,7 @@ class Node():
     self.outDegree += 1
 
   def removeOutEdge(self, edge, node):
+
     if node in self.outnodes:
       for i in range(len(self.outnodes)):
         if self.outnodes[i] == node and self.outedges[i] == edge:
@@ -588,7 +606,8 @@ class Node():
           del self.outedges[i]
           del self.outReadCount[i]
           self.outDegree -= 1
-          return
+          return True
+    return False
 
   def getAllOutEdges(self):
     return (self.outnodes, self.outedges)
