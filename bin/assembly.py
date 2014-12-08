@@ -1,6 +1,7 @@
 # A-Bruijn Graph Construction
 
 import sys, string, datetime, random, copy, os
+import numpy as np
 from collections import defaultdict
 import find_read
 
@@ -24,34 +25,35 @@ def assembly(reads, genome_file, _k, _t, gvname):
   print 'Finding kt-mers...', 
   ktmers = findKTmers(reads, _k, _t)
   print '... Done.', datetime.datetime.now()
+
   print 'Converting reads...'
   cReads = convertReads(reads, ktmers, _k)
   print '... Done.', datetime.datetime.now()
 
-  # Writes distance statistics to file
-  distfn = 'diststats_' + reads + '.' + str(_k) + '.' + str(_t) + '.txt'
-  distfn = distfn.translate(None, '/')
-  try:
-    os.remove(distfn)
-  except:
-    pass
-  with open(distfn, 'a') as f:
-    for i in cReads:
-      for item in i[1]:
-        if item > 0:
-          f.write(str(item) + '\t')
+  # # Writes distance statistics to file
+  # distfn = 'diststats_' + reads + '.' + str(_k) + '.' + str(_t) + '.txt'
+  # distfn = distfn.translate(None, '/')
+  # try:
+  #   os.remove(distfn)
+  # except:
+  #   pass
+  # with open(distfn, 'a') as f:
+  #   for i in cReads:
+  #     for item in i[1]:
+  #       if item > 0:
+  #         f.write(str(item) + '\t')
 
   print 'Generating graph...', datetime.datetime.now()
   graph = A_Bruijn_Graph(cReads)
+  print 'Total number of nodes:', len(graph.allnodes)
   print '... Done.', datetime.datetime.now()
 
-  print graph
+  print 'Splitting large nodes...'
   graph.split_large_nodes(reads)
-  print graph
-  sys.exit(0)
+  print 'Total number of nodes after splitting:', len(graph.allnodes)
+  print '... Done.', datetime.datetime.now()
 
-
-  print 'Finding many neighborhoods...'
+  print 'Finding neighborhoods...'
   genome = ''
   with open(genome_file) as f:
     for i, line in enumerate(f):
@@ -76,8 +78,6 @@ def assembly(reads, genome_file, _k, _t, gvname):
     else:
       position += 1
 
-  # testnode = allnodes['AAATGTTAATGGTCTGAAACGGAT']
-  # neighborhood(reads, testnode, neighborhood_width, neighborhood_margin)
   print '... Done.', datetime.datetime.now()
 
   return
@@ -240,7 +240,7 @@ def neighborhood(reads, centerNode, dist, margin, position, graph):
         else:
           seqs.append(line[0:startpos + dist].strip())
 
-  fold = '/home/mshen/research/nhoods_2.5m_d1_100k_24.4/'
+  fold = '/home/mshen/research/nhoods_split_24.4/'
   if not os.path.exists(fold):
     os.makedirs(fold)
   nhood_filename = fold + 'nhood_nh' + str(position) + '_' + centerNode.ktmer + '.fasta'
@@ -265,7 +265,6 @@ def findKTmers(reads, _k, _t):
   readcount = 0
   with open(reads) as f:
     for i, line in enumerate(f):
-      # print i
       if isdna:
         isdna = False
         dna = line.strip()
@@ -281,9 +280,8 @@ def findKTmers(reads, _k, _t):
         isdna = True
   ans = set()
 
-  filter_maximum = 10
   for key, val in counts.iteritems():
-    if _t <= val <= filter_maximum:
+    if _t <= val:
       ans.add(key)
   print 'Found', len(ans), 'ktmers in', readcount, 'reads'
   return ans
@@ -353,8 +351,11 @@ def hamming_dist(s1, s2):
   return sum([s1[i] != s2[i] for i in range(len(s1))])
 
 def kmer_matching(ec_seq, hr, rr, _k, cutoff):
+  if len(hr) == 0 or len(rr) == 0:
+    return None
   kmers = set()
-  for i in range(len(ec_seq) - _k + 1):
+  # for i in range(len(ec_seq) - _k + 1):
+  for i in range((len(ec_seq) - 500) / 2, (len(ec_seq) - 500) / 2 + 500):
     kmers.add(ec_seq[i:i + _k])
 
   reads = dict()    # Key = header, value = num shared kmers
@@ -369,8 +370,33 @@ def kmer_matching(ec_seq, hr, rr, _k, cutoff):
     if reads[key] < cutoff:
       break
     headers.append(key)
-    print reads[key]
+    print 'km score:', reads[key]
   return headers
+
+def split_2_groups(reads):
+  # Splits reads from kmer matching into 2 groups based on minimizing stdev
+  # Doesn't exactly work well with kmer matching as it is - stdev not a good divider
+  best_score = float('inf')
+  bestg1 = []
+  for i in range(1, len(reads)):
+    group1 = []
+    group2 = []
+    curr_pos = 0
+    for key in sorted(reads, key = reads.get, reverse = True):
+      if curr_pos < i:
+        group1.append(key)
+      else:
+        group2.append(key)
+      curr_pos += 1
+    score = np.std([reads[key] for key in group1]) + np.std([reads[key] for key in group2])
+    if score < best_score:
+      bestg1 = group1
+      best_score = score
+  print best_score, bestg1
+  for k in reads.keys():
+    print k, reads[k]
+  return bestg1
+
 
 #################
 ###  CLASSES  ###
@@ -407,8 +433,12 @@ class A_Bruijn_Graph():
         current = next
 
   def split_large_nodes(self, reads_file):
-    large_threshold = 4
+    large_threshold = 5
+    progress = 0
     for n in self.allnodes.keys():
+      progress += 1
+      if progress % 10000 == 0:
+        print progress, datetime.datetime.now()
       node = self.allnodes[n]
       if len(node.reads) > large_threshold:
         reads = node.get_reads(reads_file)
@@ -427,11 +457,15 @@ class A_Bruijn_Graph():
 
         # Find clusters
         clusters = []
+        print len(r)
         while len(r) > 0:
           r1 = r[0]
           _k = 15
-          cutoff = 30
-          headers = kmer_matching(r1, h[1:], r[1:], _k, cutoff)
+          cutoff = 50
+          if len(r) > 1:
+            headers = kmer_matching(r1, h[1:], r[1:], _k, cutoff)
+          else:
+            headers = []
           headers.append(h[0])
           clusters.append(headers)
           for item in headers:
@@ -439,12 +473,16 @@ class A_Bruijn_Graph():
             del h[h.index(item)]
           print len(r)
 
+        print 'len clusters', len(clusters)
+        print clusters
+
         if len(clusters) == 1:
           continue
 
         # Make new nodes for all but one cluster
         for i in range(len(clusters) - 1):
-          read_indices = [h_master.index(s) for s in clusters[i]]
+          print 'making new nodes:', i
+          read_indices = [node.reads[h_master.index(s)] for s in clusters[i]]
           node_name = node.ktmer + '_' + str(i + 1)
           new_node = Node(node_name)
           for neighbor in copy.copy(node.outnodes):
@@ -474,7 +512,7 @@ class A_Bruijn_Graph():
             # also, copy over appropriate position information to new_node
             # then, delete position and read info from node
             # -- check if i'm missing anything else -- 
-        self.allnodes[new_node.ktmer] = new_node
+          self.allnodes[new_node.ktmer] = new_node
     return
 
 
