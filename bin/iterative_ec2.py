@@ -16,27 +16,28 @@ import generate_new_reads
 from collections import defaultdict
 
 def main():
-  # reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
-  reads_file = '/home/mshen/research/extracts/extracted_reads_c1050000_s100000.fasta'
-  nhood_fold = '/home/mshen/research/e_coli_nh_22.4_unwhole_100k/'
+  reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
+  # nhood_fold = '/home/mshen/research/e_coli_nh_22.4_unwhole_100k/'
+  nhood_fold = '/home/mshen/research/e_coli_nhoods_500_22.4_unwhole/'
+
+  print 'Reads File:', reads_file, '\nNhood Folder:', nhood_fold 
 
   iterative_ec(reads_file, nhood_fold)
 
 def iterative_ec(reads_file, nhood_fold):
   reads_h, reads_r = rf.read_fasta(reads_file)
+  blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
+  blasr_options = '-bestn 1 -m 1'
   ec_tool = '/home/mshen/research/bin/error_correction.sh'
-  # e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
-  e_coli_genome = '/home/mshen/research/extracts/extracted_genome_c1050000_s100000.fasta'
+  e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
   _k = 15
-  cutoff = 5
-  
+  cutoff = 10
+  low_cutoff = 2
+  high_cutoff = 50
   ktmers = build_ktmer_dict(nhood_fold)
-
   traversed = set()
   nhoods = os.listdir(nhood_fold)
   random.shuffle(nhoods)
-  high_cutoff = 50
-  low_cutoff = 2
 
   curr_name = ''
   while len(traversed) < len(ktmers):
@@ -44,6 +45,19 @@ def iterative_ec(reads_file, nhood_fold):
       curr_name = random.choice(nhoods)
       while curr_name in traversed:
         curr_name = random.choice(nhoods)
+
+    if len(traversed) % 500 == 0 and len(traversed) > 0:
+      num_processed = len(traversed)
+      iter_read_file = 'READS_iter_' + str(num_processed) + '.fasta'
+      print 'writing intermediate reads to file'
+      with open(iter_read_file, 'w') as f:
+        for i in range(len(reads_r)):
+          f.write(reads_h[i] + '\n' + reads_r[i] + '\n')
+      print 'aligning intermediate reads to genome'
+      blasr_out = commands.getstatusoutput(blasr_exe + ' ' + iter_read_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+      iter_blasr_out = 'READS_blasr_iter_' + str(num_processed) + '.out'
+      with open(iter_blasr_out, 'w') as f:
+        f.write(blasr_out)
 
     traversed.add(curr_name)
     curr = nhood_fold + '/' + curr_name
@@ -59,6 +73,7 @@ def iterative_ec(reads_file, nhood_fold):
       _k = 15
       km_cutoff = 10
       kmer_matching.kmer_matching(fr_file, reads_file, _k, km_cutoff, temp_nhreads_f)
+
     ec_out = commands.getstatusoutput(ec_tool + ' ' + temp_nhreads_f)[1]
     if 'ERROR' in ec_out:
       print 'COULD NOT ERROR CORRECT', ec_out

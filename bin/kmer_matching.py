@@ -53,7 +53,7 @@ def kmer_matching(ec_seq_file, read_file, _k, cutoff, out_file):
 
   print '\n' + ec_seq_file + '\n' + str(len(headers))
   get_reads_from_headers(headers, read_file, out_file)
-  # return
+  return
   
 
   # Use blasr to check accuracy of kmer-matching found reads
