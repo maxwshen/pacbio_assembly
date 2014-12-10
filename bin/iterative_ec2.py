@@ -6,6 +6,8 @@
 #     - If the coverage is too low or too high, then use k-mer matching instead
 # Choose a new nhood when k-mer matching fails to find sufficient reads
 
+# Efficiently uses nhoods to error correct instead of k-mer matching, as opposed to iterative_ec.py
+
 import sys, string, datetime, random, copy, os, commands
 import numpy as np
 
@@ -48,14 +50,14 @@ def iterative_ec(reads_file, nhood_fold):
 
     if len(traversed) % 500 == 0 and len(traversed) > 0:
       num_processed = len(traversed)
-      iter_read_file = 'READS_iter_' + str(num_processed) + '.fasta'
+      iter_read_file = 'READS2_iter_' + str(num_processed) + '.fasta'
       print 'writing intermediate reads to file'
       with open(iter_read_file, 'w') as f:
         for i in range(len(reads_r)):
           f.write(reads_h[i] + '\n' + reads_r[i] + '\n')
       print 'aligning intermediate reads to genome'
       blasr_out = commands.getstatusoutput(blasr_exe + ' ' + iter_read_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
-      iter_blasr_out = 'READS_blasr_iter_' + str(num_processed) + '.out'
+      iter_blasr_out = 'READS2_blasr_iter_' + str(num_processed) + '.out'
       with open(iter_blasr_out, 'w') as f:
         f.write(blasr_out)
 
@@ -158,7 +160,7 @@ def replace_reads_blasr(consensus_file, km_file_name, out_file):
 
 def generate_new_reads(rr_file, reads_h, reads_r):
   # Replaces EC consensus into reads
-  lib = defaultdict(list)
+  lib = defaultdict(list)   # Key = header, Value = replacement info list
   with open(rr_file) as f:
     for i, line in enumerate(f):
       if line[0] == '>':
@@ -168,7 +170,7 @@ def generate_new_reads(rr_file, reads_h, reads_r):
   for i in range(len(reads_r)):
     if reads_h[i] in lib.keys():
       readl = list(reads_r[i])
-      for info in lib[h]:
+      for info in lib[reads_h[i]]:
         sinfo = info.split()
         read_beg = int(sinfo[0])
         read_end = int(sinfo[1])
