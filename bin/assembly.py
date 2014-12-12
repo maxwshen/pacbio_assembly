@@ -168,7 +168,7 @@ def a_bruijn_summary(cReads, reads_file):
         headers[num] = line.strip()
         num += 1
 
-  reads_kt = defaultdict(list)  # Key = ktmer, Value = [header1, header2, ...]
+  reads_kt = defaultdict(list)  # Key = ktmer, Value = [header1, dist_to_start, dist_to_end, header2, ...]
   edges = defaultdict(list)     # Key = ktmer, Value = [(neighbor, dist), ...]
 
   minimum = 20
@@ -180,14 +180,24 @@ def a_bruijn_summary(cReads, reads_file):
       kt = ktmers[j]
       if h not in reads_kt[kt]:
         reads_kt[kt].append(h)
-      if j > 0 and dists[j] > minimum:
-        prev_kt = ktmers[j - 1]
-        edges[prev_kt].append((kt, dists[j]))
-        edges[kt].append((prev_kt, - dists[j]))
+        r = find_read.find_read(h, reads_file)
+        r = r.splitlines()[1].strip()
+        reads_kt[kt].append(r.index(kt))
+        reads_kt[kt].append(len(r) - r.index(kt) - 1)
+      for k in range(len(ktmers)):
+        if k > 0 and dists[k] > minimum:
+          if k < j and ktmers[k] not in [s[0] for s in edges[kt]]:
+            dist = -1 * sum(dists[k + 1 : j + 1])
+            edges[kt].append((ktmers[k], dist))
+            edges[ktmers[k]].append((kt, - dist))
+          if k > j and ktmers[k] not in [s[0] for s in edges[kt]]:
+            dist = sum(dists[j + 1 : k + 1])
+            edges[kt].append((ktmers[k], dist))
+            edges[ktmers[k]].append((kt, - dist))
 
   with open('temp_ktmer_headers.out', 'w+') as f:
     for k in reads_kt.keys():
-      f.write(k + ' ' + ' '.join(reads_kt[k]) + '\n')
+      f.write(k + ' ' + ' '.join([str(s) for s in reads_kt[k]]) + '\n')
 
   with open('temp_ktmer_edges.out', 'w+') as f:
     for k in edges.keys():

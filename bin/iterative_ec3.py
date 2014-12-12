@@ -6,6 +6,9 @@
 #     - If there are no new ktmers, end the contig and start a new contig list at a new ktmer
 
 # Only uses the reads in (22,4)-mers as opposed to full neighborhoods, as in iterative_ec2.py
+#
+# Related files:
+# combine_ec_contigs.py : Combines the read sets produced by this code into contigs
 
 import sys, string, datetime, random, copy, os, commands
 import numpy as np
@@ -22,15 +25,6 @@ def main():
 
   print 'Reads File:', reads_file, '\nktmer Edges File:', ktmer_edges_file, '\nktmer Headers File:', ktmer_headers_file 
 
-  # Generate 100 sample read sets for Yu
-  # with open(ktmer_headers_file) as f:
-  #   lines = f.readlines()
-  # for i in range(100):
-  #   out_file = 'abruijn_22.4_' + str(i) + '.fasta'
-  #   ktmer = lines[i].split()[0]      
-  #   put_ktmer_reads_into_file(ktmer, ktmer_headers_file, reads_file, out_file)
-  # return
-
   iterative_ec(reads_file, ktmer_headers_file, ktmer_edges_file, min_dist)
 
 def put_ktmer_reads_into_file(ktmer, ktmer_headers_file, reads_file, out_file):
@@ -44,13 +38,17 @@ def put_ktmer_reads_into_file(ktmer, ktmer_headers_file, reads_file, out_file):
       f.write(find_read.find_read(h, reads_file))
   return
 
-def combine_contigs():
-  blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
-  blasr_options = '-bestn 1 -m 1'
-  pass
+def build_headers_dict(ktmer_headers_file):
+  headers = defaultdict(list)   # Key = header, Val = [headers, index, dist_from_end, ...]
+  with open(ktmer_headers_file) as f:
+    for i, line in enumerate(f):
+      words = line.split()
+      headers[line[0]] = line[1:]
+  return headers
+
 
 def iterative_ec(reads_file, ktmer_headers_file, ktmer_edges_file, min_dist):
-  ec_tool = '/home/mshen/research/bin/error_correction.sh'
+  ec_tool = '/home/mshen/research/bin/read_correction.sh'
 
   ktmers = []
   with open(ktmer_edges_file) as f:
@@ -58,22 +56,26 @@ def iterative_ec(reads_file, ktmer_headers_file, ktmer_edges_file, min_dist):
       ktmers.append(line.split()[0])
   random.shuffle(ktmers)
 
+  print 'Building dicts...', datetime.datetime.now()
   edges = build_edges_dict(ktmer_edges_file)
+  headers = build_headers_dict(ktmer_headers_file)
+  print '...Done.', datetime.datetime.now()
 
   restart_contig = False
   contigs = []    # List of lists
   curr_contig = []
   curr = ktmers[0]
-  forward = True
+  direction = 'forward'
   orig = curr
-  while len(ktmers) > 0:
+  # while len(ktmers) > 0:
+  while len(contigs) < 11:
     if restart_contig:
       print len(contigs), len(ktmers)
       restart_contig = False
       contigs.append(curr_contig)
       curr_contig = []
       curr = ktmers[0]
-      forward = True
+      direction = 'forward'
       orig = curr
     if curr in ktmers:
       del ktmers[ktmers.index(curr)]
@@ -90,34 +92,43 @@ def iterative_ec(reads_file, ktmer_headers_file, ktmer_edges_file, min_dist):
 
     with open(ec_file) as f:
       ec_seq = f.readlines()[1].strip()
-    if forward:
+    if direction == 'forward':
       curr_contig.append(ec_seq)
     elif ec_seq not in curr_contig:   # Reinserts twice when we switch from forward to back
       curr_contig.insert(0, ec_seq)
 
-    max_dist = calc_max_dist(curr, ec_seq, forward)
+    max_dist = calc_max_dist(curr, ec_seq, direction)
 
     print 'dist', max_dist, len(ec_seq)
 
     found = False
-    edge = find_best_edge(curr, edges, min_dist, max_dist, ktmers)
+    edge = find_best_edge(curr, edges, min_dist, max_dist, ktmers, headers, direction)
+    # edge = find_random_edge(curr, edges, min_dist, max_dist, ktmers)
     if edge != '':
       curr = edge
     else:
-      if forward:
-        forward = False
+      if direction == 'forward':
+        direction = 'backward'
         curr = orig
       else:
         restart_contig = True
 
-def calc_max_dist(curr, ec_seq, forward):
+  contigs_file = 'ec_contigs.fasta'
+  with open(contigs_file, 'w+') as f:
+    for i in range(len(contigs)):
+      for seq in contigs[i]:
+        f.write('>' + str(i) + '\n' + seq + '\n')
+
+  return
+
+def calc_max_dist(curr, ec_seq, direction):
   if curr in ec_seq:
     max_dist = len(ec_seq) - ec_seq.index(curr)
-    if not forward:
+    if direction == 'backward':
       max_dist -= len(ec_seq)
   else:
     max_dist = len(ec_seq) / 2
-    if not forward:
+    if direction == 'backward':
       max_dist *= -1  
   return max_dist
 
@@ -128,18 +139,53 @@ def build_edges_dict(ktmer_edges_file):
       edges[line.split()[0]] = line.split()[1:]
   return edges
 
-def find_best_edge(ktmer, edges, min_dist, max_dist, ktmers):
+def find_best_edge(ktmer, edges, min_dist, max_dist, ktmers, headers, direction):
   # Returns a list of ktmers that are within min dist, max dist
+  # direction = 'forward', or 'backward'
   curr_edges = edges[ktmer]
   best_edge = ''
   best_degree = 0
   for i in range(len(curr_edges)):
-    print i
-    if min_dist <= int(curr_edges[i]) <= max_dist or max_dist <= int(curr_edges[i]) <= min_dist:
-      if len(edges[curr_edges[i - 1]]) > best_degree and curr_edges[i - 1] in ktmers:
-        best_degree = len(edges[curr_edges[i - 1]])
-        best_edge = curr_edges[i - 1]
+    if i % 2 == 1:
+      if min_dist <= int(curr_edges[i]) <= max_dist or max_dist <= int(curr_edges[i]) <= min_dist:
+        if len(edges[curr_edges[i - 1]]) > best_degree and curr_edges[i - 1] in ktmers:
+          if direction_test(ktmer, headers, direction):
+            best_degree = len(edges[curr_edges[i - 1]])
+            best_edge = curr_edges[i - 1]
   return best_edge
+
+def direction_test(ktmer, headers, direction):
+  # Currently doesn't filter out reads on the wrong side. Naive - test if good enough
+  dist_threshold = 1000
+  min_pass = 3
+  neighbors = headers[ktmer]
+  num_passed = 0 
+  if direction == 'forward':
+    for i in range(len(neighbors)):
+      if i % 3 == 2:
+        if int(neighbors[i]) > threshold:
+          num_passed += 1
+  if direction == 'backward':
+    for i in range(len(neighbors)):
+      if i % 3 == 1:
+        if int(neighbors[i]) > threshold:
+          num_passed += 1
+  return num_passed >= min_pass
+
+def find_random_edge(ktmer, edges, min_dist, max_dist, ktmers):
+  # Returns a list of ktmers that are within min dist, max dist
+  curr_edges = edges[ktmer]
+  good_edges = []
+  min_edges_to_continue = 2
+  for i in range(len(curr_edges)):
+    if i % 2 == 1:
+      if min_dist <= int(curr_edges[i]) <= max_dist or max_dist <= int(curr_edges[i]) <= min_dist:
+        if curr_edges[i - 1] in ktmers and len(edges[curr_edges[i - 1]]) >= min_edges_to_continue:
+          good_edges.append(curr_edges[i - 1])
+  if len(good_edges) == 0:
+    return ''
+  else:
+    return random.choice(good_edges)
 
 if __name__ == '__main__':
   start = datetime.datetime.now()
