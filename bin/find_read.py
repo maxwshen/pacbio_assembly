@@ -26,6 +26,19 @@ def find_read(header, reads_file):
         get_line = True
   return None
 
+def find_reads(headers, reads_file):
+  get_line = False
+  output = ''
+  with open(reads_file) as f:
+    for i, line in enumerate(f):
+      if get_line:
+        output += header + '\n' + line
+        get_line = False
+      if line.strip() in headers:
+        header = line.strip()
+        get_line = True
+  return output
+
 if __name__ == '__main__':
   # Initiates program and records total time
   start = datetime.datetime.now()

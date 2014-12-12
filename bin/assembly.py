@@ -173,6 +173,7 @@ def a_bruijn_summary(cReads, reads_file):
 
   minimum = 20
   for i in range(len(cReads)):
+    print i
     h = headers[i]
     ktmers = cReads[i][0]
     dists = cReads[i][1]
@@ -195,11 +196,11 @@ def a_bruijn_summary(cReads, reads_file):
             edges[kt].append((ktmers[k], dist))
             edges[ktmers[k]].append((kt, - dist))
 
-  with open('temp_ktmer_headers.out', 'w+') as f:
+  with open('temp_ktmer_headers3.out', 'w+') as f:
     for k in reads_kt.keys():
       f.write(k + ' ' + ' '.join([str(s) for s in reads_kt[k]]) + '\n')
 
-  with open('temp_ktmer_edges.out', 'w+') as f:
+  with open('temp_ktmer_edges3.out', 'w+') as f:
     for k in edges.keys():
       out_edges = [s[0] + ' ' + str(s[1]) for s in edges[k]]
       f.write(k + ' ' + ' '.join(out_edges) + '\n')

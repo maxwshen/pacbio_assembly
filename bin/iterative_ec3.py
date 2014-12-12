@@ -21,6 +21,10 @@ def main():
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
   ktmer_edges_file = '/home/mshen/research/data/22.4_ktmer_edges.out'
   ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
+
+  reads_file = 'extracts_100k/extracted_reads_c2500000_s100000.fasta'
+  ktmer_edges_file = '/home/mshen/research/temp_ktmer_edges2.out'
+  ktmer_headers_file = '/home/mshen/research/temp_ktmer_headers2.out'
   min_dist = 20
 
   print 'Reads File:', reads_file, '\nktmer Edges File:', ktmer_edges_file, '\nktmer Headers File:', ktmer_headers_file 
@@ -34,8 +38,9 @@ def put_ktmer_reads_into_file(ktmer, ktmer_headers_file, reads_file, out_file):
       if line.split()[0] == ktmer:
         headers = line.split()[1:]
   with open(out_file, 'w+') as f:
-    for h in headers:
-      f.write(find_read.find_read(h, reads_file))
+    for i in range(len(headers)):
+      if i % 3 == 0:
+        f.write(find_read.find_read(headers[i], reads_file))
   return
 
 def build_headers_dict(ktmer_headers_file):
@@ -43,12 +48,31 @@ def build_headers_dict(ktmer_headers_file):
   with open(ktmer_headers_file) as f:
     for i, line in enumerate(f):
       words = line.split()
-      headers[line[0]] = line[1:]
+      headers[words[0]] = words[1:]
   return headers
 
+def get_all_reads_from_read(ktmer, edges, headers, reads_file, out_file):
+  neighbors = [ktmer]
+  for i in range(len(edges[ktmer])):
+    if i % 2 == 0:
+      neighbors.append(edges[ktmer][i])
+
+
+  found_headers = []
+  for kt in neighbors:
+    heads = headers[kt]
+    heads = [heads[i] for i in range(len(heads)) if i % 3 == 0]
+    for h in heads:
+      if h not in found_headers:
+        found_headers.append(h)
+  print found_headers
+
+  with open(out_file, 'w') as f:
+    f.write(find_read.find_reads(found_headers, reads_file))
+  return
 
 def iterative_ec(reads_file, ktmer_headers_file, ktmer_edges_file, min_dist):
-  ec_tool = '/home/mshen/research/bin/read_correction.sh'
+  ec_tool = '/home/mshen/research/bin/error_correction.sh'
 
   ktmers = []
   with open(ktmer_edges_file) as f:
@@ -60,6 +84,10 @@ def iterative_ec(reads_file, ktmer_headers_file, ktmer_edges_file, min_dist):
   edges = build_edges_dict(ktmer_edges_file)
   headers = build_headers_dict(ktmer_headers_file)
   print '...Done.', datetime.datetime.now()
+
+  temp_outfile = 'temp_allreadsfromread.fasta'
+  get_all_reads_from_read(ktmers[0], edges, headers, reads_file, temp_outfile)
+  return
 
   restart_contig = False
   contigs = []    # List of lists
@@ -99,7 +127,8 @@ def iterative_ec(reads_file, ktmer_headers_file, ktmer_edges_file, min_dist):
 
     max_dist = calc_max_dist(curr, ec_seq, direction)
 
-    print 'dist', max_dist, len(ec_seq)
+    print curr, 'dist', max_dist, len(ec_seq)
+    print edges[curr]
 
     found = False
     edge = find_best_edge(curr, edges, min_dist, max_dist, ktmers, headers, direction)
@@ -139,36 +168,45 @@ def build_edges_dict(ktmer_edges_file):
       edges[line.split()[0]] = line.split()[1:]
   return edges
 
-def find_best_edge(ktmer, edges, min_dist, max_dist, ktmers, headers, direction):
+def find_best_edge(ktmer, edges, mindist, max_dist, ktmers, headers, direction):
   # Returns a list of ktmers that are within min dist, max dist
   # direction = 'forward', or 'backward'
+  if max_dist < 0:
+    min_dist = mindist * -1
+  else:
+    min_dist = mindist
   curr_edges = edges[ktmer]
   best_edge = ''
   best_degree = 0
+  num_candidates = 0
+  num_passed_dirtest = 0
   for i in range(len(curr_edges)):
     if i % 2 == 1:
       if min_dist <= int(curr_edges[i]) <= max_dist or max_dist <= int(curr_edges[i]) <= min_dist:
-        if len(edges[curr_edges[i - 1]]) > best_degree and curr_edges[i - 1] in ktmers:
-          if direction_test(ktmer, headers, direction):
+        num_candidates += 1
+        if direction_test(curr_edges[i - 1], headers, direction):
+          num_passed_dirtest += 1
+          if len(edges[curr_edges[i - 1]]) > best_degree and curr_edges[i - 1] in ktmers:
             best_degree = len(edges[curr_edges[i - 1]])
             best_edge = curr_edges[i - 1]
+  print best_edge, best_degree / 2, headers[best_edge], 'candidates:', num_candidates, num_passed_dirtest
   return best_edge
 
 def direction_test(ktmer, headers, direction):
   # Currently doesn't filter out reads on the wrong side. Naive - test if good enough
-  dist_threshold = 1000
+  dist_threshold = 500
   min_pass = 3
   neighbors = headers[ktmer]
-  num_passed = 0 
+  num_passed = 0
   if direction == 'forward':
     for i in range(len(neighbors)):
       if i % 3 == 2:
-        if int(neighbors[i]) > threshold:
+        if int(neighbors[i]) > dist_threshold:
           num_passed += 1
   if direction == 'backward':
     for i in range(len(neighbors)):
       if i % 3 == 1:
-        if int(neighbors[i]) > threshold:
+        if int(neighbors[i]) > dist_threshold:
           num_passed += 1
   return num_passed >= min_pass
 
