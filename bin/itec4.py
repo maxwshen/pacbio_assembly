@@ -40,9 +40,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
     i += 1
     print i
     old_h = h
-    h = extend_right(h, headers, creads, traversed_headers)
-    if len(h) == 0:
-      h = extend_right_2(old_h, headers, creads, traversed_headers)
+    h = extend_right_n(h, headers, creads, traversed_headers)
     traversed_headers.append(h)
 
   contig = ''
@@ -62,7 +60,7 @@ def extend_right(header, headers, creads, traversed_headers):
         dist_to_end[k] += int(creads[header][i])
   ktmers = dist_to_end.keys()
   print len(ktmers), 'ktmers'
-  print dist_to_end
+  # print dist_to_end
 
   for k in ktmers:
     next_read = find_extending_read_rightend(k, headers, creads, dist_to_end[k])
@@ -82,7 +80,7 @@ def extend_right_2(header, headers, creads, traversed_headers):
         dist_to_end[k] += int(creads[header][i])
   ktmers = dist_to_end.keys()
   print len(ktmers), 'ktmers'
-  print dist_to_end
+  # print dist_to_end
 
   for k in ktmers:
     for h in headers[k]:
@@ -93,7 +91,7 @@ def extend_right_2(header, headers, creads, traversed_headers):
           kts.append(creads[h][i])
       kts.remove(k)
       for kt in kts:
-        dist_to_k[kt] = dist_bw_ktmers(kt, k, h, creads)
+        dist_to_k[kt] = dist_bw_ktmers(kt, k, headers, creads)
       for kt in dist_to_k.keys():
         next_read = find_extending_read_rightend(kt, headers, creads, dist_to_end[k] + dist_to_k[kt])
         if len(next_read) != 0 and next_read not in traversed_headers:
@@ -102,8 +100,81 @@ def extend_right_2(header, headers, creads, traversed_headers):
   print 'not found'
   return ''
 
-def dist_bw_ktmers(kt1, kt2, header, creads):
+def extend_right_n(header, headers, creads, traversed_headers):
+  dist_to_end = dict()    # Key = ktmer in read, Val = distance to end of read
+  for i in range(len(creads[header])):
+    if i % 2 == 1:
+      dist_to_end[creads[header][i]] = 0
+    elif i > 0:
+      for k in dist_to_end:
+        dist_to_end[k] += int(creads[header][i])
+  ktmers = dist_to_end.keys()
+
+  for k in ktmers:
+    next_read = find_extending_read_rightend(k, headers, creads, dist_to_end[k])
+    if len(next_read) != 0 and next_read not in traversed_headers:
+      return next_read
+
+  print 'trying n-degree nhood extension'
+  traversed_ktmers = set(ktmers)
+  while True:
+    print '\t', len(traversed_ktmers)
+    new_ktmers = defaultdict(list)   # Key = new-ktmer, Val = [old ktmer that is connected]
+    for kt in ktmers:
+      for kn in find_neighboring_ktmers(kt, headers, creads):
+        if kn not in traversed_ktmers:
+          if kn not in new_ktmers.keys() or kt not in new_ktmers[kn]:
+            new_ktmers[kn].append(kt)
+    if len(new_ktmers.keys()) == 0:
+      print 'None found'
+      return ''
+
+    print len(new_ktmers.keys()), len(ktmers)
+    new_dist_to_end = dict()
+    for kt in new_ktmers.keys():
+      k = new_ktmers[kt][0]
+      dist = dist_bw_ktmers(kt, k, headers, creads)
+      if dist == None:
+        continue
+      new_dist_to_end[kt] = dist_to_end[k] + dist
+      next_read = find_extending_read_rightend(kt, headers, creads, new_dist_to_end[kt])
+      if len(next_read) != 0 and next_read not in traversed_headers:
+        return next_read
+
+    # Filter out those who are too far
+    for k in ktmers:
+      traversed_ktmers.add(k)
+
+    # print new_dist_to_end
+    ktmers = []
+    limit = 10000
+    for kt in new_ktmers.keys():
+      if new_dist_to_end[kt] < limit and kt not in traversed_ktmers:
+        ktmers.append(kt)
+
+    dist_to_end = new_dist_to_end
+
+
+def find_neighboring_ktmers(ktmer, headers, creads):
+  neighbors = []
+  for h in headers[ktmer]:
+    for i in range(len(creads[h])):
+      if i % 2 == 1:
+        neighbors.append(creads[h][i])
+  return neighbors
+
+
+def dist_bw_ktmers(kt1, kt2, headers, creads):
   # Finds distance between kt1 and kt2 in a read. If kt2 is before kt1, dist is negative
+  found = False
+  for h in headers[kt1]:
+    if kt2 in creads[h]:
+      header = h
+      found = True
+
+  if not found:
+    return None
+
   dist = 0
   grab = False
   for i in range(len(creads[header])):
