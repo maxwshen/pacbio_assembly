@@ -44,6 +44,7 @@ def iterative_ec(reads_file, nhood_fold):
   curr_name = ''
   while len(traversed) < len(ktmers):
     if curr_name == '':
+      print 'starting new'
       curr_name = random.choice(nhoods)
       while curr_name in traversed:
         curr_name = random.choice(nhoods)
@@ -88,17 +89,21 @@ def iterative_ec(reads_file, nhood_fold):
     generate_new_reads(rr_outf, reads_h, reads_r)
 
     ec_h, ec_r = rf.read_fasta(consensus_file)
+    print 'consensus len:', len(ec_r[0])
 
     best_name = ''
     largest_index = 0
+    num_edges = 0
     for name in nhoods:
       if name not in traversed:
         ktmer = name.split('_')[2].split('.')[0]
         if ktmer in ec_r[0]:
+          num_edges += 1
           if ec_r[0].index(ktmer) > largest_index:
             largest_index = ec_r[0].index(ktmer)
             best_name = name
             print best_name, largest_index
+    print best_name, largest_index, 'num edges:', num_edges
     curr_name = best_name
 
 def get_first_read(fn, reads_file, out_file):

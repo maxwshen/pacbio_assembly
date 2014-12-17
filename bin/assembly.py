@@ -30,7 +30,10 @@ def assembly(reads, genome_file, _k, _t, gvname):
   cReads = convertReads(reads, ktmers, _k)
   print '... Done.', datetime.datetime.now()
 
-  a_bruijn_summary(cReads, reads)
+  headers_out_file = 'temp_ktmer_headers.out'
+  edges_out_file = 'temp_ktmer_edges.out'
+  creads_out_file = 'temp_creads.out'
+  a_bruijn_summary(cReads, reads, headers_out_file, edges_out_file, creads_out_file)
   return
 
   # # Writes distance statistics to file
@@ -158,8 +161,16 @@ def assembly(reads, genome_file, _k, _t, gvname):
     print 'Avg. kt-mer len for combined nodes: N/A'
 
 
-def a_bruijn_summary(cReads, reads_file):
+def a_bruijn_summary(cReads, reads_file, headers_out_file, edges_out_file, creads_out_file):
   # Make a defaultdict(list) of edges for each node, and distance
+  with open(creads_out_file, 'w') as f:
+    for c in cReads:
+      line = [c[1][0]]
+      for i in range(len(c[0])):
+        line.append(c[0][i])
+        line.append(c[1][i + 1])
+      f.write(' '.join([str(s) for s in line]) + '\n')
+
   headers = dict()  # Key = number, Value = header
   num = 0
   with open(reads_file) as f:
@@ -173,7 +184,9 @@ def a_bruijn_summary(cReads, reads_file):
 
   minimum = 20
   for i in range(len(cReads)):
-    print i
+    if i % 5000 == 0:
+      print i, datetime.datetime.now()
+    # print cReads[i]
     h = headers[i]
     ktmers = cReads[i][0]
     dists = cReads[i][1]
@@ -181,26 +194,27 @@ def a_bruijn_summary(cReads, reads_file):
       kt = ktmers[j]
       if h not in reads_kt[kt]:
         reads_kt[kt].append(h)
-        r = find_read.find_read(h, reads_file)
-        r = r.splitlines()[1].strip()
-        reads_kt[kt].append(r.index(kt))
-        reads_kt[kt].append(len(r) - r.index(kt) - 1)
+        # r = find_read.find_read(h, reads_file)
+        # r = r.splitlines()[1].strip()
+        # reads_kt[kt].append(r.index(kt))
+        # reads_kt[kt].append(len(r) - r.index(kt) - 1)
       for k in range(len(ktmers)):
-        if k > 0 and dists[k] > minimum:
-          if k < j and ktmers[k] not in [s[0] for s in edges[kt]]:
-            dist = -1 * sum(dists[k + 1 : j + 1])
+        if k < j and ktmers[k] not in [s[0] for s in edges[kt]]:
+          dist = -1 * sum(dists[k + 1 : j + 1])
+          if abs(dist) > minimum:
             edges[kt].append((ktmers[k], dist))
             edges[ktmers[k]].append((kt, - dist))
-          if k > j and ktmers[k] not in [s[0] for s in edges[kt]]:
-            dist = sum(dists[j + 1 : k + 1])
+        if k > j and ktmers[k] not in [s[0] for s in edges[kt]]:
+          dist = sum(dists[j + 1 : k + 1])
+          if abs(dist) > minimum:
             edges[kt].append((ktmers[k], dist))
             edges[ktmers[k]].append((kt, - dist))
 
-  with open('temp_ktmer_headers3.out', 'w+') as f:
+  with open(headers_out_file, 'w+') as f:
     for k in reads_kt.keys():
       f.write(k + ' ' + ' '.join([str(s) for s in reads_kt[k]]) + '\n')
 
-  with open('temp_ktmer_edges3.out', 'w+') as f:
+  with open(edges_out_file, 'w+') as f:
     for k in edges.keys():
       out_edges = [s[0] + ' ' + str(s[1]) for s in edges[k]]
       f.write(k + ' ' + ' '.join(out_edges) + '\n')
@@ -357,6 +371,7 @@ def convertReads(reads, ktmers, _k):
   isdna = False
   cReads = []
   count = 0
+  num_reads_wo_ktmers = 0
 
   with open(reads) as f:
     for i, line in enumerate(f):
@@ -374,11 +389,15 @@ def convertReads(reads, ktmers, _k):
             count = 1
           else:
             count += 1
+        tempDist.append(count + _k - 1)
         cReads.append((tempKmers, tempDist))
+        if len(tempKmers) == 0:
+          num_reads_wo_ktmers += 1
       if line[0] == '>' or line[0] == '@':
         isdna = True
 
   # print cReads
+  print num_reads_wo_ktmers, 'reads without any kt-mers out of', i / 2, 'reads'
   return cReads
 
 def hamming_dist(s1, s2):

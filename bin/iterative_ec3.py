@@ -12,10 +12,10 @@
 
 import sys, string, datetime, random, copy, os, commands
 import numpy as np
+from collections import defaultdict
 
 import read_fasta as rf
 import find_read
-from collections import defaultdict
 
 def main():
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
@@ -85,9 +85,8 @@ def iterative_ec(reads_file, ktmer_headers_file, ktmer_edges_file, min_dist):
   headers = build_headers_dict(ktmer_headers_file)
   print '...Done.', datetime.datetime.now()
 
-  temp_outfile = 'temp_allreadsfromread.fasta'
-  get_all_reads_from_read(ktmers[0], edges, headers, reads_file, temp_outfile)
-  return
+  # temp_outfile = 'temp_allreadsfromread.fasta'
+  # get_all_reads_from_read(ktmers[0], edges, headers, reads_file, temp_outfile)
 
   restart_contig = False
   contigs = []    # List of lists
@@ -125,9 +124,13 @@ def iterative_ec(reads_file, ktmer_headers_file, ktmer_edges_file, min_dist):
     elif ec_seq not in curr_contig:   # Reinserts twice when we switch from forward to back
       curr_contig.insert(0, ec_seq)
 
-    max_dist = calc_max_dist(curr, ec_seq, direction)
+    # max_dist = calc_max_dist(curr, ec_seq, direction)
+    if direction == 'forward':
+      max_dist = float('inf')
+    else:
+      max_dist = - float('inf')
 
-    print curr, 'dist', max_dist, len(ec_seq)
+    print curr, 'dist', max_dist, len(ec_seq), direction
     print edges[curr]
 
     found = False
@@ -186,9 +189,16 @@ def find_best_edge(ktmer, edges, mindist, max_dist, ktmers, headers, direction):
         num_candidates += 1
         if direction_test(curr_edges[i - 1], headers, direction):
           num_passed_dirtest += 1
-          if len(edges[curr_edges[i - 1]]) > best_degree and curr_edges[i - 1] in ktmers:
-            best_degree = len(edges[curr_edges[i - 1]])
-            best_edge = curr_edges[i - 1]
+          if direction == 'forward':
+            if len([s for s in edges[curr_edges[i - 1]] if s > min_dist]) > best_degree and curr_edges[i - 1] in ktmers:
+              best_degree = len(edges[curr_edges[i - 1]])
+              best_edge = curr_edges[i - 1]
+          if direction == 'backward':
+            if len([s for s in edges[curr_edges[i - 1]] if s < min_dist]) > best_degree and curr_edges[i - 1] in ktmers:
+              best_degree = len(edges[curr_edges[i - 1]])
+              best_edge = curr_edges[i - 1]
+
+
   print best_edge, best_degree / 2, headers[best_edge], 'candidates:', num_candidates, num_passed_dirtest
   return best_edge
 
