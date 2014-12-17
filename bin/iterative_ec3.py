@@ -72,7 +72,7 @@ def get_all_reads_from_read(ktmer, edges, headers, reads_file, out_file):
   return
 
 def iterative_ec(reads_file, ktmer_headers_file, ktmer_edges_file, min_dist):
-  ec_tool = '/home/mshen/research/bin/error_correction.sh'
+  ec_tool = '/home/mshen/research/bin/consensus_correction.sh'
 
   ktmers = []
   with open(ktmer_edges_file) as f:
