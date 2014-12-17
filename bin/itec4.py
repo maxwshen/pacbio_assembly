@@ -33,15 +33,26 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
   curr_ktmer = ktmers[0]
   ktmers = ktmers[1:]
   h = get_read_with_most_neighbors(curr_ktmer, headers, creads)
+  traversed_headers = [h]
   # error_correct(ec_tool, h, headers, creads, hr, rr)
   i = 0
   while len(h) != 0:
     i += 1
     print i
-    h = extend(h, headers, creads)
-  # while len(ktmers) > 0:
+    old_h = h
+    h = extend_right(h, headers, creads, traversed_headers)
+    if len(h) == 0:
+      h = extend_right_2(old_h, headers, creads, traversed_headers)
+    traversed_headers.append(h)
 
-def extend(header, headers, creads):
+  contig = ''
+  for k in traversed_headers:
+    if k != '':
+      contig += k + '\n' + rr[hr.index(k)] + '\n'
+  with open('out.fasta', 'w') as f:
+    f.write(contig)
+
+def extend_right(header, headers, creads, traversed_headers):
   dist_to_end = dict()    # Key = ktmer in read, Val = distance to end of read
   for i in range(len(creads[header])):
     if i % 2 == 1:
@@ -50,14 +61,63 @@ def extend(header, headers, creads):
       for k in dist_to_end:
         dist_to_end[k] += int(creads[header][i])
   ktmers = dist_to_end.keys()
+  print len(ktmers), 'ktmers'
+  print dist_to_end
 
   for k in ktmers:
     next_read = find_extending_read_rightend(k, headers, creads, dist_to_end[k])
-    if len(next_read) != 0:
+    if len(next_read) != 0 and next_read not in traversed_headers:
       return next_read
 
   print 'not found'
   return ''
+
+def extend_right_2(header, headers, creads, traversed_headers):
+  dist_to_end = dict()    # Key = ktmer in read, Val = distance to end of read
+  for i in range(len(creads[header])):
+    if i % 2 == 1:
+      dist_to_end[creads[header][i]] = 0
+    elif i > 0:
+      for k in dist_to_end:
+        dist_to_end[k] += int(creads[header][i])
+  ktmers = dist_to_end.keys()
+  print len(ktmers), 'ktmers'
+  print dist_to_end
+
+  for k in ktmers:
+    for h in headers[k]:
+      dist_to_k = dict()    # Key = ktmer in read, Val = distance to k
+      kts = []
+      for i in range(len(creads[h])):
+        if i % 2 == 1:
+          kts.append(creads[h][i])
+      kts.remove(k)
+      for kt in kts:
+        dist_to_k[kt] = dist_bw_ktmers(kt, k, h, creads)
+      for kt in dist_to_k.keys():
+        next_read = find_extending_read_rightend(kt, headers, creads, dist_to_end[k] + dist_to_k[kt])
+        if len(next_read) != 0 and next_read not in traversed_headers:
+          return next_read
+
+  print 'not found'
+  return ''
+
+def dist_bw_ktmers(kt1, kt2, header, creads):
+  # Finds distance between kt1 and kt2 in a read. If kt2 is before kt1, dist is negative
+  dist = 0
+  grab = False
+  for i in range(len(creads[header])):
+    if creads[header][i] == kt1 or creads[header][i] == kt2:
+      if grab == True:
+        grab = False
+        break
+      if grab == False:
+        grab = True
+    if grab and i % 2 == 0:
+      dist += int(creads[header][i])
+  if creads[header].index(kt1) > creads[header].index(kt2):
+    dist *= -1
+  return dist
 
 def find_extending_read_rightend(ktmer, headers, creads, dist):
   # If a read in ktmer extends past dist, return it
@@ -70,7 +130,6 @@ def find_extending_read_rightend(ktmer, headers, creads, dist):
       if track and i % 2 == 0:
         curr_dist += int(creads[h][i])
     if curr_dist > dist:
-      print curr_dist, dist
       return h
   return ''
 
