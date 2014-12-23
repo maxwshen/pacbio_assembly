@@ -1,4 +1,4 @@
-# Treats reads as the basis for error correction and extension, rather than kt-mers as in iterative_ec3.py
+  # Treats reads as the basis for error correction and extension, rather than kt-mers as in iterative_ec3.py
 #
 # Related files:
 # combine_ec_contigs.py : Combines the read sets produced by this code into contigs
@@ -20,7 +20,7 @@ def main():
   iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool)
 
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
-  overlap_accuracy_cutoff = 90
+  overlap_accuracy_cutoff = 80
   overlap_length_cutoff = 200
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
@@ -42,20 +42,22 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
     counter += 1
     print 'iteration', counter
     old_h = h
-    num_attempts = 3
+    num_attempts = 10
     stop = False
     for i in range(num_attempts):
+      print 'Attempt', i
       possible_heads = extend_right_n(h, headers, creads, traversed_headers)
       if len(possible_heads) == 0:
         print 'Could not extend further'
-        break
+        continue
       for head in possible_heads:
-        consensus_temp = error_correct(ec_tool, head, headers, creads, hr, rr)
-        if len(consensus_temp) == 0:
-          print 'failed to error correct'
-          continue
-        if test_overlap(consensus_temp, curr_contig[-1], overlap_accuracy_cutoff, overlap_length_cutoff):
+        candidate_read = rr[hr.index(head)]
+        if test_overlap(candidate_read, curr_contig[-1], overlap_accuracy_cutoff, overlap_length_cutoff):
           h = head
+          consensus_temp = error_correct(ec_tool, head, headers, creads, hr, rr)
+          if len(consensus_temp) == 0:
+            print 'failed to error correct'
+            continue
           curr_contig.append(consensus_temp)
           traversed_headers.append(h)
           break
@@ -93,13 +95,18 @@ def test_overlap(seq1, seq2, acc_cutoff, len_cutoff):
     f.write('>2\n' + seq2)
 
   status = commands.getstatusoutput(blasr_exe + ' ' + temps1 + ' ' + temps2 + ' ' + blasr_options)[1]
-  print status
   if len(status.strip()) == 0:
     return False
+  print status
   accuracy = float(status.split()[5])
   length = int(status.split()[-1])
+  end_align_r1 = int(status.split()[7])
+  total_len_r1 = int(status.split()[8])
+  end_pos_r1 = total_len_r1 - end_align_r1
+  beg_pos_r2 = int(status.split()[9])
   print 'accuracy:', accuracy
-  return accuracy >= acc_cutoff and length > len_cutoff
+  dist_from_end = 100
+  return accuracy >= acc_cutoff and length > len_cutoff and beg_pos_r2 < dist_from_end and end_pos_r1 < dist_from_end
 
 def extend_right_n(header, headers, creads, traversed_headers):
   dist_to_end = dict()    # Key = ktmer in read, Val = distance to end of read
@@ -163,7 +170,7 @@ def extend_right_n(header, headers, creads, traversed_headers):
 
     # print new_dist_to_end
     ktmers = []
-    limit = 10000       # Don't backtrack too far
+    limit = 2000       # Don't backtrack too far
     for kt in new_ktmers.keys():
       if new_dist_to_end[kt] < limit and kt not in traversed_ktmers:
         ktmers.append(kt)
