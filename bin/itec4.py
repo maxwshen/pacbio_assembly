@@ -1,4 +1,4 @@
-  # Treats reads as the basis for error correction and extension, rather than kt-mers as in iterative_ec3.py
+# Treats reads as the basis for error correction and extension, rather than kt-mers as in iterative_ec3.py
 #
 # Related files:
 # combine_ec_contigs.py : Combines the read sets produced by this code into contigs
@@ -14,14 +14,16 @@ def main():
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
   creads_file = '/home/mshen/research/data/22.4_creads.out'
   ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
-  ec_tool = '/home/mshen/research/bin/error_correction_1217.sh'
+  ec_tool = '/home/mshen/research/bin/error_correction_1218.sh'
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
   iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool)
 
+
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
   overlap_accuracy_cutoff = 80
   overlap_length_cutoff = 200
+  num_attempts = 10
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
@@ -37,38 +39,42 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
   traversed_headers = [h]
 
   # MAIN LOOP
-  counter = 0
-  while True:
-    counter += 1
-    print 'iteration', counter
-    old_h = h
-    num_attempts = 10
-    stop = False
-    for i in range(num_attempts):
-      print 'Attempt', i
-      possible_heads = extend_right_n(h, headers, creads, traversed_headers)
-      if len(possible_heads) == 0:
-        print 'Could not extend further'
-        continue
-      for head in possible_heads:
-        candidate_read = rr[hr.index(head)]
-        if test_overlap(candidate_read, curr_contig[-1], overlap_accuracy_cutoff, overlap_length_cutoff):
-          h = head
-          consensus_temp = error_correct(ec_tool, head, headers, creads, hr, rr)
-          if len(consensus_temp) == 0:
-            print 'failed to error correct'
-            continue
-          curr_contig.append(consensus_temp)
-          traversed_headers.append(h)
+  for direction in ['right', 'left']:
+    counter = 0
+    while True:
+      counter += 1
+      print 'iteration', counter, direction
+      old_h = h
+      stop = False
+      for i in range(num_attempts):
+        print 'Attempt', i
+        possible_heads = extend_n(h, headers, creads, traversed_headers, direction)
+        print len(possible_heads), 'candidates for extension'
+        if len(possible_heads) == 0:
+          print 'could not extend further'
+          continue
+        for head in possible_heads:
+          candidate_read = rr[hr.index(head)]
+          if test_overlap(candidate_read, curr_contig[-1], overlap_accuracy_cutoff, overlap_length_cutoff):
+            h = head
+            consensus_temp = error_correct(ec_tool, head, headers, creads, hr, rr)
+            if len(consensus_temp) == 0:
+              print 'failed to error correct'
+              continue
+            if direction == 'right':
+              curr_contig.append(consensus_temp)
+            if direction == 'left':
+              curr_contig.insert(0, consensus_temp)
+            traversed_headers.append(h)
+            break
+        if h == old_h:
+          for p in possible_heads:
+            traversed_headers.append(p)
+        else:
           break
       if h == old_h:
-        for p in possible_heads:
-          traversed_headers.append(p)
-      else:
+        print 'No new reads overlapped with current contig'
         break
-    if h == old_h:
-      print 'No new reads overlapped with current contig'
-      break
 
   # ASSESS RESULTS
   print old_h
@@ -82,6 +88,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
   with open('out.fasta', 'w') as f:
     f.write(contig)
   status = commands.getstatusoutput(blasr_exe + ' out.fasta ' + e_coli_genome + ' ' + blasr_options + ' > out.txt')[1]
+
 
 def test_overlap(seq1, seq2, acc_cutoff, len_cutoff):
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
@@ -105,27 +112,24 @@ def test_overlap(seq1, seq2, acc_cutoff, len_cutoff):
   end_pos_r1 = total_len_r1 - end_align_r1
   beg_pos_r2 = int(status.split()[9])
   print 'accuracy:', accuracy
-  dist_from_end = 100
+  dist_from_end = 200
   return accuracy >= acc_cutoff and length > len_cutoff and beg_pos_r2 < dist_from_end and end_pos_r1 < dist_from_end
 
-def extend_right_n(header, headers, creads, traversed_headers):
-  dist_to_end = dict()    # Key = ktmer in read, Val = distance to end of read
-  for i in range(len(creads[header])):
-    if i % 2 == 1:
-      dist_to_end[creads[header][i]] = 0
-    elif i > 0:
-      for k in dist_to_end:
-        dist_to_end[k] += int(creads[header][i])
+
+def extend_n(header, headers, creads, traversed_headers, direction):
+  dist_to_end = get_dist_to_end(header, creads, direction)
   ktmers = dist_to_end.keys()
   print len(ktmers), 'ktmers in 1-deg nhood'
 
   reads = []
   num_neighbors = []
   for k in ktmers:
-    next_read = find_extending_read_rightend(k, headers, creads, dist_to_end[k])
-    if len(next_read) != 0 and next_read not in traversed_headers and next_read not in reads:
-      reads.append(next_read)
-      num_neighbors.append(len(creads[next_read]) / 2 - 1)
+    next_read = find_extending_read(k, headers, creads, dist_to_end[k], direction)
+    if len(next_read) != 0:
+      accepted = [nr for nr in next_read if nr not in traversed_headers and nr not in reads]
+      reads += accepted
+      for nr in next_read:
+        num_neighbors.append(len(creads[nr]) / 2 - 1)
   if len(reads) != 0:
     return [x for (y, x) in sorted(zip(num_neighbors, reads), reverse = True)]
 
@@ -156,11 +160,16 @@ def extend_right_n(header, headers, creads, traversed_headers):
       dist = dist_bw_ktmers(kt, k, headers, creads)
       if dist == None:
         continue
-      new_dist_to_end[kt] = dist_to_end[k] + dist
-      next_read = find_extending_read_rightend(kt, headers, creads, new_dist_to_end[kt])
-      if len(next_read) != 0 and next_read not in traversed_headers and next_read not in reads:
-        reads.append(next_read)
-        num_neighbors.append(len(creads[next_read]) / 2 - 1)
+      if direction == 'right':
+        new_dist_to_end[kt] = dist_to_end[k] + dist
+      if direction == 'left':
+        new_dist_to_end[kt] = dist_to_end[k] - dist
+      next_read = find_extending_read(kt, headers, creads, new_dist_to_end[kt], direction)
+      if len(next_read) != 0:
+        accepted = [nr for nr in next_read if nr not in traversed_headers and nr not in reads]
+        reads += accepted
+        for nr in next_read:
+          num_neighbors.append(len(creads[nr]) / 2 - 1)
     if len(reads) != 0:
       return [x for (y, x) in sorted(zip(num_neighbors, reads), reverse = True)]
 
@@ -170,7 +179,7 @@ def extend_right_n(header, headers, creads, traversed_headers):
 
     # print new_dist_to_end
     ktmers = []
-    limit = 2000       # Don't backtrack too far
+    limit = 1000       # Don't backtrack too far
     for kt in new_ktmers.keys():
       if new_dist_to_end[kt] < limit and kt not in traversed_ktmers:
         ktmers.append(kt)
@@ -179,12 +188,32 @@ def extend_right_n(header, headers, creads, traversed_headers):
 
 
 def find_neighboring_ktmers(ktmer, headers, creads):
+  # Current speed bottleneck 12/25/14
   neighbors = []
   for h in headers[ktmer]:
     for i in range(len(creads[h])):
       if i % 2 == 1:
         neighbors.append(creads[h][i])
   return neighbors
+
+
+def get_dist_to_end(header, creads, direction):
+  dist_to_end = dict()    # Key = ktmer in read, Val = distance to end of read
+  if direction == 'right':
+    for i in range(len(creads[header])):
+      if i % 2 == 1:
+        dist_to_end[creads[header][i]] = 0
+      elif i > 0:
+        for k in dist_to_end:
+          dist_to_end[k] += int(creads[header][i])
+  if direction == 'left':
+    curr = 0
+    for i in range(len(creads[header])):
+      if i % 2 == 1:
+        dist_to_end[creads[header][i]] = curr
+      else:
+        curr += int(creads[header][i])
+  return dist_to_end
 
 
 def dist_bw_ktmers(kt1, kt2, headers, creads):
@@ -213,19 +242,34 @@ def dist_bw_ktmers(kt1, kt2, headers, creads):
     dist *= -1
   return dist
 
-def find_extending_read_rightend(ktmer, headers, creads, dist):
+
+def find_extending_read(ktmer, headers, creads, dist, direction):
   # If a read in ktmer extends past dist, return it
-  for h in headers[ktmer]:
-    curr_dist = 0
-    track = False
-    for i in range(len(creads[h])):
-      if creads[h][i] == ktmer:
-        track = True
-      if track and i % 2 == 0:
-        curr_dist += int(creads[h][i])
-    if curr_dist > dist:
-      return h
-  return ''
+  valid = []
+  if direction == 'right':
+    for h in headers[ktmer]:
+      curr_dist = 0
+      track = False
+      for i in range(len(creads[h])):
+        if creads[h][i] == ktmer:
+          track = True
+        if track and i % 2 == 0:
+          curr_dist += int(creads[h][i])
+      if curr_dist > dist:
+        valid.append(h)
+  if direction == 'left':
+    for h in headers[ktmer]:
+      curr_dist = 0
+      track = True
+      for i in range(len(creads[h])):
+        if creads[h][i] == ktmer:
+          track = False
+        if track and i % 2 == 0:
+          curr_dist += int(creads[h][i])
+      if curr_dist > dist:
+        valid.append(h)
+  return valid
+
 
 def error_correct(ec_tool, header, headers, creads, hr, rr):
   reads = []
