@@ -23,7 +23,7 @@ def main():
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
   overlap_accuracy_cutoff = 80
   overlap_length_cutoff = 200
-  num_attempts = 10
+  num_attempts = 6
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
@@ -55,7 +55,12 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
           continue
         for head in possible_heads:
           candidate_read = rr[hr.index(head)]
-          if test_overlap(candidate_read, curr_contig[-1], overlap_accuracy_cutoff, overlap_length_cutoff):
+          overlap = False
+          if direction == 'right' and test_overlap(candidate_read, curr_contig[-1], overlap_accuracy_cutoff, overlap_length_cutoff):
+            overlap = True
+          if direction == 'left' and test_overlap(curr_contig[0], candidate_read, overlap_accuracy_cutoff, overlap_length_cutoff):
+            overlap = True
+          if overlap:
             h = head
             consensus_temp = error_correct(ec_tool, head, headers, creads, hr, rr)
             if len(consensus_temp) == 0:
@@ -188,7 +193,8 @@ def extend_n(header, headers, creads, traversed_headers, direction):
 
 
 def find_neighboring_ktmers(ktmer, headers, creads):
-  # Current speed bottleneck 12/25/14
+  # Speed bottleneck 12/25/14
+  # But storing dict of all neighbors in memory is slower
   neighbors = []
   for h in headers[ktmer]:
     for i in range(len(creads[h])):
