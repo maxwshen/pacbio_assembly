@@ -24,14 +24,18 @@ def main():
   for name in os.listdir(fold):
     ec_seq_file = name
     out_file = 'km_' + ec_seq_file.translate(None, '/') + '.fasta'    
-    kmer_matching(fold + ec_seq_file, read_file, _k, cutoff, out_file)
+    kmer_matching_and_checking(fold + ec_seq_file, read_file, _k, cutoff, out_file)
   return
 
-def kmer_matching(ec_seq_file, read_file, _k, cutoff, out_file):
+def kmer_matching(ec_seq_file, read_file, _k, cutoff, file_bool = True):
   # ec_seq_file should be a fasta file with only one sequence
+  # if file is false, ec_seq_file is the sequence directly.
 
-  hs, rs = rf.read_fasta(ec_seq_file)
-  ec_seq = rs[0]
+  if file_bool:
+    hs, rs = rf.read_fasta(ec_seq_file)
+    ec_seq = rs[0]
+  else:
+    ec_seq = ec_seq_file
 
   kmers = set()
   for i in range(len(ec_seq) - _k + 1):
@@ -45,11 +49,16 @@ def kmer_matching(ec_seq_file, read_file, _k, cutoff, out_file):
     score = sum([1 if r[i:i + _k] in kmers else 0 for i in range(len(r) - _k + 1)])
     reads[h] = score
 
-  headers = []
+  filtered_heads = []
   for key in sorted(reads, key = reads.get, reverse = True):
     if reads[key] < cutoff:
       break
-    headers.append(key)
+    filtered_heads.append(key)
+
+  return filtered_heads
+
+def kmer_matching_and_checking(ec_seq_file, read_file, _k, cutoff, out_file):
+  headers = kmer_matching(ec_seq_file, read_file, _k, cutoff)
 
   print '\n' + ec_seq_file + '\n' + str(len(headers))
   get_reads_from_headers(headers, read_file, out_file)

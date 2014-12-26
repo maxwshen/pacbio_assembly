@@ -9,6 +9,7 @@ from collections import defaultdict
 
 import read_fasta as rf
 import find_read
+import kmer_matching
 
 def main():
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
@@ -23,7 +24,10 @@ def main():
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
   overlap_accuracy_cutoff = 80
   overlap_length_cutoff = 200
-  num_attempts = 6
+  num_attempts = 3
+  limit_km_times = 1
+  km_k = 15
+  km_cutoff = 10
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
@@ -42,17 +46,30 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
   for direction in ['right', 'left']:
     counter = 0
     while True:
+      # Break condition: Current header doesn't change, meaning we couldn't find any extension candidates
       counter += 1
       print 'iteration', counter, direction
       old_h = h
       stop = False
-      for i in range(num_attempts):
+      for i in range(num_attempts + limit_km_times):
         print 'Attempt', i
-        possible_heads = extend_n(h, headers, creads, traversed_headers, direction)
-        print len(possible_heads), 'candidates for extension'
-        if len(possible_heads) == 0:
-          print 'could not extend further'
-          continue
+
+        # Grab candidates via nhood extension or kmer matching
+        if i < num_attempts:
+          # Try nhood extension num_attempt times, then try kmer matching if still no extension
+          possible_heads = extend_n(h, headers, creads, traversed_headers, direction)
+          print len(possible_heads), 'candidates for extension'
+          if len(possible_heads) == 0:
+            print 'could not extend further'
+            continue
+        else:
+          print 'Trying k-mer matching'
+          if direction == 'right':
+            possible_heads = kmer_matching.kmer_matching(curr_contig[-1], reads_file, km_k, km_cutoff, file_bool = False)
+          if direction == 'left':
+            possible_heads = kmer_matching.kmer_matching(curr_contig[0], reads_file, km_k, km_cutoff, file_bool = False)
+
+        # Test candidates for overlap
         for head in possible_heads:
           candidate_read = rr[hr.index(head)]
           overlap = False
@@ -96,6 +113,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
 
 
 def test_overlap(seq1, seq2, acc_cutoff, len_cutoff):
+  dist_from_end = 200
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
   blasr_options = '-bestn 1 -m 1'   # Concise output
 
@@ -117,11 +135,13 @@ def test_overlap(seq1, seq2, acc_cutoff, len_cutoff):
   end_pos_r1 = total_len_r1 - end_align_r1
   beg_pos_r2 = int(status.split()[9])
   print 'accuracy:', accuracy
-  dist_from_end = 200
   return accuracy >= acc_cutoff and length > len_cutoff and beg_pos_r2 < dist_from_end and end_pos_r1 < dist_from_end
 
 
 def extend_n(header, headers, creads, traversed_headers, direction):
+  leniency = 100    # If 1-degree nhood fails, we accept a read that extends beyond border - leniency
+  backtrack_limit = 1000       # Don't backtrack too far
+  
   dist_to_end = get_dist_to_end(header, creads, direction)
   ktmers = dist_to_end.keys()
   print len(ktmers), 'ktmers in 1-deg nhood'
@@ -140,7 +160,7 @@ def extend_n(header, headers, creads, traversed_headers, direction):
 
   # Try finding a read that comes close to passing the current read
   for k in dist_to_end.keys():
-    dist_to_end[k] -= 100
+    dist_to_end[k] -= leniency
 
   print 'trying n-degree nhood extension'
   traversed_ktmers = set(ktmers)
@@ -184,9 +204,8 @@ def extend_n(header, headers, creads, traversed_headers, direction):
 
     # print new_dist_to_end
     ktmers = []
-    limit = 1000       # Don't backtrack too far
     for kt in new_ktmers.keys():
-      if new_dist_to_end[kt] < limit and kt not in traversed_ktmers:
+      if new_dist_to_end[kt] < backtrack_limit and kt not in traversed_ktmers:
         ktmers.append(kt)
 
     dist_to_end = new_dist_to_end
