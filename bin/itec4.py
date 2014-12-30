@@ -18,7 +18,80 @@ def main():
   ec_tool = '/home/mshen/research/bin/error_correction_1218.sh'
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
-  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool)
+  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool)
+  ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
+
+
+def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
+  def within(beg1, end1, beg2, end2):
+    # Test if 2 is in 1
+    if beg1 < beg2 < end1:
+      return True
+    if beg1 < end2 < end1:
+      return True
+    return False
+
+  def expand(beg1, end1, beg2, end2):
+    newbeg1 = beg1
+    newend1 = end1
+    if beg2 < beg1:
+      newbeg1 = beg2
+    if end2 > end1:
+      newend1 = end2
+    return [newbeg1, newend1]
+
+  def within_all(clusters):
+    for i in range(len(clusters)):
+      for j in range(len(clusters)):
+        if i != j:
+          if within(clusters[i][0], clusters[i][1], clusters[j][0], clusters[j][1]):
+            return i, j
+    return None
+
+  e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
+  headers = build_headers_dict(ktmer_headers_file)
+  hr, rr = rf.read_fasta(reads_file)
+  blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
+  blasr_options = '-bestn 1 -m 1'   # Concise output
+
+  for kt in headers.keys():
+    print kt
+    clusters = []
+    for h in headers[kt]:
+      tempfile = 'temp.fasta'
+      with open(tempfile, 'w') as f:
+        f.write('>1\n' + rr[hr.index(h)]) 
+      status = commands.getstatusoutput(blasr_exe + ' ' + tempfile + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+      beg = int(status.split()[6])
+      end = int(status.split()[7])
+      found = False
+      for c in clusters:
+        if within(c[0], c[1], beg, end):
+          found = True
+          new = expand(c[0], c[1], beg, end)
+          c[0] = new[0]
+          c[1] = new[1]
+          c[2] += 1
+      if not found:
+        clusters.append([beg, end, 1])
+      # print clusters, beg, end
+
+    # Do final clustering of clusters
+    while True:
+      found = False
+      if within_all(clusters) is not None:
+        found = True
+        i, j = within_all(clusters)
+        new = expand(clusters[i][0], clusters[i][1], clusters[j][0], clusters[j][1])
+        clusters[i][0] = new[0]
+        clusters[i][1] = new[1]
+        clusters[i][2] += clusters[j][2]
+        clusters.remove(clusters[j])
+      if not found:
+        break
+
+    for c in clusters:
+      print ' '.join([str(s) for s in c])
 
 
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):

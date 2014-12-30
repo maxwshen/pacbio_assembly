@@ -14,6 +14,27 @@ def main():
   assembly(reads_file, genome_file, _k, _t, gv_file)
   return
 
+def dist_bw_ktmers_in_genome(ktmers, _k, genome_file, out_file):
+  genome = ''
+  with open(genome_file) as f:
+    for i, line in enumerate(f):
+      if i > 0:
+        genome += line.strip()
+
+  dists = []
+  curr = 0
+  for i in range(len(genome) - _k + 1):
+    curr += 1
+    if genome[i : i + _k] in ktmers:
+      dists.append(curr)
+      curr = 0
+
+  dists.append(curr)
+  with open(out_file, 'w') as f:
+    f.write('\n'.join([str(s) for s in dists]))
+  return
+
+
 def assembly(reads, genome_file, _k, _t, gvname):
   # Given input reads in fasta format, assemble the genome
   # Procedure:
@@ -25,6 +46,10 @@ def assembly(reads, genome_file, _k, _t, gvname):
   print 'Finding kt-mers...', 
   ktmers = findKTmers(reads, _k, _t)
   print '... Done.', datetime.datetime.now()
+
+  out_file = 'dists_22.4_genome.txt'
+  dist_bw_ktmers_in_genome(ktmers, _k, genome_file, out_file)
+  sys.exit(0)
 
   print 'Converting reads...'
   cReads = convertReads(reads, ktmers, _k)

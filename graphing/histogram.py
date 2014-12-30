@@ -31,12 +31,12 @@ def plot_1group(input_file):
   step = 1
   binrange = range(0, largest + step, step)
 
-  # plt.hist(data, color = 'green', bins = binrange, log = True)
-  plt.hist(data, color = 'green', bins = binrange)
+  plt.hist(data, color = 'green', bins = binrange, log = True)
+  # plt.hist(data, color = 'green', bins = binrange)
 
 
-  plt.xlabel('Percent Accuracy')
-  plt.ylabel('Quantity of Reads')
+  plt.xlabel('Dist b/w consecutive 22,4-mers')
+  plt.ylabel('Quantity')
   plt.show()
 
 def plot_2groups(input_file):
