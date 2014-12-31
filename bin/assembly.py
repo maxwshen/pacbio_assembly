@@ -47,6 +47,7 @@ def assembly(reads, genome_file, _k, _t, gvname):
   ktmers = findKTmers(reads, _k, _t)
   print '... Done.', datetime.datetime.now()
 
+  # Find distance bw kt-mers for figures
   out_file = 'dists_22.4_genome.txt'
   dist_bw_ktmers_in_genome(ktmers, _k, genome_file, out_file)
   sys.exit(0)
