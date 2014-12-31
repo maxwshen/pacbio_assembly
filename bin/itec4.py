@@ -116,18 +116,20 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
   contigs = []
 
   num_contig_attempts = 400
-  for i in range(num_contig_attempts):
-    curr_ktmer = ktmers[i]
+  for m in range(num_contig_attempts):
+    curr_ktmer = ktmers[m]
 
     h = get_read_with_most_neighbors(curr_ktmer, headers, creads)
     curr_contig = [error_correct(ec_tool, h, headers, creads, hr, rr)]
     curr_contig_headers = [h]
     traversed_headers = [h]
+    master_h = h
 
     # MAIN LOOP
     for direction in ['right', 'left']:
       counter = 0
       limit_km_times = limit_km_times_total
+      h = master_h
       while True:
         # Break condition: Current header doesn't change, meaning we couldn't find any extension candidates
         counter += 1
@@ -190,14 +192,14 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
     blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
     blasr_options = '-bestn 1 -m 1'   # Concise output
     contigs_fold = '/home/mshen/research/contigs/'
-    contig_file = contigs_fold + 'contig_' + str(i) + '.fasta'
-    contig_result = contigs_fold + 'contig_' + str(i) + 'results.fasta'
-    for i in range(len(curr_contig)):
-      if curr_contig[i] != '':
-        contig += '>' + curr_contig_headers[i] + '\n' + curr_contig[i] + '\n'
+    contig_file = contigs_fold + 'contig_' + str(m) + '.fasta'
+    contig_result = contigs_fold + 'contig_' + str(m) + 'results.fasta'
+    for j in range(len(curr_contig)):
+      if curr_contig[j] != '':
+        contig += '>' + curr_contig_headers[j] + '\n' + curr_contig[j] + '\n'
     with open(contig_file, 'w') as f:
       f.write(contig)
-    status = commands.getstatusoutput(blasr_exe + ' ' + contig_file +' ' + e_coli_genome + ' ' + blasr_options + ' > ' + contig_file)[1]
+    status = commands.getstatusoutput(blasr_exe + ' ' + contig_file +' ' + e_coli_genome + ' ' + blasr_options + ' > ' + contig_result)[1]
 
 
 def test_overlap(base, candidate, acc_cutoff, len_cutoff, direction, relaxed = False):
