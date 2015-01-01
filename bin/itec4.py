@@ -18,11 +18,13 @@ def main():
   ec_tool = '/home/mshen/research/bin/error_correction_1218.sh'
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
-  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool)
-  # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
+  temp_sig = str(datetime.datetime.now()).split()[1]
+
+  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, temp_sig)
+  # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file, temp_sig)
 
 
-def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
+def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file, temp_sig):
   # Finds read clusters (aligned to the genome) for all kt-mers
   def within(beg1, end1, beg2, end2):
     # Test if 2 is in 1
@@ -59,7 +61,7 @@ def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
     print kt
     clusters = []
     for h in headers[kt]:
-      tempfile = 'temp.fasta'
+      tempfile = 'temp' + temp_sig + '.fasta'
       with open(tempfile, 'w') as f:
         f.write('>1\n' + rr[hr.index(h)]) 
       status = commands.getstatusoutput(blasr_exe + ' ' + tempfile + ' ' + e_coli_genome + ' ' + blasr_options)[1]
@@ -98,14 +100,39 @@ def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
 
     # May want to write a sister function that doesn't rely on the genome
 
+def verify_against_candidates(h, candidate_headers, hr, rr, support_cutoff, support_ratio, temp_sig):
+  blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
+  blasr_options = '-bestn 1 -m 1'   # Concise output
 
-def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
+  temp_file = 'temp_h_' + temp_sig + '.fasta'
+  with open(temp_file, 'w') as f:
+    f.write(h + '\n' + rr[hr.index(h)])
+
+  support = 0
+  temp_chfile = 'temp_ch_' + temp_sig + '.fasta'
+  for ch in candidate_headers:
+    with open(temp_chfile, 'w') as f:
+      f.write(ch + '\n' + rr[hr.index(ch)])
+    status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + temp_chfile + ' ' + blasr_options)[1]
+    if len(status) != 0:
+      acc = float(status.split()[5])
+      if acc > support_cutoff:
+        support += 1
+
+  support_pct = float(support) / float(len(candidate_headers))
+  # print 'support found:', support_pct
+  return support_pct > support_ratio
+
+def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, temp_sig):
+  contigs_fold = '/home/mshen/research/contigs3/'  
   overlap_accuracy_cutoff = 75    # .
   overlap_length_cutoff = 200     # .
   num_attempts = 3                # Number of times to try nhood extension.
   limit_km_times_total = 1        # How many times to attempt k-mer matching extension per direction
   km_k = 15                       # .
   km_cutoff = 10                  # .
+  support_cutoff = 80             # required support for a chosen candidate read from other candidates
+  support_ratio = .3              # required support for a chosen candidate read from other candidates
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
@@ -117,11 +144,16 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
 
   num_contig_attempts = 400
   for m in range(num_contig_attempts):
+    print '\n' + str(datetime.datetime.now())
     curr_ktmer = ktmers[m]
 
     h = get_read_with_most_neighbors(curr_ktmer, headers, creads)
-    curr_contig = [error_correct(ec_tool, h, headers, creads, hr, rr)]
-    curr_contig_headers = [h]
+    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/30241/533_8934/0_8401'
+    print 'STARTING HEADER:\n', h
+    curr_contig = [error_correct(ec_tool, h, headers, creads, hr, rr, temp_sig)]
+    print 'STARTING AT',                        # testing
+    find_genomic_position(curr_contig[0], temp_sig)       # testing
+    curr_contig_headers = [h + 'START']
     traversed_headers = [h]
     master_h = h
 
@@ -143,7 +175,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
           # Grab candidates via nhood extension or kmer matching
           if i < num_attempts:
             # Try nhood extension num_attempt times, then try kmer matching if still no extension
-            possible_heads = extend_n(h, headers, creads, traversed_headers, direction)
+            possible_heads = extend_n(h, headers, creads, traversed_headers, direction, hr, rr, support_cutoff, support_ratio, temp_sig)
             print len(possible_heads), 'candidates for extension'
             if len(possible_heads) == 0:
               print 'could not extend further'
@@ -162,9 +194,14 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
           # Test candidates for overlap
           for head in possible_heads:
             candidate_read = rr[hr.index(head)]
-            if test_overlap(candidate_read, curr_contig[-1], overlap_accuracy_cutoff, overlap_length_cutoff, direction, relaxed = km):
+            if len(possible_heads) < 50:                  # testing
+              print head,                                 # testing
+              find_genomic_position(candidate_read, temp_sig)       # testing
+            if test_overlap(candidate_read, curr_contig[-1], overlap_accuracy_cutoff, overlap_length_cutoff, direction, temp_sig, relaxed = km):
               h = head
-              consensus_temp = error_correct(ec_tool, head, headers, creads, hr, rr)
+              consensus_temp = error_correct(ec_tool, head, headers, creads, hr, rr, temp_sig)
+              print 'SUCCESS!',                         # testing 
+              find_genomic_position(consensus_temp, temp_sig)     # testing
               if len(consensus_temp) == 0:
                 print 'failed to error correct'
                 continue
@@ -191,7 +228,6 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
     e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
     blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
     blasr_options = '-bestn 1 -m 1'   # Concise output
-    contigs_fold = '/home/mshen/research/contigs/'
     contig_file = contigs_fold + 'contig_' + str(m) + '.fasta'
     contig_result = contigs_fold + 'contig_' + str(m) + 'results.fasta'
     for j in range(len(curr_contig)):
@@ -202,7 +238,24 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
     status = commands.getstatusoutput(blasr_exe + ' ' + contig_file +' ' + e_coli_genome + ' ' + blasr_options + ' > ' + contig_result)[1]
 
 
-def test_overlap(base, candidate, acc_cutoff, len_cutoff, direction, relaxed = False):
+def find_genomic_position(read, temp_sig):
+  e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
+  blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
+  blasr_options = '-bestn 1 -m 1'   # Concise output
+  temp_file = 'temp_read' + temp_sig + '.fasta'
+  with open(temp_file, 'w') as f:
+    f.write('>1\n' + read)
+  status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + e_coli_genome + ' ' + blasr_options)[1]
+
+  if len(status) > 0:
+    beg = int(status.split()[6])
+    end = int(status.split()[7])
+    print '\taligned to:', beg, end
+  else:
+    print '\tFAILED ALIGNMENT'
+
+
+def test_overlap(base, candidate, acc_cutoff, len_cutoff, direction, temp_sig, relaxed = False):
   # Tests that seq1 is before seq2
   if direction == 'right':
     seq1 = base
@@ -214,8 +267,8 @@ def test_overlap(base, candidate, acc_cutoff, len_cutoff, direction, relaxed = F
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
   blasr_options = '-bestn 1 -m 1'   # Concise output
 
-  temps1 = 'temp_seq1.fasta'
-  temps2 = 'temp_seq2.fasta'
+  temps1 = 'temp_seq1' + temp_sig + '.fasta'
+  temps2 = 'temp_seq2' + temp_sig + '.fasta'
   with open(temps1, 'w') as f:
     f.write('>1\n' + seq1)
   with open(temps2, 'w') as f:
@@ -246,7 +299,7 @@ def test_overlap(base, candidate, acc_cutoff, len_cutoff, direction, relaxed = F
     return accuracy >= acc_cutoff and length > len_cutoff
 
 
-def extend_n(header, headers, creads, traversed_headers, direction):
+def extend_n(header, headers, creads, traversed_headers, direction, hr, rr, support_cutoff, support_ratio, temp_sig):
   leniency = 100    # If 1-degree nhood fails, we accept a read that extends beyond border - leniency
   backtrack_limit = 1000       # Don't backtrack too far
   num_kmers_cutoff = 500       # If we start considering this many kt-mers in nhood extension, stop.
@@ -258,7 +311,7 @@ def extend_n(header, headers, creads, traversed_headers, direction):
   reads = []
   num_neighbors = []
   for k in ktmers:
-    next_read = find_extending_read(k, headers, creads, dist_to_end[k], direction)
+    next_read = find_extending_read(k, headers, hr, rr, support_cutoff, support_ratio, temp_sig)
     if len(next_read) != 0:
       accepted = [nr for nr in next_read if nr not in traversed_headers and nr not in reads]
       reads += accepted
@@ -301,7 +354,7 @@ def extend_n(header, headers, creads, traversed_headers, direction):
         new_dist_to_end[kt] = dist_to_end[k] + dist
       if direction == 'left':
         new_dist_to_end[kt] = dist_to_end[k] - dist
-      next_read = find_extending_read(kt, headers, creads, new_dist_to_end[kt], direction)
+      next_read = find_extending_read(k, headers, hr, rr, support_cutoff, support_ratio, temp_sig)
       if len(next_read) != 0:
         accepted = [nr for nr in next_read if nr not in traversed_headers and nr not in reads]
         reads += accepted
@@ -380,35 +433,20 @@ def dist_bw_ktmers(kt1, kt2, headers, creads):
   return dist
 
 
-def find_extending_read(ktmer, headers, creads, dist, direction):
+def find_extending_read(ktmer, headers, hr, rr, support_cutoff, support_ratio, temp_sig):
   # If a read in ktmer extends past dist, return it
+  # Modified 12/31/14: Do not check if read extends past dist, instead
+  # check this to the last error corrected portion.
+  # This is because sometimes the EC consensus can be much shorter than
+  # the actual read, and we just want a read that extends past the EC consensus,
+  # not the current read we perform 1-deg nhood extension on.
   valid = []
-  if direction == 'right':
-    for h in headers[ktmer]:
-      curr_dist = 0
-      track = False
-      for i in range(len(creads[h])):
-        if creads[h][i] == ktmer:
-          track = True
-        if track and i % 2 == 0:
-          curr_dist += int(creads[h][i])
-      if curr_dist > dist:
-        valid.append(h)
-  if direction == 'left':
-    for h in headers[ktmer]:
-      curr_dist = 0
-      track = True
-      for i in range(len(creads[h])):
-        if creads[h][i] == ktmer:
-          track = False
-        if track and i % 2 == 0:
-          curr_dist += int(creads[h][i])
-      if curr_dist > dist:
-        valid.append(h)
+  if verify_against_candidates(headers[ktmer][0], headers[ktmer][1:], hr, rr, support_cutoff, support_ratio, temp_sig):
+    valid = headers[ktmer]
   return valid
 
 
-def error_correct(ec_tool, header, headers, creads, hr, rr):
+def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig):
   reads = []
   collected_h = set()
   ktmers = []
@@ -427,11 +465,11 @@ def error_correct(ec_tool, header, headers, creads, hr, rr):
     reads.append(rr[hr.index(ch)])
   print len(reads) / 2, 'reads used for correction'
 
-  temp_orig_file = 'temp_orig.fasta'
+  temp_orig_file = 'temp_orig' + temp_sig + '.fasta'
   with open(temp_orig_file, 'w') as f:
     f.write(header + '\n' + rr[hr.index(header)])
 
-  temp_nhood_file = 'temp_nhood.fasta'
+  temp_nhood_file = 'temp_nhood' + temp_sig + '.fasta'
   with open(temp_nhood_file, 'w') as f:
     f.write('\n'.join(reads))
 

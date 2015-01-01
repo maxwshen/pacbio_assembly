@@ -12,7 +12,21 @@ import random
 
 def main():
   input_file = sys.argv[1]
-  plot_1group(input_file)
+  # plot_1group(input_file)
+  plot_y_axis(input_file)
+
+def plot_y_axis(input_file):
+  fileh = open(input_file, 'r')
+  data = fileh.readlines()
+
+  x1 = [i for i in range(len(data))]
+  y1 = data
+
+  plt.plot(x1, y1, linewidth = 1.0)
+  plt.xlabel('Genome positions')
+  plt.ylabel('')
+  plt.show()
+
 
 def plot_1group(input_file):
   x1 = []

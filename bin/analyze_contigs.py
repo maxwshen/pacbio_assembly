@@ -1,9 +1,12 @@
+# Quantifies the contigs found via itec4, given a folder containing contig files and contig results files.
+# Expected file names: contig_78results.fasta
+
 import sys, string, datetime, random, copy, os, commands, fnmatch, numpy
 
 from collections import defaultdict
 
 def main():
-  input_folder = '/home/mshen/research/contigs/'
+  input_folder = '/home/mshen/research/contigs2/'
   analyze_contigs(input_folder)
 
 
@@ -28,8 +31,13 @@ def analyze_contigs(fold):
 
   lengths = []
   num_jumps = 0
+  num_single_contigs = 0
+  total_num = 0
+  single_lengths = []
+  covered = [0] * 4700000
   for fil in os.listdir(fold):
     if fnmatch.fnmatch(fil, '*results*'):
+      total_num += 1
       with open(fold + fil) as f:
         lines = f.readlines()
 
@@ -45,15 +53,38 @@ def analyze_contigs(fold):
         else:
           contigs.append([beg, end, 1])
 
-      print fil, '\n', contigs
+      print fil, '\n  ', contigs
 
       best = sorted(contigs, key = lambda l: l[2], reverse = True)[0]
+      print '  ', best[1] - best[0], best
       lengths.append(best[1] - best[0])
       num_jumps += len(contigs) - 1
+      if len(contigs) == 1:
+        num_single_contigs += 1
+        single_lengths.append(best[1] - best[0])
+      for i in range(best[0], best[1]):
+        covered[i] = 1
 
-  print numpy.mean(lengths), numpy.std(lengths)
+  print '\nAvg. contig len:', numpy.mean(lengths), ' Stdev:', numpy.std(lengths)
+  print 'Single contig avg len:', numpy.mean(single_lengths), ' Stdev:', numpy.std(single_lengths)
   print 'Num. jumps:', num_jumps
+  print 'Num. single contigs:', num_single_contigs
+  print 'Total num. contigs:', total_num
+  print 'Base pairs covered:', sum(covered)
 
+
+
+  coverage_outfile = 'out_contig_genome_coverage.out'
+  # with open(coverage_outfile, 'w') as f:
+  #   f.write('\n'.join([str(s) for s in covered]))
+
+  len_outfile = 'out_contig_lengths_all.out'
+  with open(len_outfile, 'w') as f:
+    f.write('\n'.join([str(s) for s in lengths]))
+
+  len_outfile_single = 'out_contig_lengths_single.out'
+  with open(len_outfile_single, 'w') as f:
+    f.write('\n'.join([str(s) for s in single_lengths]))
 
 
 if __name__ == '__main__':

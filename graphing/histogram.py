@@ -27,15 +27,15 @@ def plot_1group(input_file):
       data.append(float(words[0]))
 
   largest = max(data)
-  # step = int(np.log2(largest))
-  step = 1
+  step = int(np.log2(largest))
+  # step = 1
   binrange = range(0, largest + step, step)
 
-  plt.hist(data, color = 'green', bins = binrange, log = True)
-  # plt.hist(data, color = 'green', bins = binrange)
+  # plt.hist(data, color = 'green', bins = binrange, log = True)
+  plt.hist(data, color = 'green', bins = binrange)
 
 
-  plt.xlabel('Dist b/w consecutive 22,4-mers')
+  plt.xlabel('Lengths of all single whole contigs')
   plt.ylabel('Quantity')
   plt.show()
 
