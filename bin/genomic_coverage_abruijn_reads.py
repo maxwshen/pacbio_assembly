@@ -4,9 +4,25 @@ from collections import defaultdict
 import read_fasta as rf
 
 def main():
-  genomic_coverage_abruijn_reads()
+  # genomic_coverage_abruijn_reads()
+  get_coverage()
   return
 
+def get_coverage():
+  inp = '/home/mshen/research/nohup_gen_coverage_abruijn_reads_22.4.out'
+  with open(inp) as f:
+    aligns = f.readlines()
+  genome = [0] * 4700000
+  for a in aligns:
+    beg = int(a.split()[6])
+    end = int(a.split()[7])
+    for i in range(beg, end):
+      genome[i] += 1
+
+  out_file = 'out_abruijn_coverage_22.4.out'
+  with open(out_file, 'w') as f:
+    f.write('\n'.join([str(s) for s in genome]))
+  return
 
 def genomic_coverage_abruijn_reads():
   e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
