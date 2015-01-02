@@ -101,6 +101,7 @@ def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file, temp_sig):
     # May want to write a sister function that doesn't rely on the genome
 
 def verify_against_candidates(h, candidate_headers, hr, rr, support_cutoff, support_ratio, support_len, temp_sig):
+  dist_to_end = 100
   if len(candidate_headers) == 0:
     return True
 
@@ -122,28 +123,44 @@ def verify_against_candidates(h, candidate_headers, hr, rr, support_cutoff, supp
       acc = float(status.split()[5])
       beg_align_r1 = int(status.split()[6])
       end_align_r1 = int(status.split()[7])
+      total_len_r1 = int(status.split()[8])
+      end_pos_r1 = total_len_r1 - end_align_r1
       beg_align_r2 = int(status.split()[9])
       end_align_r2 = int(status.split()[10])
+      total_len_r2 = int(status.split()[11])
+      end_pos_r2 = total_len_r2 - end_align_r2
       length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2     # Avg alignment length
 
+      is_support = False
       if acc > support_cutoff and length > support_len:
-        support += 1
+        is_support = True
+      if end_pos_r1 < dist_to_end and beg_align_r2 < dist_to_end:
+        is_support = True
+      if end_pos_r2 < dist_to_end and beg_align_r1 < dist_to_end:
+        is_support = True
+      if end_pos_r1 < dist_to_end and beg_align_r1 < dist_to_end:
+        is_support = True
+      if end_pos_r2 < dist_to_end and beg_align_r2 < dist_to_end:
+        is_support = True
+
+      if is_support:
+          support += 1
 
   support_pct = float(support) / float(len(candidate_headers))
   print 'support found:', support_pct         # TESTING
   return support_pct >= support_ratio
 
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, temp_sig):
-  contigs_fold = '/home/mshen/research/contigs_temp/'  
+  contigs_fold = '/home/mshen/research/contigs4/'  
   overlap_accuracy_cutoff = 75    # .
   overlap_length_cutoff = 300     # .
   num_attempts = 2                # Number of times to try nhood extension.
-  limit_km_times_total = 1        # How many times to attempt k-mer matching extension per direction
+  limit_km_times_total = 4        # How many times to attempt k-mer matching extension per direction
   km_k = 15                       # .
-  km_cutoff = 10                  # .
-  support_cutoff = 70             # Required support for a chosen candidate read from other candidates
-  support_ratio = 0.3             # Required support for a chosen candidate read from other candidates
-  support_len = 200               # Required bp overlap for support
+  km_cutoff = 20                  # .
+  support_cutoff = 70             # Required pct accuracy for support to count
+  support_ratio = 0.5             # Required support for a chosen candidate read from other candidates
+  support_len = 1000              # Required bp overlap for support
   support_dist_cutoff = 50        # Base pair length, acceptable support distance from end of consensus
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
@@ -160,7 +177,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, temp_sig)
     curr_ktmer = ktmers[m]
 
     h = get_read_with_most_neighbors(curr_ktmer, headers, creads)
-    h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/79757/0_7466/0_7466'
+    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/25524/0_5702/0_5702'  # jump ex
+    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/66451/0_6519/0_6519'    # normal ex
+    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/22681/0_4859/0_4859'  # right before jump ex
+    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/1326/0_5814/0_5814' # a little farther from jump ex
     print 'STARTING HEADER:\n', h
     curr_contig = [error_correct(ec_tool, h, headers, creads, hr, rr, temp_sig)]
     print 'STARTING AT',                        # testing
@@ -189,7 +209,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, temp_sig)
           # Grab candidates via nhood extension or kmer matching
           if i < num_attempts:
             # Try nhood extension num_attempt times, then try kmer matching if still no extension
-            possible_heads = extend_n(h, headers, creads, traversed_headers, direction, hr, rr, support_cutoff, support_ratio, temp_sig)
+            possible_heads = extend_n(h, headers, creads, traversed_headers, direction, hr, rr, support_cutoff, support_ratio, support_len, temp_sig)
             print len(possible_heads), 'candidates for extension'
             if len(possible_heads) == 0:
               print 'could not extend further'
@@ -234,8 +254,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, temp_sig)
                 curr_contig[0] = curr_contig[0][farthest_support[0] : ]
           print len(good_candidates), 'reads passed overlap filter'
 
-          for gc in good_candidates:                                # testing
-            find_genomic_position(rr[hr.index(gc)], temp_sig)       # testing
+          # for gc in good_candidates:                                # testing
+            # find_genomic_position(rr[hr.index(gc)], temp_sig)       # testing
 
           # Filter candidates by their support for each other
           filtered_good_candidates = []
@@ -258,7 +278,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, temp_sig)
 
           # Once we choose a particular candidate
           h = best_head
-          consensus_temp = error_correct(ec_tool, head, headers, creads, hr, rr, temp_sig)
+          print 'New header:', h
+          consensus_temp = error_correct(ec_tool, h, headers, creads, hr, rr, temp_sig)
           print 'SUCCESS!',                         # testing 
           find_genomic_position(consensus_temp, temp_sig)     # testing
           if len(consensus_temp) == 0:
@@ -320,7 +341,7 @@ def test_overlap(seq1, seq2, acc_cutoff, len_cutoff, direction, temp_sig, farthe
   # Tests that seq1 is after seq2
   # farthest_support is a list that will contain 1 element,
   #   the distance from the end (depending on direction) of the farthest support
-  dist_from_end = 200
+  dist_from_end = 50
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
   blasr_options = '-bestn 1 -m 1'   # Concise output
 
@@ -362,6 +383,8 @@ def test_overlap(seq1, seq2, acc_cutoff, len_cutoff, direction, temp_sig, farthe
 
   if not relaxed:
     if direction == 'right':
+      # if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 and beg_align_r2 < dist_from_end:
+        # print status                    # TESTING
       return accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 and beg_align_r2 < dist_from_end
     if direction == 'left':
       return accuracy >= acc_cutoff and length > len_cutoff and beg_align_r2 < dist_from_end and beg_align_r1 > beg_align_r2 and end_pos_r1 < dist_from_end
@@ -369,7 +392,7 @@ def test_overlap(seq1, seq2, acc_cutoff, len_cutoff, direction, temp_sig, farthe
     return accuracy >= acc_cutoff and length > len_cutoff
 
 
-def extend_n(header, headers, creads, traversed_headers, direction, hr, rr, support_cutoff, support_ratio, temp_sig):
+def extend_n(header, headers, creads, traversed_headers, direction, hr, rr, support_cutoff, support_ratio, support_len, temp_sig):
   leniency = 100    # If 1-degree nhood fails, we accept a read that extends beyond border - leniency
   backtrack_limit = 1000       # Don't backtrack too far
   num_kmers_cutoff = 500       # If we start considering this many kt-mers in nhood extension, stop.
@@ -381,7 +404,7 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr, supp
   reads = []
   num_neighbors = []
   for k in ktmers:
-    next_read = find_extending_read(k, headers, hr, rr, support_cutoff, support_ratio, temp_sig)
+    next_read = find_extending_read(k, headers, hr, rr, support_cutoff, support_ratio, support_len, temp_sig)
     if len(next_read) != 0:
       accepted = [nr for nr in next_read if nr not in traversed_headers and nr not in reads]
       reads += accepted
@@ -424,7 +447,7 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr, supp
         new_dist_to_end[kt] = dist_to_end[k] + dist
       if direction == 'left':
         new_dist_to_end[kt] = dist_to_end[k] - dist
-      next_read = find_extending_read(k, headers, hr, rr, support_cutoff, support_ratio, temp_sig)
+      next_read = find_extending_read(k, headers, hr, rr, support_cutoff, support_ratio, support_len, temp_sig)
       if len(next_read) != 0:
         accepted = [nr for nr in next_read if nr not in traversed_headers and nr not in reads]
         reads += accepted
@@ -503,7 +526,7 @@ def dist_bw_ktmers(kt1, kt2, headers, creads):
   return dist
 
 
-def find_extending_read(ktmer, headers, hr, rr, support_cutoff, support_ratio, temp_sig):
+def find_extending_read(ktmer, headers, hr, rr, support_cutoff, support_ratio, support_len, temp_sig):
   # If a read in ktmer extends past dist, return it
   # Modified 12/31/14: Do not check if read extends past dist, instead
   # check this to the last error corrected portion.
