@@ -6,7 +6,7 @@ import sys, string, datetime, random, copy, os, commands, fnmatch, numpy
 from collections import defaultdict
 
 def main():
-  input_folder = '/home/mshen/research/contigs2/'
+  input_folder = '/home/mshen/research/' + sys.argv[1] + '/'
   analyze_contigs(input_folder)
 
 
