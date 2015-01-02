@@ -13,9 +13,13 @@ def main():
 def analyze_contigs(fold):
   def within(beg1, end1, beg2, end2):
     # Test if 2 is in 1
-    if beg1 < beg2 < end1:
+    if beg1 <= beg2 <= end1:
       return True
-    if beg1 < end2 < end1:
+    if beg1 <= end2 <= end1:
+      return True
+    if beg1 <= beg2 <= end2 <= end1:
+      return True
+    if beg2 <= beg1 <= end1 <= end2:
       return True
     return False
 
