@@ -100,7 +100,10 @@ def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file, temp_sig):
 
     # May want to write a sister function that doesn't rely on the genome
 
-def verify_against_candidates(h, candidate_headers, hr, rr, support_cutoff, support_ratio, temp_sig):
+def verify_against_candidates(h, candidate_headers, hr, rr, support_cutoff, support_ratio, support_len, temp_sig):
+  if len(candidate_headers) == 0:
+    return True
+
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
   blasr_options = '-bestn 1 -m 1'   # Concise output
 
@@ -114,25 +117,34 @@ def verify_against_candidates(h, candidate_headers, hr, rr, support_cutoff, supp
     with open(temp_chfile, 'w') as f:
       f.write(ch + '\n' + rr[hr.index(ch)])
     status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + temp_chfile + ' ' + blasr_options)[1]
+    # print status                            # TESTING
     if len(status) != 0:
       acc = float(status.split()[5])
-      if acc > support_cutoff:
+      beg_align_r1 = int(status.split()[6])
+      end_align_r1 = int(status.split()[7])
+      beg_align_r2 = int(status.split()[9])
+      end_align_r2 = int(status.split()[10])
+      length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2     # Avg alignment length
+
+      if acc > support_cutoff and length > support_len:
         support += 1
 
   support_pct = float(support) / float(len(candidate_headers))
-  # print 'support found:', support_pct
-  return support_pct > support_ratio
+  print 'support found:', support_pct         # TESTING
+  return support_pct >= support_ratio
 
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, temp_sig):
-  contigs_fold = '/home/mshen/research/contigs3/'  
+  contigs_fold = '/home/mshen/research/contigs_temp/'  
   overlap_accuracy_cutoff = 75    # .
-  overlap_length_cutoff = 200     # .
-  num_attempts = 3                # Number of times to try nhood extension.
+  overlap_length_cutoff = 300     # .
+  num_attempts = 2                # Number of times to try nhood extension.
   limit_km_times_total = 1        # How many times to attempt k-mer matching extension per direction
   km_k = 15                       # .
   km_cutoff = 10                  # .
-  support_cutoff = 80             # required support for a chosen candidate read from other candidates
-  support_ratio = .3              # required support for a chosen candidate read from other candidates
+  support_cutoff = 70             # Required support for a chosen candidate read from other candidates
+  support_ratio = 0.3             # Required support for a chosen candidate read from other candidates
+  support_len = 200               # Required bp overlap for support
+  support_dist_cutoff = 50        # Base pair length, acceptable support distance from end of consensus
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
@@ -148,14 +160,15 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, temp_sig)
     curr_ktmer = ktmers[m]
 
     h = get_read_with_most_neighbors(curr_ktmer, headers, creads)
-    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/30241/533_8934/0_8401'
+    h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/79757/0_7466/0_7466'
     print 'STARTING HEADER:\n', h
     curr_contig = [error_correct(ec_tool, h, headers, creads, hr, rr, temp_sig)]
     print 'STARTING AT',                        # testing
     find_genomic_position(curr_contig[0], temp_sig)       # testing
     curr_contig_headers = [h + 'START']
-    traversed_headers = [h]
     master_h = h
+    master_traversed_headers = [h]
+
 
     # MAIN LOOP
     for direction in ['right', 'left']:
@@ -167,10 +180,11 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, temp_sig)
         counter += 1
         print 'iteration', counter, direction
         old_h = h
-        stop = False
+        temp_traversed_headers = []
         for i in range(num_attempts + limit_km_times):
-          print 'Attempt', i
+          print 'Attempt', i                                            # testing
           km = False
+          traversed_headers = master_traversed_headers + temp_traversed_headers
 
           # Grab candidates via nhood extension or kmer matching
           if i < num_attempts:
@@ -191,31 +205,78 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, temp_sig)
             if h in possible_heads:
               possible_heads.remove(h)
 
-          # Test candidates for overlap
-          for head in possible_heads:
-            candidate_read = rr[hr.index(head)]
-            if len(possible_heads) < 50:                  # testing
-              print head,                                 # testing
-              find_genomic_position(candidate_read, temp_sig)       # testing
-            if test_overlap(candidate_read, curr_contig[-1], overlap_accuracy_cutoff, overlap_length_cutoff, direction, temp_sig, relaxed = km):
-              h = head
-              consensus_temp = error_correct(ec_tool, head, headers, creads, hr, rr, temp_sig)
-              print 'SUCCESS!',                         # testing 
-              find_genomic_position(consensus_temp, temp_sig)     # testing
-              if len(consensus_temp) == 0:
-                print 'failed to error correct'
-                continue
-              if direction == 'right':
-                curr_contig.append(consensus_temp)
-                curr_contig_headers.append(h)
-              if direction == 'left':
-                curr_contig.insert(0, consensus_temp)
-                curr_contig_headers.insert(0, h)
-              traversed_headers.append(h)
+          # Filter candidates by overlapping test
+          # If we find farthest_support is far, redo overlapping with trimmed consensus
+          for i2 in range(2):
+            good_candidates = []
+            farthest_support = []
+            for head in possible_heads:
+              candidate_read = rr[hr.index(head)]
+              # if len(possible_heads) < 50:                            # testing
+                # print head,                                           # testing
+                # find_genomic_position(candidate_read, temp_sig)       # testing
+
+              overlaps = False
+              if direction == 'right' and test_overlap(candidate_read, curr_contig[-1], overlap_accuracy_cutoff, overlap_length_cutoff, direction, temp_sig, farthest_support, relaxed = km):
+                overlaps = True
+              if direction == 'left' and test_overlap(curr_contig[0], candidate_read, overlap_accuracy_cutoff, overlap_length_cutoff, direction, temp_sig, farthest_support, relaxed = km):
+                overlaps = True
+              if overlaps:
+                good_candidates.append(head)
+
+            if len(farthest_support) == 0 or farthest_support[0] < support_dist_cutoff:
               break
-          if h == old_h:
+            else:
+              print 'Trimmed consensus since support dist =', farthest_support[0]
+              if direction == 'right':
+                curr_contig[-1] = curr_contig[-1][ : -farthest_support[0]]
+              if direction == 'left':
+                curr_contig[0] = curr_contig[0][farthest_support[0] : ]
+          print len(good_candidates), 'reads passed overlap filter'
+
+          for gc in good_candidates:                                # testing
+            find_genomic_position(rr[hr.index(gc)], temp_sig)       # testing
+
+          # Filter candidates by their support for each other
+          filtered_good_candidates = []
+          if not km:
+            for gc in good_candidates:
+              temp_candidates = copy.copy(good_candidates)
+              temp_candidates.remove(gc)
+              if verify_against_candidates(gc, temp_candidates, hr, rr, support_cutoff, support_ratio, support_len, temp_sig):
+                filtered_good_candidates.append(gc)
+          if km:
+            filtered_good_candidates = good_candidates
+          print 'Filtered', len(good_candidates) - len(filtered_good_candidates), 'reads by support filter'
+          if len(filtered_good_candidates) == 0:
+            print 'No reads passed filtering step against other candidates'
             for p in possible_heads:
-              traversed_headers.append(p)
+              temp_traversed_headers.append(p)
+            continue
+
+          best_head = filtered_good_candidates[0]
+
+          # Once we choose a particular candidate
+          h = best_head
+          consensus_temp = error_correct(ec_tool, head, headers, creads, hr, rr, temp_sig)
+          print 'SUCCESS!',                         # testing 
+          find_genomic_position(consensus_temp, temp_sig)     # testing
+          if len(consensus_temp) == 0:
+            print 'failed to error correct'
+            continue
+          if direction == 'right':
+            curr_contig.append(consensus_temp)
+            curr_contig_headers.append(h)
+          if direction == 'left':
+            curr_contig.insert(0, consensus_temp)
+            curr_contig_headers.insert(0, h)
+          master_traversed_headers.append(h)
+
+          if h == old_h:
+            # This part ensures nhood extension by preventing us from 
+            # getting stuck in returning lower degree headers. This should be made more temporary.
+            for p in possible_heads:
+              temp_traversed_headers.append(p)
           else:
             break
         if h == old_h:
@@ -255,14 +316,10 @@ def find_genomic_position(read, temp_sig):
     print '\tFAILED ALIGNMENT'
 
 
-def test_overlap(base, candidate, acc_cutoff, len_cutoff, direction, temp_sig, relaxed = False):
-  # Tests that seq1 is before seq2
-  if direction == 'right':
-    seq1 = base
-    seq2 = candidate
-  if direction == 'left':
-    seq1 = candidate
-    seq2 = base
+def test_overlap(seq1, seq2, acc_cutoff, len_cutoff, direction, temp_sig, farthest_support, relaxed = False):
+  # Tests that seq1 is after seq2
+  # farthest_support is a list that will contain 1 element,
+  #   the distance from the end (depending on direction) of the farthest support
   dist_from_end = 200
   blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
   blasr_options = '-bestn 1 -m 1'   # Concise output
@@ -277,7 +334,7 @@ def test_overlap(base, candidate, acc_cutoff, len_cutoff, direction, temp_sig, r
   status = commands.getstatusoutput(blasr_exe + ' ' + temps1 + ' ' + temps2 + ' ' + blasr_options)[1]
   if len(status.strip()) == 0:
     return False
-  print status
+  # print status                    # TESTING
   accuracy = float(status.split()[5])
   beg_align_r1 = int(status.split()[6])
   end_align_r1 = int(status.split()[7])
@@ -288,13 +345,26 @@ def test_overlap(base, candidate, acc_cutoff, len_cutoff, direction, temp_sig, r
   total_len_r2 = int(status.split()[11])
   end_pos_r2 = total_len_r2 - end_align_r2
   length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2          # Average alignment length
-  print 'accuracy:', accuracy
+
+  # Update farthest support, the distance to the end of the consensus that has support from 1deg nhood 
+  if len(farthest_support) == 0:
+    if direction == 'right':
+      farthest_support.append(end_pos_r1)
+    if direction == 'left':
+      farthest_support.append(beg_align_r2)
+  else:
+    if direction == 'right':
+      if end_pos_r1 < farthest_support[0]:
+        farthest_support[0] = end_pos_r1
+    if direction == 'left':
+      if beg_align_r2 < farthest_support[0]:
+        farthest_support[0] = beg_align_r2
 
   if not relaxed:
     if direction == 'right':
-      return accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1
+      return accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 and beg_align_r2 < dist_from_end
     if direction == 'left':
-      return accuracy >= acc_cutoff and length > len_cutoff and beg_align_r2 < dist_from_end and beg_align_r1 > beg_align_r2
+      return accuracy >= acc_cutoff and length > len_cutoff and beg_align_r2 < dist_from_end and beg_align_r1 > beg_align_r2 and end_pos_r1 < dist_from_end
   else:
     return accuracy >= acc_cutoff and length > len_cutoff
 
@@ -441,8 +511,9 @@ def find_extending_read(ktmer, headers, hr, rr, support_cutoff, support_ratio, t
   # the actual read, and we just want a read that extends past the EC consensus,
   # not the current read we perform 1-deg nhood extension on.
   valid = []
-  if verify_against_candidates(headers[ktmer][0], headers[ktmer][1:], hr, rr, support_cutoff, support_ratio, temp_sig):
-    valid = headers[ktmer]
+  # if verify_against_candidates(headers[ktmer][0], headers[ktmer][1:], hr, rr, support_cutoff, support_ratio, support_len, temp_sig):
+    # valid = headers[ktmer]
+  valid = headers[ktmer]  
   return valid
 
 
