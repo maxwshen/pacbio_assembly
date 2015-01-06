@@ -39,11 +39,20 @@ def main():
     for h in headers[kt]:
       collected_h.add(h)
 
+  to_con = []
+  to_gen = []
   for ch in collected_h:
     with open(temp2_file, 'w') as f:
       f.write(ch + '\n' + rr[hr.index(ch)])
     status = commands.getstatusoutput(blasr_exe + ' ' + temp2_file + ' ' + temp_file + ' ' + blasr_options)[1]
-    print '  ', status
+    to_con.append(status)
+    status = commands.getstatusoutput(blasr_exe + ' ' + temp2_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+    to_gen.append(status)
+
+  print sum([1 for s in to_con if len(s) > 0]), 'used in consensus out of', len(to_con)
+  for tg in to_gen:
+    print tg
+
 
 if __name__ == '__main__':
   # Initiates program and records total time

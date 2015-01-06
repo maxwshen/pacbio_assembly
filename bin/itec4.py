@@ -39,7 +39,24 @@ def main():
   contigs_fold = '/home/mshen/research/contigs4/'
   # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
-  combine_contigs(contigs_fold)
+  # combine_contigs(contigs_fold)
+  check_contigs(contigs_fold, reads_file)
+
+def check_contigs(contigs_fold, reads_file):
+  hr, rr = rf.read_fasta(reads_file)
+  res_file = contigs_fold + 'contig_0results.fasta'
+  comb_file = contigs_fold + 'contig_0_combined.fasta'
+  temp_file = 'temp_cc_' + temp_sig + '.fasta'
+  with open(res_file) as f:
+    reads = [s.split()[0] for s in f.readlines()]
+  for r in reads:
+    mod_r = '/'.join(r.split('/')[:-1]).replace('START', '')
+    print mod_r
+    with open(temp_file, 'w') as f:
+      f.write(mod_r + '\n' + rr[hr.index(mod_r)])
+    status = commands.getstatusoutput(blasr_exe + ' ' + temp_file + ' ' + comb_file + ' ' + blasr_options)[1]
+    print status
+
 
 def combine_contigs(contigs_fold):
   acc_cutoff = 0
@@ -90,7 +107,7 @@ def combine_contigs(contigs_fold):
 
       best_base = sorted(bases, key = len, reverse = True)[0]
       out_file = fn.split('.')[0] + '_combined.fasta'
-      with open(out_file, 'w') as f:
+      with open(contigs_fold + out_file, 'w') as f:
         f.write('>' + fn + '\n' + best_base)
       status = commands.getstatusoutput(blasr_exe + ' ' + out_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
       print 'BEST:'
@@ -98,9 +115,6 @@ def combine_contigs(contigs_fold):
 
 
 
-def find_jumps(contigs_fold, reads_file):
-  # Aligns reads that contribute towards a contig with the consensus sequences
-  hr, rr = rf.read_fasta(reads_file)
 
 def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
   # Finds read clusters (aligned to the genome) for all kt-mers
@@ -597,7 +611,9 @@ def find_extending_read(ktmer, headers, hr, rr):
   return valid
 
 
-def error_correct(ec_tool, header, headers, creads, hr, rr):
+def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None):
+  if temp_sig_out is not None:
+    temp_sig = temp_sig_out
   reads = []
   collected_h = set()
   ktmers = []

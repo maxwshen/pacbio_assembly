@@ -5,9 +5,46 @@ import sys, string, datetime, random, copy, os, commands, fnmatch, numpy
 
 from collections import defaultdict
 
+blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
+blasr_options = '-bestn 1 -m 1'   # Concise output
+e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
+
 def main():
-  input_folder = '/home/mshen/research/' + sys.argv[1] + '/'
-  analyze_contigs(input_folder)
+  fold = sys.argv[1]
+  if sys.argv[2] == 'combined':
+    combined = True
+  else:
+    combined = False
+  input_folder = '/home/mshen/research/' + fold + '/'
+  
+  if not combined:
+    analyze_contigs(input_folder)
+  if combined:
+    analyze_combined_contigs(input_folder)
+
+def analyze_combined_contigs(fold):
+  lengths = []
+  accs = []
+  for fn in os.listdir(fold):
+    if fnmatch.fnmatch(fn, '*combined*'):
+      status = commands.getstatusoutput(blasr_exe + ' ' + fold + fn + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+      print status
+      accuracy = float(status.split()[5])
+      beg_align_r1 = int(status.split()[6])
+      end_align_r1 = int(status.split()[7])
+      total_len_r1 = int(status.split()[8])
+      end_pos_r1 = total_len_r1 - end_align_r1
+      beg_align_r2 = int(status.split()[9])
+      end_align_r2 = int(status.split()[10])
+      total_len_r2 = int(status.split()[11])
+      end_pos_r2 = total_len_r2 - end_align_r2
+      length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2
+
+      lengths.append(length)
+      accs.append(accuracy)
+
+  print numpy.mean(lengths), numpy.std(lengths)
+  print numpy.mean(accs), numpy.std(accs)
 
 
 def analyze_contigs(fold):
