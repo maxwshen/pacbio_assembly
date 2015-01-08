@@ -5,21 +5,43 @@ import read_fasta as rf
 
 def main():
   # genomic_coverage_abruijn_reads()
-  get_coverage()
+  infile = sys.argv[1]
+  get_coverage(infile)
   return
 
-def get_coverage():
-  inp = '/home/mshen/research/nohup_gen_coverage_abruijn_reads_22.4.out'
+def get_coverage(infile):
+  # inp = '/home/mshen/research/nohup_gen_coverage_abruijn_reads_22.4.out'
+  inp = infile
   with open(inp) as f:
     aligns = f.readlines()
   genome = [0] * 4700000
   for a in aligns:
-    beg = int(a.split()[6])
-    end = int(a.split()[7])
-    for i in range(beg, end):
-      genome[i] += 1
+    if len(a.split()) > 7:
+      beg = int(a.split()[6])
+      end = int(a.split()[7])
+      for i in range(beg, end):
+        genome[i] += 1
 
-  out_file = 'out_abruijn_coverage_22.4.out'
+  regions_0 = []
+  start_pos = -1
+  extend = False
+  for i in range(len(genome)):
+    if genome[i] == 0 and not extend:
+      extend = True
+      start_pos = i
+    if genome[i] != 0 and extend:
+      extend = False
+      regions_0.append([start_pos, i])
+
+  # print regions_0
+  lens_0 = [s[1] - s[0] for s in regions_0]
+  print lens_0
+  print numpy.mean(lens_0), numpy.std(lens_0), len(regions_0)
+  print sorted(regions_0, key = lambda d: d[1] - d[0], reverse = True)
+  sys.exit(0)
+
+  # out_file = 'out_abruijn_coverage_22.4.out'
+  out_file = 'out_abruijn_contigs4.out'
   with open(out_file, 'w') as f:
     f.write('\n'.join([str(s) for s in genome]))
   return

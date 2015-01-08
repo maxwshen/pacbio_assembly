@@ -15,7 +15,7 @@ global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
 contigs_fold = '/home/mshen/research/contigs_temp/'  
 overlap_accuracy_cutoff = 75    # .
-overlap_length_cutoff = 2000     # .
+overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
 support_ratio = 0.5             # CANDIDATE: Required support for a chosen read from other candidates
@@ -118,8 +118,6 @@ def combine_contigs(contigs_fold):
       print status
 
 
-
-
 def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
   # Finds read clusters (aligned to the genome) for all kt-mers
   def within(beg1, end1, beg2, end2):
@@ -194,7 +192,9 @@ def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
 
     # May want to write a sister function that doesn't rely on the genome
 
+
 def verify_against_candidates(h, candidate_headers, hr, rr):
+  # I think this can be improved to detect jumps better 
   dist_to_end = 100
   if len(candidate_headers) == 0:
     return True
@@ -241,6 +241,19 @@ def verify_against_candidates(h, candidate_headers, hr, rr):
   print 'support found:', support_pct         # TESTING
   return support_pct >= support_ratio
 
+
+def filter_ktmers(ktmers, creads, headers):
+  new_ktmers = []
+  excluded = set()
+  for kt in ktmers:
+    if kt in excluded:
+      continue
+    new_ktmers.append(kt)
+    for n in find_neighboring_ktmers(kt, headers, creads):
+      excluded.add(n)
+  return new_ktmers
+
+
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
@@ -250,6 +263,16 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
   print 'Found', len(ktmers), 'kt-mers.'
 
   contigs = []
+
+  ktmers = filter_ktmers(ktmers, creads, headers)
+  print 'After filtering,', len(ktmers), 'kt-mers remain.'
+  genome = '/home/mshen/research/data/e_coli_genome.fasta'
+  gh, gr = rf.read_fasta(genome)
+  for kt in ktmers:
+    if kt in gr[0]:
+      print gr[0].index(kt)
+
+  sys.exit(0)
 
   num_contig_attempts = 20
   for m in range(num_contig_attempts):
@@ -307,6 +330,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
 
           # Filter candidates by overlapping test
           # If we find farthest_support is far, redo overlapping with trimmed consensus
+          criteria = dict()   # Key = header, Val = some order-able criteria (ex: length)
           for i2 in range(2):
             good_candidates = []
             farthest_support = []
@@ -317,9 +341,9 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
                 # find_genomic_position(candidate_read)       # testing
 
               overlaps = False
-              if direction == 'right' and test_overlap(candidate_read, curr_contig[-1], direction, farthest_support, relaxed = km):
+              if direction == 'right' and test_overlap(head, candidate_read, curr_contig[-1], direction, farthest_support, criteria, relaxed = km):
                 overlaps = True
-              if direction == 'left' and test_overlap(curr_contig[0], candidate_read, direction, farthest_support, relaxed = km):
+              if direction == 'left' and test_overlap(head, curr_contig[0], candidate_read, direction, farthest_support, criteria, relaxed = km):
                 overlaps = True
               if overlaps:
                 good_candidates.append(head)
@@ -359,6 +383,9 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
               temp_traversed_headers.append(p)
             continue
 
+          # Sort candidates by some criteria
+          filtered_good_candidates.sort(key = lambda d: criteria[d], reverse = True)
+
           # Once we choose a particular candidate
           consensus_temp = ''
           for i in range(len(filtered_good_candidates)):
@@ -370,7 +397,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
           if len(consensus_temp) == 0:
             print 'COULD NOT ERROR CORRECT ANY FILTERED GOOD CANDIDATES'
           else:
-            print 'New header:', h                    # testing
+            print 'New header:', h, criteria[h]       # testing
             print 'SUCCESS!',                         # testing 
             find_genomic_position(consensus_temp)     # testing
             if len(consensus_temp) == 0:
@@ -422,7 +449,7 @@ def find_genomic_position(read):
     print '\tFAILED ALIGNMENT'
 
 
-def test_overlap(seq1, seq2, direction, farthest_support, relaxed = False):
+def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relaxed = False):
   # Tests that seq1 is after seq2
   # farthest_support is a list that will contains distances 
   # from the end (depending on direction) of the current read
@@ -451,6 +478,9 @@ def test_overlap(seq1, seq2, direction, farthest_support, relaxed = False):
   total_len_r2 = int(status.split()[11])
   end_pos_r2 = total_len_r2 - end_align_r2
   length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2          # Average alignment length
+
+  # update criteria
+  criteria[head1] = length
 
   # Update farthest support, the distance to the end of the consensus that has support from 1deg nhood 
   if direction == 'right':

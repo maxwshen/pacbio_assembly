@@ -35,7 +35,7 @@ def plot_1group(input_file):
   plt.hist(data, color = 'green', bins = binrange)
 
 
-  plt.xlabel('Lengths of all single whole contigs')
+  plt.xlabel('Distances between seed kt-mers')
   plt.ylabel('Quantity')
   plt.show()
 
