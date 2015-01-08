@@ -17,7 +17,10 @@ def main():
   headers = itec4.build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
 
-  con = itec4.error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig)
+  con = itec4.error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = temp_sig)
+  if len(con) == 0:
+    print 'FAILURE IN ERROR CORRECTION'
+    sys.exit(0)
 
   temp_file = 'temp_cfh_' + temp_sig + '.fasta'
   temp2_file = 'temp_cfh2_' + temp_sig + '.fasta'
