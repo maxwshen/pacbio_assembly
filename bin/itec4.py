@@ -13,14 +13,13 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs_temp/'  
-overlap_accuracy_cutoff = 75    # .
+contigs_fold = '/home/mshen/research/contigs7/'  
+overlap_accuracy_cutoff = 70    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
-support_ratio = 0.5             # CANDIDATE: Required support for a chosen read from other candidates
-support_len = 1000              # CANDIDATE: Required bp overlap for support
-limit_km_times_total = 10        # How many times to attempt k-mer matching extension per direction
+support_ratio = 0.6             # CANDIDATE: Required support for a chosen read from other candidates
+limit_km_times_total = 4        # How many times to attempt k-mer matching extension per direction
 km_k = 15                       # .
 km_cutoff = 20                  # .
 support_dist_cutoff = 10        # CONSENSUS: Bp. length, acceptable support distance from end of consensus
@@ -209,7 +208,7 @@ def verify_against_candidates(h, candidate_headers, hr, rr):
     with open(temp_chfile, 'w') as f:
       f.write(ch + '\n' + rr[hr.index(ch)])
     status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + temp_chfile + ' ' + blasr_options)[1]
-    # print status                            # TESTING
+    print status                        # TESTING
     if len(status) != 0:
       acc = float(status.split()[5])
       beg_align_r1 = int(status.split()[6])
@@ -242,7 +241,60 @@ def verify_against_candidates(h, candidate_headers, hr, rr):
   return support_pct >= support_ratio
 
 
+def verify_against_candidates_longest(candidate_headers, hr, rr):
+  # Improved version
+  # Take the longest read, find support against that - no long tails
+  dist_to_end = 300
+  if len(candidate_headers) == 0:
+    return True
+
+  cand_r = [rr[hr.index(s)] for s in candidate_headers]
+  cand_r.sort(key = len, reverse = True)
+  base = cand_r[0]
+
+  temp_base = 'temp_bas_' + temp_sig + '.fasta'
+  with open(temp_base, 'w') as f:
+    f.write('>' + hr[rr.index(base)] + '\n' + base)
+
+  print commands.getstatusoutput(blasr_exe + ' ' + temp_base +' ' + e_coli_genome + ' ' + blasr_options)[1]
+
+  support = 0
+  temp_chfile = 'temp_ch_' + temp_sig + '.fasta'
+  for ch in cand_r[1:]:
+    with open(temp_chfile, 'w') as f:
+      f.write('>' + hr[rr.index(ch)] + '\n' + ch)
+    status = commands.getstatusoutput(blasr_exe + ' ' + temp_base +' ' + temp_chfile + ' ' + blasr_options)[1]
+    print status                        # TESTING
+    print commands.getstatusoutput(blasr_exe + ' ' + temp_chfile +' ' + e_coli_genome + ' ' + blasr_options)[1]
+    if len(status) != 0:
+      acc = float(status.split()[5])
+      beg_align_r1 = int(status.split()[6])
+      end_align_r1 = int(status.split()[7])
+      total_len_r1 = int(status.split()[8])
+      end_pos_r1 = total_len_r1 - end_align_r1
+      beg_align_r2 = int(status.split()[9])
+      end_align_r2 = int(status.split()[10])
+      total_len_r2 = int(status.split()[11])
+      end_pos_r2 = total_len_r2 - end_align_r2
+      length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2     # Avg alignment length
+
+      is_support = False
+      if acc > support_cutoff:
+        if beg_align_r1 > dist_to_end and beg_align_r2 < dist_to_end or beg_align_r1 < dist_to_end and beg_align_r2 > dist_to_end or beg_align_r1 < dist_to_end and beg_align_r2 < dist_to_end:
+          if end_pos_r1 > dist_to_end and end_pos_r2 < dist_to_end or end_pos_r1 < dist_to_end and end_pos_r2 > dist_to_end or end_pos_r1 < dist_to_end and end_pos_r2 < dist_to_end: 
+            is_support = True
+            support += 1
+            print '+1'
+
+  support_pct = float(support) / float(len(candidate_headers) - 1)
+  print 'support found:', support_pct         # TESTING
+  return support_pct >= support_ratio
+
+
 def filter_ktmers(ktmers, creads, headers):
+  # Filters out kt-mers that are in the same 1-deg nhood
+  # Produces about 3000 from 240k 22,4-mers, evenly spaced
+  # Max dist 12k, average 1.5k
   new_ktmers = []
   excluded = set()
   for kt in ktmers:
@@ -252,6 +304,12 @@ def filter_ktmers(ktmers, creads, headers):
     for n in find_neighboring_ktmers(kt, headers, creads):
       excluded.add(n)
   return new_ktmers
+
+  # genome = '/home/mshen/research/data/e_coli_genome.fasta'
+  # gh, gr = rf.read_fasta(genome)
+  # for kt in ktmers:
+  #   if kt in gr[0]:
+  #     print gr[0].index(kt)
 
 
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
@@ -266,15 +324,9 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
 
   ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
-  genome = '/home/mshen/research/data/e_coli_genome.fasta'
-  gh, gr = rf.read_fasta(genome)
-  for kt in ktmers:
-    if kt in gr[0]:
-      print gr[0].index(kt)
 
-  sys.exit(0)
-
-  num_contig_attempts = 20
+  # num_contig_attempts = 200                   # testing
+  num_contig_attempts = len(ktmers)
   for m in range(num_contig_attempts):
     print '\n' + str(datetime.datetime.now())
     curr_ktmer = ktmers[m]
@@ -282,7 +334,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
     h = get_read_with_most_neighbors(curr_ktmer, headers, creads)
     # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/25524/0_5702/0_5702'  # jump ex
     # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/66451/0_6519/0_6519'    # normal ex
-    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/22681/0_4859/0_4859'  # right before jump ex
+    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/22681/0_4859/0_4859'  # 4 iterations  before jump ex
     # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/1326/0_5814/0_5814' # a little farther from jump ex
     print 'STARTING HEADER:\n', h
     curr_contig = [error_correct(ec_tool, h, headers, creads, hr, rr)]
@@ -340,13 +392,21 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
                 # print head,                                           # testing
                 # find_genomic_position(candidate_read)       # testing
 
+              # candidate_read = error_correct(ec_tool, head, headers, creads, hr, rr)    # testing
+              # print 'consensus:',                         # testing
+              # find_genomic_position(candidate_read)       # testing
+              # print' original:',                          # testing
+              # find_genomic_position(rr[hr.index(head)])   # testing
+
               overlaps = False
-              if direction == 'right' and test_overlap(head, candidate_read, curr_contig[-1], direction, farthest_support, criteria, relaxed = km):
+              if direction == 'right' and test_overlap(head, candidate_read, curr_contig[-1], direction, farthest_support, criteria, relaxed = False):
+                # option: relaxed = km
                 overlaps = True
-              if direction == 'left' and test_overlap(head, curr_contig[0], candidate_read, direction, farthest_support, criteria, relaxed = km):
+              if direction == 'left' and test_overlap(head, curr_contig[0], candidate_read, direction, farthest_support, criteria, relaxed = False):
                 overlaps = True
               if overlaps:
                 good_candidates.append(head)
+              # print 'Overlap:', overlaps                  # testing
 
             if len(farthest_support) == 0:
               break
@@ -369,11 +429,14 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
           # Filter candidates by their support for each other
           filtered_good_candidates = []
           if not km:
-            for gc in good_candidates:
-              temp_candidates = copy.copy(good_candidates)
-              temp_candidates.remove(gc)
-              if verify_against_candidates(gc, temp_candidates, hr, rr):
-                filtered_good_candidates.append(gc)
+            filtered_good_candidates = good_candidates
+            # if verify_against_candidates_longest(good_candidates, hr, rr):
+              # filtered_good_candidates = good_candidates
+            # for gc in good_candidates:
+              # temp_candidates = copy.copy(good_candidates)
+              # temp_candidates.remove(gc)
+              # if verify_against_candidates(gc, temp_candidates, hr, rr):
+                # filtered_good_candidates.append(gc)
           if km:
             filtered_good_candidates = good_candidates
           print 'Filtered', len(good_candidates) - len(filtered_good_candidates), 'reads by support filter'
