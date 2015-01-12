@@ -116,8 +116,8 @@ def analyze_contigs(fold):
 
 
   coverage_outfile = 'out_contig_genome_coverage.out'
-  # with open(coverage_outfile, 'w') as f:
-  #   f.write('\n'.join([str(s) for s in covered]))
+  with open(coverage_outfile, 'w') as f:
+    f.write('\n'.join([str(s) for s in covered]))
 
   len_outfile = 'out_contig_lengths_all.out'
   with open(len_outfile, 'w') as f:

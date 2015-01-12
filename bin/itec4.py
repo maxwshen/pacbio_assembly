@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs7/'  
+contigs_fold = '/home/mshen/research/contigs_test2/'  
 overlap_accuracy_cutoff = 70    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
@@ -27,13 +27,13 @@ support_t = 4                   # CONSENSUS: Req. # reads to support a position 
 blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_options = '-bestn 1 -m 1'   # Concise output
 e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
-
+ec_prefix = '3X_'
 
 def main():
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
   creads_file = '/home/mshen/research/data/22.4_creads.out'
   ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
-  ec_tool = '/home/mshen/research/bin/error_correction_1218.sh'
+  ec_tool = '/home/mshen/research/bin/error_correction_3X.sh'
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
 
@@ -312,6 +312,18 @@ def filter_ktmers(ktmers, creads, headers):
   #     print gr[0].index(kt)
 
 
+def ktmers_from_genome(ktmers, min_bp, max_bp):
+  hg, rg = rf.read_fasta(e_coli_genome)
+  rg = rg[0]
+
+  new_kt = []
+  _k = len(ktmers[0])
+  for i in range(min_bp, max_bp - _k + 1):
+    if rg[i : i + _k] in ktmers:
+      new_kt.append(rg[i : i + _k])
+  return new_kt
+
+
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
@@ -322,7 +334,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
 
   contigs = []
 
-  ktmers = filter_ktmers(ktmers, creads, headers)
+  min_bp = 4190000
+  max_bp = 4200000
+  ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
+  # ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
   # num_contig_attempts = 200                   # testing
@@ -448,6 +463,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
 
           # Sort candidates by some criteria
           filtered_good_candidates.sort(key = lambda d: criteria[d], reverse = True)
+          random.shuffle(filtered_good_candidates)    # testing
 
           # Once we choose a particular candidate
           consensus_temp = ''
@@ -741,7 +757,7 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
   with open(temp_nhood_file, 'w') as f:
     f.write('\n'.join(reads))
 
-  ec_out = 'corrected_' + temp_orig_file
+  ec_out = ec_prefix + temp_orig_file
   status = commands.getstatusoutput(ec_tool + ' ' + temp_orig_file + ' ' + temp_nhood_file)[1]
   print status
   if 'ERROR' in status or 'No such file or directory' in status:
