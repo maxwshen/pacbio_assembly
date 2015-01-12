@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs_test2/'  
+contigs_fold = '/home/mshen/research/contigs_test3/'  
 overlap_accuracy_cutoff = 70    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
@@ -23,7 +23,7 @@ limit_km_times_total = 4        # How many times to attempt k-mer matching exten
 km_k = 15                       # .
 km_cutoff = 20                  # .
 support_dist_cutoff = 10        # CONSENSUS: Bp. length, acceptable support distance from end of consensus
-support_t = 4                   # CONSENSUS: Req. # reads to support a position to determine farthest support
+support_t = 3                   # CONSENSUS: Req. # reads to support a position to determine farthest support
 blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_options = '-bestn 1 -m 1'   # Concise output
 e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
@@ -334,8 +334,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
 
   contigs = []
 
-  min_bp = 4190000
-  max_bp = 4200000
+  min_bp = 106713
+  max_bp = 108843
   ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
   # ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
@@ -374,6 +374,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
         for i in range(num_attempts + limit_km_times):
           print 'Attempt', i                                            # testing
           km = False
+          km_early_out = False
           traversed_headers = master_traversed_headers + temp_traversed_headers
 
           # Grab candidates via nhood extension or kmer matching
@@ -385,6 +386,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
               print 'could not extend further'
               continue
           else:
+            if km_early_out:
+              break
             print 'Trying k-mer matching'
             limit_km_times -= 1
             km = True
@@ -459,6 +462,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
             print 'No reads passed filtering step against other candidates'
             for p in possible_heads:
               temp_traversed_headers.append(p)
+            if km:
+              km_early_out = True
             continue
 
           # Sort candidates by some criteria
