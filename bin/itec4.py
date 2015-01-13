@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs_test3/'  
+contigs_fold = '/home/mshen/research/contigs9/'  
 overlap_accuracy_cutoff = 70    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
@@ -22,7 +22,7 @@ support_ratio = 0.6             # CANDIDATE: Required support for a chosen read 
 limit_km_times_total = 4        # How many times to attempt k-mer matching extension per direction
 km_k = 15                       # .
 km_cutoff = 20                  # .
-support_dist_cutoff = 10        # CONSENSUS: Bp. length, acceptable support distance from end of consensus
+support_dist_cutoff = 100000    # CONSENSUS: Bp. length, acceptable support distance from end of consensus
 support_t = 3                   # CONSENSUS: Req. # reads to support a position to determine farthest support
 blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_options = '-bestn 1 -m 1'   # Concise output
@@ -334,10 +334,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
 
   contigs = []
 
-  min_bp = 106713
-  max_bp = 108843
-  ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
-  # ktmers = filter_ktmers(ktmers, creads, headers)
+  # min_bp = 106713
+  # max_bp = 108843
+  # ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
+  ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
   # num_contig_attempts = 200                   # testing
@@ -371,7 +371,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
         print 'iteration', counter, direction
         old_h = h
         temp_traversed_headers = []
-        for i in range(num_attempts + limit_km_times):
+        for i in range(num_attempts + 1):
           print 'Attempt', i                                            # testing
           km = False
           km_early_out = False
@@ -387,6 +387,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
               continue
           else:
             if km_early_out:
+              possible_heads = []
               break
             print 'Trying k-mer matching'
             limit_km_times -= 1
@@ -517,6 +518,16 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
     with open(contig_file, 'w') as f:
       f.write(contig)
     status = commands.getstatusoutput(blasr_exe + ' ' + contig_file +' ' + e_coli_genome + ' ' + blasr_options + ' > ' + contig_result)[1]
+
+    # Filter kt-mers
+    curr_ktmer_len = len(ktmers)
+    for i in range(len(curr_contig)):
+      new_ktmers = []
+      for kt in ktmers:
+        if kt not in curr_contig[i]:
+          new_ktmers.append(kt)
+      ktmers = new_ktmers
+    print curr_ktmer_len - len(ktmers), ' kt-mers filtered from consensus'
 
 
 def find_genomic_position(read):
