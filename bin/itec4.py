@@ -13,15 +13,15 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs13/'  
-overlap_accuracy_cutoff = 70    # .
+contigs_fold = '/home/mshen/research/contigs15/'  
+overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
 support_ratio = 0.6             # CANDIDATE: Required support for a chosen read from other candidates
 limit_km_times_total = 4        # How many times to attempt k-mer matching extension per direction
 km_k = 15                       # .
-km_cutoff = 20                  # .
+km_cutoff = 10                  # .
 support_dist_cutoff = 100000    # CONSENSUS: Bp. length, acceptable support distance from end of consensus
 support_t = 3                   # CONSENSUS: Req. # reads to support a position to determine farthest support
 blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
@@ -33,7 +33,7 @@ def main():
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
   creads_file = '/home/mshen/research/data/22.4_creads.out'
   ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
-  ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
+  ec_tool = '/home/mshen/research/bin/error_correction_3X.sh'
   parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
@@ -337,18 +337,33 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   curr_min_pos = 0
   curr_max_pos = 5000000
   if parallel_prefix == '000':
+    curr_max_pos = 500000
+  if parallel_prefix == '050':
+    curr_min_pos = 500000
     curr_max_pos = 1000000
   if parallel_prefix == '100':
     curr_min_pos = 1000000
+    curr_max_pos = 1500000
+  if parallel_prefix == '150':
+    curr_min_pos = 1500000
     curr_max_pos = 2000000
   if parallel_prefix == '200':
     curr_min_pos = 2000000
+    curr_max_pos = 2500000
+  if parallel_prefix == '250':
+    curr_min_pos = 2500000
     curr_max_pos = 3000000
   if parallel_prefix == '300':
     curr_min_pos = 3000000
+    curr_max_pos = 3500000
+  if parallel_prefix == '350':
+    curr_min_pos = 3500000
     curr_max_pos = 4000000
   if parallel_prefix == '400':
     curr_min_pos = 4000000
+    curr_max_pos = 4500000
+  if parallel_prefix == '450':
+    curr_min_pos = 4500000
     curr_max_pos = 5000000
 
   # min_bp = 106713
@@ -390,7 +405,11 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         print 'iteration', counter, direction
         old_h = h
         temp_traversed_headers = []
-        for i in range(num_attempts + 1):
+        if limit_km_times > 0:
+          num_attempts_temp = num_attempts + 1
+        else:
+          num_attempts_temp = num_attempts
+        for i in range(num_attempts_temp):
           print 'Attempt', i                                            # testing
           km = False
           km_early_out = False
@@ -571,7 +590,7 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   # Tests that seq1 is after seq2
   # farthest_support is a list that will contains distances 
   # from the end (depending on direction) of the current read
-  dist_from_end = 50
+  dist_from_end = 200
   acc_cutoff = overlap_accuracy_cutoff
   len_cutoff = overlap_length_cutoff
 
