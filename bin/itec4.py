@@ -144,7 +144,6 @@ def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
             return i, j
     return None
 
-  e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
   headers = build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
 
