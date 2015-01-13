@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs9/'  
+contigs_fold = '/home/mshen/research/contigs12/'  
 overlap_accuracy_cutoff = 70    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
@@ -33,12 +33,13 @@ def main():
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
   creads_file = '/home/mshen/research/data/22.4_creads.out'
   ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
-  ec_tool = '/home/mshen/research/bin/error_correction_3X.sh'
+  ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
+  parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
 
   # Actions
-  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool)
+  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
   # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
@@ -323,7 +324,7 @@ def ktmers_from_genome(ktmers, min_bp, max_bp):
   return new_kt
 
 
-def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
+def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix):
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
@@ -332,6 +333,23 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
   print 'Found', len(ktmers), 'kt-mers.'
 
   contigs = []
+
+  curr_min_pos = 0
+  curr_max_pos = 5000000
+  if parallel_prefix == '000':
+    curr_max_pos = 1000000
+  if parallel_prefix == '100':
+    curr_min_pos = 1000000
+    curr_max_pos = 2000000
+  if parallel_prefix == '200':
+    curr_min_pos = 2000000
+    curr_max_pos = 3000000
+  if parallel_prefix == '300':
+    curr_min_pos = 3000000
+    curr_max_pos = 4000000
+  if parallel_prefix == '400':
+    curr_min_pos = 4000000
+    curr_max_pos = 5000000
 
   # min_bp = 106713
   # max_bp = 108843
@@ -353,7 +371,9 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
     print 'STARTING HEADER:\n', h
     curr_contig = [error_correct(ec_tool, h, headers, creads, hr, rr)]
     print 'STARTING AT',                        # testing
-    find_genomic_position(curr_contig[0])       # testing
+    pos = find_genomic_position(curr_contig[0])       # testing
+    if pos > curr_max_pos or pos < curr_min_pos:                   # testing
+      continue                                  # testing
     curr_contig_headers = [h + 'START']
     master_h = h
     master_traversed_headers = [h]
@@ -480,10 +500,14 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
               break  
           if len(consensus_temp) == 0:
             print 'COULD NOT ERROR CORRECT ANY FILTERED GOOD CANDIDATES'
+            h = old_h
           else:
             print 'New header:', h, criteria[h]       # testing
             print 'SUCCESS!',                         # testing 
-            find_genomic_position(consensus_temp)     # testing
+            # find_genomic_position(consensus_temp)     # testing
+            if consensus_temp in curr_contig:
+              print 'new consensus already exists in current contig'
+              continue
             if len(consensus_temp) == 0:
               print 'failed to error correct'
               continue
@@ -509,8 +533,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool):
     # ASSESS RESULTS
     print old_h
     contig = ''
-    contig_file = contigs_fold + 'contig_' + str(m) + '.fasta'
-    contig_result = contigs_fold + 'contig_' + str(m) + 'results.fasta'
+    contig_file = contigs_fold + 'contig_' + parallel_prefix + str(m) + '.fasta'
+    contig_result = contigs_fold + 'contig_' + parallel_prefix + str(m) + 'results.fasta'
     for j in range(len(curr_contig)):
       if curr_contig[j] != '':
         contig += '>' + curr_contig_headers[j] + '\n' + curr_contig[j] + '\n'
@@ -541,6 +565,8 @@ def find_genomic_position(read):
     print '\taligned to:', beg, end
   else:
     print '\tFAILED ALIGNMENT'
+
+  return (beg + end) / 2
 
 
 def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relaxed = False):
