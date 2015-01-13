@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs15/'  
+contigs_fold = '/home/mshen/research/contigs16/'  
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
@@ -33,7 +33,7 @@ def main():
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
   creads_file = '/home/mshen/research/data/22.4_creads.out'
   ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
-  ec_tool = '/home/mshen/research/bin/error_correction_3X.sh'
+  ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
   parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
@@ -369,6 +369,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   # min_bp = 106713
   # max_bp = 108843
   # ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
+  covered_range = []        # testing, stores a list of consensus positions so we don't overlap
   ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
@@ -389,6 +390,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     pos = find_genomic_position(curr_contig[0])       # testing
     if pos > curr_max_pos or pos < curr_min_pos:                   # testing
       continue                                  # testing
+    for cr in covered_range:
+      if abs(pos - cr) < 1500:
+        # don't start here, if it's within 1500bp of a consensus we already have 
+        continue 
     curr_contig_headers = [h + 'START']
     master_h = h
     master_traversed_headers = [h]
@@ -523,7 +528,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
           else:
             print 'New header:', h, criteria[h]       # testing
             print 'SUCCESS!',                         # testing 
-            # find_genomic_position(consensus_temp)     # testing
+            con_pos = find_genomic_position(consensus_temp)     # testing
+            covered_range.append(con_pos)
             if len(consensus_temp) == 0:
               print 'failed to error correct'
               continue
@@ -590,7 +596,7 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   # Tests that seq1 is after seq2
   # farthest_support is a list that will contains distances 
   # from the end (depending on direction) of the current read
-  dist_from_end = 200
+  dist_from_end = 100
   acc_cutoff = overlap_accuracy_cutoff
   len_cutoff = overlap_length_cutoff
 

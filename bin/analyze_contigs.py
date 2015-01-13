@@ -104,14 +104,14 @@ def analyze_contigs(fold):
         num_single_contigs += 1
         single_lengths.append(best[1] - best[0])
       for i in range(best[0], best[1]):
-        covered[i] = 1
+        covered[i] += 1
 
   print '\nAvg. contig len:', numpy.mean(lengths), ' Stdev:', numpy.std(lengths)
   print 'Single contig avg len:', numpy.mean(single_lengths), ' Stdev:', numpy.std(single_lengths)
   print 'Num. jumps:', num_jumps
   print 'Num. single contigs:', num_single_contigs
   print 'Total num. contigs:', total_num
-  print 'Base pairs covered:', sum(covered)
+  print 'Base pairs covered:', sum([1 for s in covered if s > 0])
 
 
 
