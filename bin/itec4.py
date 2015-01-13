@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs12/'  
+contigs_fold = '/home/mshen/research/contigs13/'  
 overlap_accuracy_cutoff = 70    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
@@ -496,7 +496,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             best_head = filtered_good_candidates[i]
             h = best_head
             consensus_temp = error_correct(ec_tool, h, headers, creads, hr, rr)
-            if len(consensus_temp) != 0:
+            if len(consensus_temp) != 0 and consensus_temp not in curr_contig:
               break  
           if len(consensus_temp) == 0:
             print 'COULD NOT ERROR CORRECT ANY FILTERED GOOD CANDIDATES'
@@ -505,9 +505,6 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             print 'New header:', h, criteria[h]       # testing
             print 'SUCCESS!',                         # testing 
             # find_genomic_position(consensus_temp)     # testing
-            if consensus_temp in curr_contig:
-              print 'new consensus already exists in current contig'
-              continue
             if len(consensus_temp) == 0:
               print 'failed to error correct'
               continue
@@ -563,10 +560,11 @@ def find_genomic_position(read):
     beg = int(status.split()[6])
     end = int(status.split()[7])
     print '\taligned to:', beg, end
+    return (beg + end) / 2
   else:
     print '\tFAILED ALIGNMENT'
-
-  return (beg + end) / 2
+    return -1
+  
 
 
 def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relaxed = False):
