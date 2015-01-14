@@ -75,7 +75,8 @@ def analyze_contigs(fold):
   num_single_contigs = 0
   total_num = 0
   single_lengths = []
-  covered = [0] * 4700000
+  covered_best = [0] * 4700000
+  covered_all = [0] * 4700000
   for fil in os.listdir(fold):
     if fnmatch.fnmatch(fil, '*results*'):
       total_num += 1
@@ -104,20 +105,25 @@ def analyze_contigs(fold):
         num_single_contigs += 1
         single_lengths.append(best[1] - best[0])
       for i in range(best[0], best[1]):
-        covered[i] += 1
+        covered_best[i] += 1
+      for b in contigs:
+        for i in range(b[0], b[1]):
+          covered_all[i] += 1
+
 
   print '\nAvg. contig len:', numpy.mean(lengths), ' Stdev:', numpy.std(lengths)
   print 'Single contig avg len:', numpy.mean(single_lengths), ' Stdev:', numpy.std(single_lengths)
   print 'Num. jumps:', num_jumps
   print 'Num. single contigs:', num_single_contigs
   print 'Total num. contigs:', total_num
-  print 'Base pairs covered:', sum([1 for s in covered if s > 0])
+  print 'Base pairs covered by best:', sum([1 for s in covered_best if s > 0])
+  print 'Base pairs covered by all:', sum([1 for s in covered_all if s > 0])
 
 
 
   coverage_outfile = 'out_contig_genome_coverage.out'
   with open(coverage_outfile, 'w') as f:
-    f.write('\n'.join([str(s) for s in covered]))
+    f.write('\n'.join([str(s) for s in covered_best]))
 
   len_outfile = 'out_contig_lengths_all.out'
   with open(len_outfile, 'w') as f:

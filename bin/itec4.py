@@ -39,10 +39,54 @@ def main():
 
 
   # Actions
-  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
   # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
+  output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
+
+def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
+  out_fold = '/home/mshen/research/1deg_nhoods/'
+  hr, rr = rf.read_fasta(reads_file)
+  creads = build_creads_dict(creads_file, reads_file)
+  headers = build_headers_dict(ktmer_headers_file)
+
+  par_range = range(len(hr)) 
+  if parallel_prefix == '000':
+    par_range = range(10000)
+  if parallel_prefix == '100':
+    par_range = range(10000, 20000)
+  if parallel_prefix == '200':
+    par_range = range(20000, len(hr))
+
+  for i in par_range:
+    print i
+    header = hr[i]
+    collected_h = set()
+    ktmers = []
+    for j in range(len(creads[header])):
+      if j % 2 == 1:
+        ktmers.append(creads[header][j])
+    for kt in ktmers:
+      for h in headers[kt]:
+        collected_h.add(h)
+
+    base_file = str(i) + '_base.fasta'
+    hood_file = str(i) + '_hood.fasta'
+    with open(base_file, 'w') as f:
+      f.write(header + '\n' + rr[i])
+    with open(hood_file, 'w') as f:
+      for h in collected_h:
+        f.write(h + '\n' + rr[hr.index(h)] + '\n')
+
+    ec_out = ec_prefix + base_file
+    new_ec_out = str(i) + '_corr.fasta'
+    status = commands.getstatusoutput(ec_tool + ' ' + base_file + ' ' + hood_file)[1]
+    commands.getstatusoutput('mv ' + ec_out + ' ' + new_ec_out)
+    commands.getstatusoutput('mv ' + new_ec_out + ' ' + out_fold)
+    commands.getstatusoutput('mv ' + base_file + ' ' + out_fold)
+    commands.getstatusoutput('mv ' + hood_file + ' ' + out_fold)
+  return
 
 def check_contigs(contigs_fold, reads_file):
   # Aligns component reads to combined contigs in an effort to find jumps.
@@ -591,7 +635,6 @@ def find_genomic_position(read):
     return -1
   
 
-
 def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relaxed = False):
   # Tests that seq1 is after seq2
   # farthest_support is a list that will contains distances 
@@ -833,6 +876,7 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
   print 'consensus len:', len(consensus), 'out of', len(rr[hr.index(header)])
   return consensus
 
+
 def get_read_with_most_neighbors(ktmer, headers, creads):
   best_h = ''
   best_neighbors = 0
@@ -844,6 +888,7 @@ def get_read_with_most_neighbors(ktmer, headers, creads):
       best_h = h
   return best_h
 
+
 def build_creads_dict(creads_file, reads_file):
   creads = defaultdict(list)   # Key = header, Val = creads 
   h, r = rf.read_fasta(reads_file)
@@ -852,6 +897,7 @@ def build_creads_dict(creads_file, reads_file):
       creads[h[i]] = line.split()
   return creads
 
+
 def build_headers_dict(ktmer_headers_file):
   headers = defaultdict(list)   # Key = ktmer, Val = [headers]
   with open(ktmer_headers_file) as f:
@@ -859,6 +905,7 @@ def build_headers_dict(ktmer_headers_file):
       words = line.split()
       headers[words[0]] = words[1:]
   return headers
+
 
 if __name__ == '__main__':
   start = datetime.datetime.now()
