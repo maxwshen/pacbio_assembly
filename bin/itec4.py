@@ -40,10 +40,11 @@ def main():
 
   # Actions
   # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  read_ec_from_file()
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
   # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
-  output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
+  # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
 
 def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
   out_fold = '/home/mshen/research/1deg_nhoods/'
@@ -87,6 +88,21 @@ def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool
     commands.getstatusoutput('mv ' + base_file + ' ' + out_fold)
     commands.getstatusoutput('mv ' + hood_file + ' ' + out_fold)
   return
+
+
+def read_ec_from_file():
+  # Takes 13 seconds to read 24k files
+  ec_fold = '/home/mshen/research/1deg_nhoods/'
+  ecs = dict()      # Key = header, Val = consensus
+  
+  for fn in os.listdir(ec_fold):
+    if fnmatch.fnmatch(fn, '*corr.fasta'):
+      with open(ec_fold + fn) as f:
+        lines = f.readlines()
+      ecs[lines[0].strip()] = lines[1].strip()
+      print len(ecs)
+  return ecs
+
 
 def check_contigs(contigs_fold, reads_file):
   # Aligns component reads to combined contigs in an effort to find jumps.
@@ -410,20 +426,23 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     curr_min_pos = 4500000
     curr_max_pos = 5000000
 
-  # min_bp = 106713
-  # max_bp = 108843
-  # ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
+  min_bp = 4512847
+  max_bp = 4513437
+  ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
   covered_range = []        # testing, stores a list of consensus positions so we don't overlap
-  ktmers = filter_ktmers(ktmers, creads, headers)
+  # ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
-  # num_contig_attempts = 200                   # testing
-  num_contig_attempts = len(ktmers)
+  num_contig_attempts = 2                   # testing
+  # num_contig_attempts = len(ktmers)
   for m in range(num_contig_attempts):
     print '\n' + str(datetime.datetime.now())
     curr_ktmer = ktmers[m]
 
     h = get_read_with_most_neighbors(curr_ktmer, headers, creads)
+    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/4937/4611_8608/0_3997'  # farthest
+    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/37843/0_2510/0_2510'    # base
+    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/74540/0_1570/0_1570'  # most ktmers
     # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/25524/0_5702/0_5702'  # jump ex
     # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/66451/0_6519/0_6519'    # normal ex
     # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/22681/0_4859/0_4859'  # 4 iterations  before jump ex
@@ -497,6 +516,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
               # if len(possible_heads) < 50:                            # testing
                 # print head,                                           # testing
                 # find_genomic_position(candidate_read)       # testing
+                # num_neighbors = len(creads[head]) / 2 - 1   # testing
+                # print head, num_neighbors                   # testing
 
               # candidate_read = error_correct(ec_tool, head, headers, creads, hr, rr)    # testing
               # print 'consensus:',                         # testing
@@ -626,9 +647,10 @@ def find_genomic_position(read):
   status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + e_coli_genome + ' ' + blasr_options)[1]
 
   if len(status) > 0:
+    acc = float(status.split()[5])
     beg = int(status.split()[6])
     end = int(status.split()[7])
-    print '\taligned to:', beg, end
+    print '\taligned to:', beg, end, acc
     return (beg + end) / 2
   else:
     print '\tFAILED ALIGNMENT'
