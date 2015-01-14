@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs16/'  
+contigs_fold = '/home/mshen/research/contigs17/'  
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
@@ -28,6 +28,7 @@ blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_options = '-bestn 1 -m 1'   # Concise output
 e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
 ec_prefix = '3X_'
+use_ecs = True
 
 def main():
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
@@ -39,8 +40,7 @@ def main():
 
 
   # Actions
-  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
-  read_ec_from_file()
+  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
   # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
@@ -95,12 +95,12 @@ def read_ec_from_file():
   ec_fold = '/home/mshen/research/1deg_nhoods/'
   ecs = dict()      # Key = header, Val = consensus
   
+  print 'Building EC consensus dictionary from', ec_fold, '...'
   for fn in os.listdir(ec_fold):
     if fnmatch.fnmatch(fn, '*corr.fasta'):
       with open(ec_fold + fn) as f:
         lines = f.readlines()
       ecs[lines[0].strip()] = lines[1].strip()
-      print len(ecs)
   return ecs
 
 
@@ -388,6 +388,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
+  if use_ecs:
+    ecs = read_ec_from_file()
   ktmers = headers.keys()
   random.shuffle(ktmers)
   print 'Found', len(ktmers), 'kt-mers.'
@@ -426,11 +428,12 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     curr_min_pos = 4500000
     curr_max_pos = 5000000
 
-  min_bp = 4512847
-  max_bp = 4513437
-  ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
+  # min_bp = 4512847
+  # max_bp = 4513437
+  # print 'Filtering kt-mers between', min_bp, max_bp
+  # ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
   covered_range = []        # testing, stores a list of consensus positions so we don't overlap
-  # ktmers = filter_ktmers(ktmers, creads, headers)
+  ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
   num_contig_attempts = 2                   # testing
@@ -512,7 +515,11 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             good_candidates = []
             farthest_support = []
             for head in possible_heads:
-              candidate_read = rr[hr.index(head)]
+              if use_ecs and head in ecs:
+                candidate_read = ecs[head]
+              else:
+                candidate_read = rr[hr.index(head)]
+
               # if len(possible_heads) < 50:                            # testing
                 # print head,                                           # testing
                 # find_genomic_position(candidate_read)       # testing
@@ -584,7 +591,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
           for i in range(len(filtered_good_candidates)):
             best_head = filtered_good_candidates[i]
             h = best_head
-            consensus_temp = error_correct(ec_tool, h, headers, creads, hr, rr)
+            if use_ecs and h in ecs:
+              consensus_temp = ecs[h]
+            else:
+              consensus_temp = error_correct(ec_tool, h, headers, creads, hr, rr)
             if len(consensus_temp) != 0 and consensus_temp not in curr_contig:
               break  
           if len(consensus_temp) == 0:
