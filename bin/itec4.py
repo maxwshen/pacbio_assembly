@@ -13,8 +13,8 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs17/'  
-overlap_accuracy_cutoff = 75    # .
+contigs_fold = '/home/mshen/research/contigs18/'  
+overlap_accuracy_cutoff = 92    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
@@ -45,6 +45,33 @@ def main():
   # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
+  # build_super_contigs(contigs_fold)
+
+
+def build_super_contigs(contigs_fold):
+  # Align one contig against all others
+  curr_contig = '/home/mshen/research/contigs16/contig_150177_combined.fasta'
+
+  acc_cutoff = 0
+  dist_to_end = 100
+  for fn in os.listdir(contigs_fold):
+    if fnmatch.fnmatch(fn, '*combined.fasta'):
+      status = commands.getstatusoutput(blasr_exe + ' ' + curr_contig + ' ' + contigs_fold + fn + ' ' + blasr_options)[1]
+      if len(status) == 0:
+        print 'FAILED BLASR ALIGNMENT'
+        continue
+      else:
+        print status                      # TESTING
+        acc = float(status.split()[5])
+        beg_align_r1 = int(status.split()[6])
+        end_align_r1 = int(status.split()[7])
+        total_len_r1 = int(status.split()[8])
+        end_pos_r1 = total_len_r1 - end_align_r1
+        beg_align_r2 = int(status.split()[9])
+        end_align_r2 = int(status.split()[10])
+        total_len_r2 = int(status.split()[11])
+        end_pos_r2 = total_len_r2 - end_align_r2
+
 
 def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
   out_fold = '/home/mshen/research/1deg_nhoods/'
@@ -428,16 +455,16 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     curr_min_pos = 4500000
     curr_max_pos = 5000000
 
-  # min_bp = 4512847
-  # max_bp = 4513437
+  # min_bp = 3767636
+  # max_bp = 3800064
   # print 'Filtering kt-mers between', min_bp, max_bp
   # ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
   covered_range = []        # testing, stores a list of consensus positions so we don't overlap
   ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
-  num_contig_attempts = 2                   # testing
-  # num_contig_attempts = len(ktmers)
+  # num_contig_attempts = 2                   # testing
+  num_contig_attempts = len(ktmers)
   for m in range(num_contig_attempts):
     print '\n' + str(datetime.datetime.now())
     curr_ktmer = ktmers[m]
