@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs19/'  
+contigs_fold = '/home/mshen/research/contigs20/'  
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
@@ -31,9 +31,12 @@ ec_prefix = '3X_'
 use_ecs = False
 
 def main():
-  reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
-  creads_file = '/home/mshen/research/data/22.4_creads.out'
-  ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
+  # reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
+  # creads_file = '/home/mshen/research/data/22.4_creads.out'
+  # ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
+  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  creads_file = '/home/mshen/research/data/22.7_creads_20k.out'
+  ktmer_headers_file = '/home/mshen/research/data/22.7_ktmer_headers_20k.out'
   ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
   parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
@@ -107,6 +110,8 @@ def build_super_contigs(contigs_fold, parallel_prefix):
 def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
   out_fold = '/home/mshen/research/1deg_nhoods/'
   hr, rr = rf.read_fasta(reads_file)
+  for i in range(len(hr)):
+    hr[i] = hr[i].split()[0]
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
 
@@ -166,6 +171,8 @@ def check_contigs(contigs_fold, reads_file):
   # Aligns component reads to combined contigs in an effort to find jumps.
   # 1/5/15: Doesn't work very well.
   hr, rr = rf.read_fasta(reads_file)
+  for i in range(len(hr)):
+    hr[i] = hr[i].split()[0]
   res_file = contigs_fold + 'contig_0results.fasta'
   comb_file = contigs_fold + 'contig_0_combined.fasta'
   temp_file = 'temp_cc_' + temp_sig + '.fasta'
@@ -191,6 +198,8 @@ def combine_contigs(contigs_fold):
       if fn.split('.')[0] + '_combined.fasta' in os.listdir(contigs_fold):
         continue
       hs, rs = rf.read_fasta(contigs_fold + fn)
+      for i in range(len(hs)):
+        hs[i] = hs[i].split()[0]
       bases = [rs[0]]
       for i in range(1, len(rs)):
         new_bases = []
@@ -267,6 +276,8 @@ def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
 
   headers = build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
+  for i in range(len(hr)):
+    hr[i] = hr[i].split()[0]
 
   for kt in headers.keys():
     print kt
@@ -448,6 +459,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   creads = build_creads_dict(creads_file, reads_file)
   headers = build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
+  for i in range(len(hr)):
+    hr[i] = hr[i].split()[0]
   if use_ecs:
     ecs = read_ec_from_file()
   ktmers = headers.keys()
@@ -985,6 +998,8 @@ def get_read_with_most_neighbors(ktmer, headers, creads):
 def build_creads_dict(creads_file, reads_file):
   creads = defaultdict(list)   # Key = header, Val = creads 
   h, r = rf.read_fasta(reads_file)
+  for i in range(len(h)):
+    h[i] = h[i].split()[0]
   with open(creads_file) as f:
     for i, line in enumerate(f):
       creads[h[i]] = line.split()

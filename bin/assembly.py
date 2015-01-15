@@ -11,8 +11,8 @@ def main():
   # _k = int(sys.argv[3])
   # _t = int(sys.argv[4])
   # gv_file = sys.argv[5]
-  # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  reads_file = '/home/mshen/research/sample.fasta'
+  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  # reads_file = '/home/mshen/research/sample.fasta'
   genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
   _k = int(sys.argv[1])
   _t = int(sys.argv[2])
@@ -224,7 +224,7 @@ def a_bruijn_summary(cReads, reads_file, headers_out_file, edges_out_file, cread
     for j in range(len(ktmers)):
       kt = ktmers[j]
       if h not in reads_kt[kt]:
-        reads_kt[kt].append(h)
+        reads_kt[kt].append(h.split()[0])
         # r = find_read.find_read(h, reads_file)
         # r = r.splitlines()[1].strip()
         # reads_kt[kt].append(r.index(kt))
@@ -426,7 +426,7 @@ def convertReads(reads, ktmers, _k):
           tempKmers = []
           count = 0
           for j in range(len(curr_read) - _k + 1):
-            kmer = dna[j : j + _k]
+            kmer = curr_read[j : j + _k]
             if kmer in ktmers:
               tempDist.append(count)
               tempKmers.append(kmer)
@@ -443,7 +443,7 @@ def convertReads(reads, ktmers, _k):
     tempKmers = []
     count = 0
     for j in range(len(curr_read) - _k + 1):
-      kmer = dna[j : j + _k]
+      kmer = curr_read[j : j + _k]
       if kmer in ktmers:
         tempDist.append(count)
         tempKmers.append(kmer)
