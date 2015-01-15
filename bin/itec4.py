@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs20/'  
+contigs_fold = '/home/mshen/research/contigs_temp/'  
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
@@ -31,12 +31,12 @@ ec_prefix = '3X_'
 use_ecs = False
 
 def main():
-  # reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
-  # creads_file = '/home/mshen/research/data/22.4_creads.out'
-  # ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
-  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  creads_file = '/home/mshen/research/data/22.7_creads_20k.out'
-  ktmer_headers_file = '/home/mshen/research/data/22.7_ktmer_headers_20k.out'
+  reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
+  creads_file = '/home/mshen/research/data/22.4_creads.out'
+  ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
+  # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  # creads_file = '/home/mshen/research/data/22.7_creads_20k.out'
+  # ktmer_headers_file = '/home/mshen/research/data/22.7_ktmer_headers_20k.out'
   ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
   parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
@@ -501,8 +501,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     curr_min_pos = 4500000
     curr_max_pos = 5000000
 
-  # min_bp = 3790000
-  # max_bp = 3800064
+  # min_bp = 3281477
+  # max_bp = 3281680
   # print 'Filtering kt-mers between', min_bp, max_bp
   # ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
   covered_range = []        # testing, stores a list of consensus positions so we don't overlap
@@ -939,22 +939,95 @@ def find_extending_read(ktmer, headers, hr, rr):
   return valid
 
 
+def get_nhood(header, headers, creads):
+  def find_acceptable_neighbors(ktmer, header, creads, left, right):
+    ktmers = []
+    dists = dict()
+    kt_pos = -1
+    temp_total = 0
+    for i in range(len(creads[header])):
+      if i % 2 == 1:
+        ktmers.append(creads[header][i])
+        dists[creads[header][i]] = temp_total
+        if creads[header][i] == ktmer:
+          kt_pos = temp_total
+      else:
+        temp_total += int(creads[header][i])
+
+    for key in dists.keys():
+      dists[key] -= kt_pos
+      if -left <= dists[key] <= right and key != ktmer:
+        ktmers.append(key)
+    return ktmers, dists
+
+  ktmers = []
+  nhood_headers = []
+  dist_to_left = dict()     # Key = ktmer, Val = int dist
+  dist_to_right = dict()     # Key = ktmer, Val = int dist
+  temp_total = 0
+
+  for i in range(len(creads[header])):
+    if i % 2 == 1:
+      kt = creads[header][i]
+      ktmers.append(kt)
+      for h in headers[kt]:
+        if h not in nhood_headers:
+          nhood_headers.append(h)
+      dist_to_left[kt] = temp_total
+    else:
+      temp_total += int(creads[header][i])
+  for kt in dist_to_left.keys():
+    dist_to_right[kt] = temp_total - dist_to_left[kt]
+
+  # print len(nhood_headers)
+  while len(nhood_headers) < 50:
+    # print 'loop'              # testing
+    new_ktmers = copy.copy(ktmers)
+    for kt in ktmers:
+      for h in headers[kt]:
+        kts_new, dists = find_acceptable_neighbors(kt, h, creads, dist_to_left[kt], dist_to_right[kt])
+        for kt_new in kts_new:
+          if kt_new not in ktmers:
+            new_ktmers.append(kt_new)
+            dist_to_left[kt_new] = dist_to_left[kt] + dists[kt_new]
+            dist_to_right[kt_new] = dist_to_right[kt] - dists[kt_new]
+            nhood_headers += [s for s in headers[kt_new] if s not in nhood_headers]
+      # print len(nhood_headers), len(ktmers)              # testing
+    ktmers = new_ktmers
+  return nhood_headers
+
 def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None):
   if temp_sig_out is not None:
     temp_sig = temp_sig_out
   else:
     global temp_sig
   reads = []
-  collected_h = set()
-  ktmers = []
-  if header not in creads or len(creads[header]) == 1:
-    return ''
-  for i in range(len(creads[header])):
-    if i % 2 == 1:
-      ktmers.append(creads[header][i])
-  for kt in ktmers:
-    for h in headers[kt]:
-      collected_h.add(h)
+
+  # 1-deg nhood
+  # collected_h = set()
+  # ktmers = []
+  # if header not in creads or len(creads[header]) == 1:
+  #   return ''
+  # for i in range(len(creads[header])):
+  #   if i % 2 == 1:
+  #     ktmers.append(creads[header][i])
+  # for kt in ktmers:
+  #   for h in headers[kt]:
+  #     collected_h.add(h)
+
+  collected_h = get_nhood(header, headers, creads)
+
+  # Use 2-deg nhood, no width bound (irrelevant reads, but ec tool should handle)
+  # new_ktmers = []
+  # new_collected_h = copy.copy(collected_h)
+  # for ch in collected_h:
+  #   for i in range(len(creads[ch])):
+  #     if i % 2 == 1:
+  #       new_ktmers.append(creads[ch][i])
+  #   for kt in new_ktmers:
+  #     for h in headers[kt]:
+  #       new_collected_h.add(h)
+  # collected_h = new_collected_h
 
   reads = [header, rr[hr.index(header)]]
   for ch in collected_h:
