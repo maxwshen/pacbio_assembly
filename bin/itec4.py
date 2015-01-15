@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs_temp/'  
+contigs_fold = '/home/mshen/research/contigs20/'  
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
@@ -104,7 +104,6 @@ def build_super_contigs(contigs_fold, parallel_prefix):
                     jump_score += 1
                     print '+1 jump score'
       print 'jump score:', jump_score, jump_denom
-
 
 
 def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
@@ -530,7 +529,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     if pos > curr_max_pos or pos < curr_min_pos:                   # testing
       continue                                  # testing
     for cr in covered_range:
-      if abs(pos - cr) < 1500:
+      if abs(pos - cr) < 50:
         # don't start here, if it's within 1500bp of a consensus we already have 
         continue 
     curr_contig_headers = [h + 'START']
@@ -801,6 +800,8 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
   print len(ktmers), 'ktmers in 1-deg nhood'
 
   reads = []
+
+  # Traditional
   num_neighbors = []
   for k in ktmers:
     next_read = find_extending_read(k, headers, hr, rr)
@@ -809,6 +810,10 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
       reads += accepted
       for nr in next_read:
         num_neighbors.append(len(creads[nr]) / 2 - 1)
+
+  # Bounded Nhood
+  reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
+
   if len(reads) != 0:
     return [x for (y, x) in sorted(zip(num_neighbors, reads), reverse = True)]
 
