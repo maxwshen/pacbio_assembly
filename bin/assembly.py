@@ -6,11 +6,17 @@ from collections import defaultdict
 import find_read
 
 def main():
-  reads_file = sys.argv[1]
-  genome_file = sys.argv[2]
-  _k = int(sys.argv[3])
-  _t = int(sys.argv[4])
-  gv_file = sys.argv[5]
+  # reads_file = sys.argv[1]
+  # genome_file = sys.argv[2]
+  # _k = int(sys.argv[3])
+  # _t = int(sys.argv[4])
+  # gv_file = sys.argv[5]
+  # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  reads_file = '/home/mshen/research/sample.fasta'
+  genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
+  _k = int(sys.argv[1])
+  _t = int(sys.argv[2])
+  gv_file = 'temp.gv'
   assembly(reads_file, genome_file, _k, _t, gv_file)
   return
 
@@ -48,17 +54,16 @@ def assembly(reads, genome_file, _k, _t, gvname):
   print '... Done.', datetime.datetime.now()
 
   # Find distance bw kt-mers for figures
-  out_file = 'dists_22.4_genome.txt'
+  out_file = 'dists_' + str(_k) + '_' + str(_t) + '_genome.txt'
   dist_bw_ktmers_in_genome(ktmers, _k, genome_file, out_file)
-  sys.exit(0)
 
   print 'Converting reads...'
   cReads = convertReads(reads, ktmers, _k)
   print '... Done.', datetime.datetime.now()
 
-  headers_out_file = 'temp_ktmer_headers.out'
-  edges_out_file = 'temp_ktmer_edges.out'
-  creads_out_file = 'temp_creads.out'
+  headers_out_file = 'temp_ktmer_headers' + '_' + str(_k) + '_' + str(_t) + '.out'
+  edges_out_file = 'temp_ktmer_edges' + '_' + str(_k) + '_' + str(_t) + '.out'
+  creads_out_file = 'temp_creads.out' + '_' + str(_k) + '_' + str(_t) + '.out'
   a_bruijn_summary(cReads, reads, headers_out_file, edges_out_file, creads_out_file)
   return
 
@@ -224,26 +229,26 @@ def a_bruijn_summary(cReads, reads_file, headers_out_file, edges_out_file, cread
         # r = r.splitlines()[1].strip()
         # reads_kt[kt].append(r.index(kt))
         # reads_kt[kt].append(len(r) - r.index(kt) - 1)
-      for k in range(len(ktmers)):
-        if k < j and ktmers[k] not in [s[0] for s in edges[kt]]:
-          dist = -1 * sum(dists[k + 1 : j + 1])
-          if abs(dist) > minimum:
-            edges[kt].append((ktmers[k], dist))
-            edges[ktmers[k]].append((kt, - dist))
-        if k > j and ktmers[k] not in [s[0] for s in edges[kt]]:
-          dist = sum(dists[j + 1 : k + 1])
-          if abs(dist) > minimum:
-            edges[kt].append((ktmers[k], dist))
-            edges[ktmers[k]].append((kt, - dist))
+      # for k in range(len(ktmers)):
+      #   if k < j and ktmers[k] not in [s[0] for s in edges[kt]]:
+      #     dist = -1 * sum(dists[k + 1 : j + 1])
+      #     if abs(dist) > minimum:
+      #       edges[kt].append((ktmers[k], dist))
+      #       edges[ktmers[k]].append((kt, - dist))
+      #   if k > j and ktmers[k] not in [s[0] for s in edges[kt]]:
+      #     dist = sum(dists[j + 1 : k + 1])
+      #     if abs(dist) > minimum:
+      #       edges[kt].append((ktmers[k], dist))
+      #       edges[ktmers[k]].append((kt, - dist))
 
   with open(headers_out_file, 'w+') as f:
     for k in reads_kt.keys():
       f.write(k + ' ' + ' '.join([str(s) for s in reads_kt[k]]) + '\n')
 
-  with open(edges_out_file, 'w+') as f:
-    for k in edges.keys():
-      out_edges = [s[0] + ' ' + str(s[1]) for s in edges[k]]
-      f.write(k + ' ' + ' '.join(out_edges) + '\n')
+  # with open(edges_out_file, 'w+') as f:
+  #   for k in edges.keys():
+  #     out_edges = [s[0] + ' ' + str(s[1]) for s in edges[k]]
+  #     f.write(k + ' ' + ' '.join(out_edges) + '\n')
 
   return
 
@@ -353,24 +358,32 @@ def findKTmers(reads, _k, _t):
   # Output:
   #   Set of all ktmers in reads  
 
-  isdna = False
   counts = dict()
   readcount = 0
   with open(reads) as f:
+    curr_read = ''
     for i, line in enumerate(f):
-      if isdna:
-        isdna = False
+      if line[0] != '>':
         dna = line.strip()
-        for j in range(len(dna) - _k + 1):
-          kmer = dna[j:j+_k]
+        curr_read += dna
+      if line[0] == '>' or line[0] == '@':
+        readcount += 1
+        for j in range(len(curr_read) - _k + 1):
+          kmer = curr_read[j:j+_k]
           # print kmer
           if kmer in counts:
             counts[kmer] = counts[kmer] + 1
           else:
             counts[kmer] = 1
-      if line[0] == '>' or line[0] == '@':
-        readcount += 1
-        isdna = True
+        curr_read = ''
+    for j in range(len(curr_read) - _k + 1):
+      kmer = curr_read[j:j+_k]
+      # print kmer
+      if kmer in counts:
+        counts[kmer] = counts[kmer] + 1
+      else:
+        counts[kmer] = 1
+    curr_read = ''
   ans = set()
 
   for key, val in counts.iteritems():
@@ -394,36 +407,58 @@ def convertReads(reads, ktmers, _k):
   #   The 0-th element in the distance list is the distance of the first (k,t)-mer
   #     from the beginning of the string.
 
-  isdna = False
   cReads = []
-  count = 0
+  readcount = 0
   num_reads_wo_ktmers = 0
+  curr_dna = ''
 
+  readcount = 0
   with open(reads) as f:
+    curr_read = ''
     for i, line in enumerate(f):
-      count = 0
-      if isdna:
-        isdna = False
-        dna = line
-        tempKmers = []
-        tempDist = []
-        for j in range(len(dna) - _k + 1):
-          kmer = dna[j:j+_k]
-          if kmer in ktmers:
-            tempDist.append(count)
-            tempKmers.append(kmer)
-            count = 1
-          else:
-            count += 1
-        tempDist.append(count + _k - 1)
-        cReads.append((tempKmers, tempDist))
-        if len(tempKmers) == 0:
-          num_reads_wo_ktmers += 1
-      if line[0] == '>' or line[0] == '@':
-        isdna = True
+      if line[0] != '>':
+        dna = line.strip()
+        curr_read += dna
+      if i > 0:
+        if line[0] == '>' or line[0] == '@':
+          readcount += 1
+          tempDist = []
+          tempKmers = []
+          count = 0
+          for j in range(len(curr_read) - _k + 1):
+            kmer = dna[j : j + _k]
+            if kmer in ktmers:
+              tempDist.append(count)
+              tempKmers.append(kmer)
+              count = 1
+            else:
+              count += 1
+          tempDist.append(count + _k - 1)
+          if len(tempDist) == 1:
+            num_reads_wo_ktmers += 1
+          cReads.append((tempKmers, tempDist))
+          curr_read = ''
+    readcount += 1
+    tempDist = []
+    tempKmers = []
+    count = 0
+    for j in range(len(curr_read) - _k + 1):
+      kmer = dna[j : j + _k]
+      if kmer in ktmers:
+        tempDist.append(count)
+        tempKmers.append(kmer)
+        count = 1
+      else:
+        count += 1
+    tempDist.append(count + _k - 1)
+    if len(tempDist) == 1:
+      num_reads_wo_ktmers += 1
+    cReads.append((tempKmers, tempDist))
+    curr_read = ''
 
   # print cReads
-  print num_reads_wo_ktmers, 'reads without any kt-mers out of', i / 2, 'reads'
+  print num_reads_wo_ktmers, 'reads without any kt-mers out of', readcount, 'reads'
+  print cReads
   return cReads
 
 def hamming_dist(s1, s2):

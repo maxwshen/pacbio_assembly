@@ -13,8 +13,8 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs18/'  
-overlap_accuracy_cutoff = 92    # .
+contigs_fold = '/home/mshen/research/contigs19/'  
+overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
@@ -28,7 +28,7 @@ blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_options = '-bestn 1 -m 1'   # Concise output
 e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
 ec_prefix = '3X_'
-use_ecs = True
+use_ecs = False
 
 def main():
   reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
@@ -45,32 +45,63 @@ def main():
   # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
-  # build_super_contigs(contigs_fold)
+  # build_super_contigs(contigs_fold, parallel_prefix)
 
 
-def build_super_contigs(contigs_fold):
-  # Align one contig against all others
-  curr_contig = '/home/mshen/research/contigs16/contig_150177_combined.fasta'
-
-  acc_cutoff = 0
+def build_super_contigs(contigs_fold, parallel_prefix):
+  sc_overlap_len = 500
+  sc_overlap_acc = 90
   dist_to_end = 100
+
+  # Align one contig against all others
+  traversed = set()
   for fn in os.listdir(contigs_fold):
-    if fnmatch.fnmatch(fn, '*combined.fasta'):
-      status = commands.getstatusoutput(blasr_exe + ' ' + curr_contig + ' ' + contigs_fold + fn + ' ' + blasr_options)[1]
-      if len(status) == 0:
-        print 'FAILED BLASR ALIGNMENT'
-        continue
+    if fnmatch.fnmatch(fn, '*combined.fasta') and fn not in traversed:
+      if fn.split('_')[1][:3] == parallel_prefix:
+        curr_contig = fn
+        cc_file = contigs_fold + curr_contig
+        traversed.add(fn)
       else:
-        print status                      # TESTING
-        acc = float(status.split()[5])
-        beg_align_r1 = int(status.split()[6])
-        end_align_r1 = int(status.split()[7])
-        total_len_r1 = int(status.split()[8])
-        end_pos_r1 = total_len_r1 - end_align_r1
-        beg_align_r2 = int(status.split()[9])
-        end_align_r2 = int(status.split()[10])
-        total_len_r2 = int(status.split()[11])
-        end_pos_r2 = total_len_r2 - end_align_r2
+        continue
+
+      print cc_file
+
+      jump_score = 0
+      jump_denom = 0
+      for direction in ['right']:
+        candidates = []
+        for fn2 in os.listdir(contigs_fold):
+          if fnmatch.fnmatch(fn2, '*combined.fasta') and fn2 != curr_contig:
+            fn_file = contigs_fold + fn2
+            status = commands.getstatusoutput(blasr_exe + ' ' + cc_file + ' ' + fn_file + ' ' + blasr_options)[1]
+            if len(status) == 0:
+              # print 'FAILED BLASR ALIGNMENT'    # testing
+              continue
+            else:
+              # print status                      # TESTING
+              acc = float(status.split()[5])
+              beg_align_r1 = int(status.split()[6])
+              end_align_r1 = int(status.split()[7])
+              total_len_r1 = int(status.split()[8])
+              end_pos_r1 = total_len_r1 - end_align_r1
+              beg_align_r2 = int(status.split()[9])
+              end_align_r2 = int(status.split()[10])
+              total_len_r2 = int(status.split()[11])
+              end_pos_r2 = total_len_r2 - end_align_r2
+              length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2
+
+              if direction == 'right':
+                if beg_align_r1 < dist_to_end and end_pos_r2 < dist_to_end and acc > sc_overlap_acc and length > sc_overlap_len:
+                  candidates.append(fn_file)
+                  # print 'SUCCESS'
+                if length > 10000:
+                  jump_denom += 1
+                  print status
+                  if beg_align_r1 > dist_to_end and beg_align_r2 > dist_to_end or end_pos_r1 > dist_to_end and  end_pos_r2 > dist_to_end:
+                    jump_score += 1
+                    print '+1 jump score'
+      print 'jump score:', jump_score, jump_denom
+
 
 
 def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
@@ -157,6 +188,8 @@ def combine_contigs(contigs_fold):
   for fn in os.listdir(contigs_fold):
     if fnmatch.fnmatch(fn, '*[0-9].fasta'):
       print fn                              # TESTING
+      if fn.split('.')[0] + '_combined.fasta' in os.listdir(contigs_fold):
+        continue
       hs, rs = rf.read_fasta(contigs_fold + fn)
       bases = [rs[0]]
       for i in range(1, len(rs)):
@@ -455,7 +488,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     curr_min_pos = 4500000
     curr_max_pos = 5000000
 
-  # min_bp = 3767636
+  # min_bp = 3790000
   # max_bp = 3800064
   # print 'Filtering kt-mers between', min_bp, max_bp
   # ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
@@ -567,6 +600,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
                 overlaps = True
               if overlaps:
                 good_candidates.append(head)
+                criteria[head] = len(creads[head]) / 2 - 1
               # print 'Overlap:', overlaps                  # testing
 
             if len(farthest_support) == 0:
@@ -611,7 +645,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
 
           # Sort candidates by some criteria
           filtered_good_candidates.sort(key = lambda d: criteria[d], reverse = True)
-          random.shuffle(filtered_good_candidates)    # testing
+          # random.shuffle(filtered_good_candidates)    # testing
 
           # Once we choose a particular candidate
           consensus_temp = ''
