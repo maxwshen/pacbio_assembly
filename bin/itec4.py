@@ -13,8 +13,9 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs21/'  
+contigs_fold = '/home/mshen/research/contigs23/'  
 overlap_accuracy_cutoff = 75    # .
+# overlap_length_cutoff = 7000     # .
 overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
@@ -24,6 +25,8 @@ km_k = 15                       # .
 km_cutoff = 10                  # .
 support_dist_cutoff = 100000    # CONSENSUS: Bp. length, acceptable support distance from end of consensus
 support_t = 3                   # CONSENSUS: Req. # reads to support a position to determine farthest support
+nhood_header_limit = 50         # .
+nhood_it_limit = 4              # .
 blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_options = '-bestn 1 -m 1'   # Concise output
 e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
@@ -43,9 +46,9 @@ def main():
 
 
   # Actions
-  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
-  # combine_contigs(contigs_fold)
+  combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # build_super_contigs(contigs_fold, parallel_prefix)
@@ -583,7 +586,10 @@ def get_nhood(header, headers, creads):
 
   # print len(nhood_headers)
   num_iterations = 0
-  while len(nhood_headers) < 50 and num_iterations < 4:
+  used_ktmers = set(ktmers)
+  exit = False
+  print 'starting w/', len(nhood_headers), 'headers'
+  while len(nhood_headers) < nhood_header_limit and num_iterations < nhood_it_limit:
     num_iterations += 1
     print num_iterations
     # print 'loop'              # testing
@@ -593,13 +599,23 @@ def get_nhood(header, headers, creads):
       for h in headers[kt]:
         kts_new, dists = find_acceptable_neighbors(kt, h, creads, dist_to_left[kt], dist_to_right[kt])
         for kt_new in kts_new:
-          if kt_new not in ktmers:
+          if kt_new not in ktmers and kt_new not in used_ktmers:
             new_ktmers.append(kt_new)
             dist_to_left[kt_new] = dist_to_left[kt] + dists[kt_new]
             dist_to_right[kt_new] = dist_to_right[kt] - dists[kt_new]
             nhood_headers += [s for s in headers[kt_new] if s not in nhood_headers]
-      # print len(nhood_headers), len(new_ktmers)              # testing
+            if len(nhood_headers) >= nhood_header_limit:
+              exit = True
+              break
+        if exit:
+          break
+      if exit:
+        break
+      print len(nhood_headers), len(new_ktmers), len(used_ktmers)              # testing
+    for s in new_ktmers:
+      used_ktmers.add(s)
     ktmers = copy.copy(new_ktmers)
+
   return nhood_headers
 
 
