@@ -15,8 +15,8 @@ global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
 contigs_fold = '/home/mshen/research/contigs23/'  
 overlap_accuracy_cutoff = 75    # .
-# overlap_length_cutoff = 7000     # .
-overlap_length_cutoff = 300     # .
+overlap_length_cutoff = 7000     # .
+# overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
 support_ratio = 0.6             # CANDIDATE: Required support for a chosen read from other candidates
@@ -26,7 +26,7 @@ km_cutoff = 10                  # .
 support_dist_cutoff = 100000    # CONSENSUS: Bp. length, acceptable support distance from end of consensus
 support_t = 3                   # CONSENSUS: Req. # reads to support a position to determine farthest support
 nhood_header_limit = 50         # .
-nhood_it_limit = 4              # .
+nhood_it_limit = 3              # .
 blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_options = '-bestn 1 -m 1'   # Concise output
 e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
@@ -34,12 +34,12 @@ ec_prefix = '3X_'
 use_ecs = False
 
 def main():
-  reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
-  creads_file = '/home/mshen/research/data/22.4_creads.out'
-  ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
-  # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  # creads_file = '/home/mshen/research/data/22.7_creads_20k.out'
-  # ktmer_headers_file = '/home/mshen/research/data/22.7_ktmer_headers_20k.out'
+  # reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
+  # creads_file = '/home/mshen/research/data/22.4_creads.out'
+  # ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
+  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  creads_file = '/home/mshen/research/data/22.7_creads_20k.out'
+  ktmer_headers_file = '/home/mshen/research/data/22.7_ktmer_headers_20k.out'
   ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
   parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
@@ -48,10 +48,10 @@ def main():
   # Actions
   # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
-  combine_contigs(contigs_fold)
+  # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
-  # build_super_contigs(contigs_fold, parallel_prefix)
+  find_jumps_in_contigs(contigs_fold, parallel_prefix)
 
 
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix):
@@ -105,7 +105,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   # print 'Filtering kt-mers between', min_bp, max_bp
   # ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
   covered_range = []        # testing, stores a list of consensus positions so we don't overlap
-  ktmers = filter_ktmers(ktmers, creads, headers)
+  # ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
   # num_contig_attempts = 2                   # testing
@@ -179,6 +179,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
               possible_heads = kmer_matching.kmer_matching(curr_contig[0], reads_file, km_k, km_cutoff, file_bool = False)
             if h in possible_heads:
               possible_heads.remove(h)
+            new_possible_heads = []
+            for ph in possible_heads:
+              new_possible_heads.append(ph.split()[0])
+            possible_heads = new_possible_heads
 
           # Filter candidates by overlapping test
           # If we find farthest_support is far, redo overlapping with trimmed consensus
@@ -712,59 +716,106 @@ def build_headers_dict(ktmer_headers_file):
 
 
 
-def build_super_contigs(contigs_fold, parallel_prefix):
-  sc_overlap_len = 500
+def find_jumps_in_contigs(contigs_fold, parallel_prefix):
+  sc_overlap_len = 10000
   sc_overlap_acc = 90
-  dist_to_end = 100
+  dist_to_end = 200
+  jump_pct_cutoff = 0.60        # If > this pct of candidates show jumps, then split up contig
+  min_support = 2               # When splitting contigs, split at any location with this much support
 
   # Align one contig against all others
   traversed = set()
-  for fn in os.listdir(contigs_fold):
-    if fnmatch.fnmatch(fn, '*combined.fasta') and fn not in traversed:
-      if fn.split('_')[1][:3] == parallel_prefix:
-        curr_contig = fn
-        cc_file = contigs_fold + curr_contig
-        traversed.add(fn)
-      else:
-        continue
+  combined_files = [s for s in os.listdir(contigs_fold) if fnmatch.fnmatch(s, '*combined.fasta')]
+  combined_files = [s for s in combined_files if s not in traversed]
+  for fn in combined_files:
+    if fn.split('_')[1][:3] == parallel_prefix:
+      curr_contig = fn
+      cc_file = contigs_fold + curr_contig
+      traversed.add(fn)
+    else:
+      continue
 
-      print cc_file
+    print cc_file
 
-      jump_score = 0
-      jump_denom = 0
-      for direction in ['right']:
-        candidates = []
-        for fn2 in os.listdir(contigs_fold):
-          if fnmatch.fnmatch(fn2, '*combined.fasta') and fn2 != curr_contig:
-            fn_file = contigs_fold + fn2
-            status = commands.getstatusoutput(blasr_exe + ' ' + cc_file + ' ' + fn_file + ' ' + blasr_options)[1]
-            if len(status) == 0:
-              # print 'FAILED BLASR ALIGNMENT'    # testing
-              continue
-            else:
-              # print status                      # TESTING
-              acc = float(status.split()[5])
-              beg_align_r1 = int(status.split()[6])
-              end_align_r1 = int(status.split()[7])
-              total_len_r1 = int(status.split()[8])
-              end_pos_r1 = total_len_r1 - end_align_r1
-              beg_align_r2 = int(status.split()[9])
-              end_align_r2 = int(status.split()[10])
-              total_len_r2 = int(status.split()[11])
-              end_pos_r2 = total_len_r2 - end_align_r2
-              length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2
+    jump_pos = dict()   # Key = genomic position (int), Val = count
+    jump_denom = 0
+    jump_score = 0
+    for fn2 in os.listdir(contigs_fold):
+      if fnmatch.fnmatch(fn2, '*combined.fasta') and fn2 != curr_contig:
+        fn_file = contigs_fold + fn2
+        status = commands.getstatusoutput(blasr_exe + ' ' + cc_file + ' ' + fn_file + ' ' + blasr_options)[1]
+        if len(status) == 0:
+          # print 'FAILED BLASR ALIGNMENT'    # testing
+          continue
+        else:
+          # print status                      # TESTING
+          acc = float(status.split()[5])
+          beg_align_r1 = int(status.split()[6])
+          end_align_r1 = int(status.split()[7])
+          total_len_r1 = int(status.split()[8])
+          end_pos_r1 = total_len_r1 - end_align_r1
+          beg_align_r2 = int(status.split()[9])
+          end_align_r2 = int(status.split()[10])
+          total_len_r2 = int(status.split()[11])
+          end_pos_r2 = total_len_r2 - end_align_r2
+          length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2
 
-              if direction == 'right':
-                if beg_align_r1 < dist_to_end and end_pos_r2 < dist_to_end and acc > sc_overlap_acc and length > sc_overlap_len:
-                  candidates.append(fn_file)
-                  # print 'SUCCESS'
-                if length > 10000:
-                  jump_denom += 1
-                  print status
-                  if beg_align_r1 > dist_to_end and beg_align_r2 > dist_to_end or end_pos_r1 > dist_to_end and  end_pos_r2 > dist_to_end:
-                    jump_score += 1
-                    print '+1 jump score'
-      print 'jump score:', jump_score, jump_denom
+          if length > sc_overlap_len and acc > sc_overlap_acc:
+            jump_denom += 1
+            print status
+            if beg_align_r1 > dist_to_end and beg_align_r2 > dist_to_end or end_pos_r1 > dist_to_end and  end_pos_r2 > dist_to_end:
+              print 'found jump'
+              jump_score += 1
+              if beg_align_r2 not in jump_pos:
+                jump_pos[beg_align_r2] = 0
+              if end_align_r2 not in jump_pos:
+                jump_pos[end_align_r2] = 0
+              jump_pos[beg_align_r2] += 1
+              jump_pos[end_align_r2] += 1
+    print 'jump score:', jump_pos, jump_denom
+
+    # Smooth out counts on either end of contig, from 0 to dist_to_end, and dist_to_end to last bp
+    total_contig_len = total_len_r2
+    new_jump_pos = {0: 0, total_contig_len: 0}
+    for k in jump_pos:
+      if k < dist_to_end:
+        new_jump_pos[0] += jump_pos[k]
+      if k > total_contig_len - dist_to_end:
+        new_jump_pos[total_contig_len] += jump_pos[k]
+      if dist_to_end <= k <= total_contig_len - dist_to_end:
+        if k not in new_jump_pos:
+          new_jump_pos[k] = jump_pos[k]
+        else:
+          new_jump_pos[k] += jump_pos[k] 
+    jump_pos = new_jump_pos
+    print 'after smoothing:', jump_pos, jump_denom
+
+    # Split
+    if float(jump_score) / float(jump_denom) >= jump_pct_cutoff:
+      split_pts = []
+      for k in jump_pos:
+        if jump_pos[k] >= min_support:
+          split_pts.append(k)
+      split_pts.sort()
+      if split_pts[0] != 0:
+        split_pts.insert(0, 0)
+      if split_pts[-1] != total_contig_len:
+        split_pts.append(total_contig_len)
+    else:
+      split_pts = [0, total_contig_len]
+
+    # Write split contigs
+    ch, cr = read_fasta.read_fasta(curr_contig)
+    ch = ch[0]
+    cr = cr[0]
+    for i in range(len(split_pts) - 1):
+      # [:-6] is to remove '.fasta'
+      new_contig_file = curr_contig[: -6] + '_split_' + str(i) + '.fasta'
+      with open(new_contig_file, 'w') as f:
+        f.write(ch + '_split_' + str(i) + '\n' + cr[split_pts[i] : split_pts[i + 1]])
+
+
+
 
 
 def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
