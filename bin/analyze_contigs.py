@@ -26,22 +26,25 @@ def analyze_combined_contigs(fold):
   lengths = []
   accs = []
   for fn in os.listdir(fold):
-    if fnmatch.fnmatch(fn, '*combined*'):
+    # if fnmatch.fnmatch(fn, '*combined*'):
+    if fnmatch.fnmatch(fn, '*split*'):
       status = commands.getstatusoutput(blasr_exe + ' ' + fold + fn + ' ' + e_coli_genome + ' ' + blasr_options)[1]
       print status
-      accuracy = float(status.split()[5])
-      beg_align_r1 = int(status.split()[6])
-      end_align_r1 = int(status.split()[7])
-      total_len_r1 = int(status.split()[8])
-      end_pos_r1 = total_len_r1 - end_align_r1
-      beg_align_r2 = int(status.split()[9])
-      end_align_r2 = int(status.split()[10])
-      total_len_r2 = int(status.split()[11])
-      end_pos_r2 = total_len_r2 - end_align_r2
-      length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2
+      if len(status) > 0:
+        accuracy = float(status.split()[5])
+        beg_align_r1 = int(status.split()[6])
+        end_align_r1 = int(status.split()[7])
+        total_len_r1 = int(status.split()[8])
+        end_pos_r1 = total_len_r1 - end_align_r1
+        beg_align_r2 = int(status.split()[9])
+        end_align_r2 = int(status.split()[10])
+        total_len_r2 = int(status.split()[11])
+        end_pos_r2 = total_len_r2 - end_align_r2
+        length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2
 
-      lengths.append(length)
-      accs.append(accuracy)
+        if length > 1000:
+          lengths.append(length)
+          accs.append(accuracy)
 
   print numpy.mean(lengths), numpy.std(lengths)
   print numpy.mean(accs), numpy.std(accs)

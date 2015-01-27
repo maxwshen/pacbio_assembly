@@ -15,8 +15,8 @@ global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
 contigs_fold = '/home/mshen/research/contigs23/'  
 overlap_accuracy_cutoff = 75    # .
-overlap_length_cutoff = 7000     # .
-# overlap_length_cutoff = 300     # .
+# overlap_length_cutoff = 7000     # .
+overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
 support_ratio = 0.6             # CANDIDATE: Required support for a chosen read from other candidates
@@ -34,24 +34,24 @@ ec_prefix = '3X_'
 use_ecs = False
 
 def main():
-  # reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
-  # creads_file = '/home/mshen/research/data/22.4_creads.out'
-  # ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
-  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  creads_file = '/home/mshen/research/data/22.7_creads_20k.out'
-  ktmer_headers_file = '/home/mshen/research/data/22.7_ktmer_headers_20k.out'
+  reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
+  creads_file = '/home/mshen/research/data/22.4_creads.out'
+  ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
+  # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  # creads_file = '/home/mshen/research/data/22.7_creads_20k.out'
+  # ktmer_headers_file = '/home/mshen/research/data/22.7_ktmer_headers_20k.out'
   ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
   parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
 
   # Actions
-  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
   # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
-  find_jumps_in_contigs(contigs_fold, parallel_prefix)
+  # find_jumps_in_contigs(contigs_fold, parallel_prefix)
 
 
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix):
@@ -100,10 +100,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     curr_min_pos = 4500000
     curr_max_pos = 5000000
 
-  # min_bp = 3281477
-  # max_bp = 3281680
-  # print 'Filtering kt-mers between', min_bp, max_bp
-  # ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
+  min_bp = 2515752
+  max_bp = 2516697 
+  print 'Filtering kt-mers between', min_bp, max_bp
+  ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
   covered_range = []        # testing, stores a list of consensus positions so we don't overlap
   # ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
@@ -721,7 +721,7 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
   sc_overlap_acc = 90
   dist_to_end = 200
   jump_pct_cutoff = 0.60        # If > this pct of candidates show jumps, then split up contig
-  min_support = 2               # When splitting contigs, split at any location with this much support
+  min_support = 3               # When splitting contigs, split at any location with this much support
 
   # Align one contig against all others
   traversed = set()
@@ -805,12 +805,12 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
       split_pts = [0, total_contig_len]
 
     # Write split contigs
-    ch, cr = read_fasta.read_fasta(curr_contig)
+    ch, cr = rf.read_fasta(contigs_fold + curr_contig)
     ch = ch[0]
     cr = cr[0]
     for i in range(len(split_pts) - 1):
       # [:-6] is to remove '.fasta'
-      new_contig_file = curr_contig[: -6] + '_split_' + str(i) + '.fasta'
+      new_contig_file = contigs_fold + curr_contig[: -6] + '_split_' + str(i) + '.fasta'
       with open(new_contig_file, 'w') as f:
         f.write(ch + '_split_' + str(i) + '\n' + cr[split_pts[i] : split_pts[i + 1]])
 
