@@ -13,10 +13,10 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs23/'  
+contigs_fold = '/home/mshen/research/contigs_temp/'  
 overlap_accuracy_cutoff = 75    # .
-# overlap_length_cutoff = 7000     # .
-overlap_length_cutoff = 300     # .
+overlap_length_cutoff = 5000     # .
+# overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
 support_ratio = 0.6             # CANDIDATE: Required support for a chosen read from other candidates
@@ -34,12 +34,12 @@ ec_prefix = '3X_'
 use_ecs = False
 
 def main():
-  reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
-  creads_file = '/home/mshen/research/data/22.4_creads.out'
-  ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
-  # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  # creads_file = '/home/mshen/research/data/22.7_creads_20k.out'
-  # ktmer_headers_file = '/home/mshen/research/data/22.7_ktmer_headers_20k.out'
+  # reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
+  # creads_file = '/home/mshen/research/data/22.4_creads.out'
+  # ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
+  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  creads_file = '/home/mshen/research/data/22.7_creads_20k.out'
+  ktmer_headers_file = '/home/mshen/research/data/22.7_ktmer_headers_20k.out'
   ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
   parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
@@ -100,10 +100,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     curr_min_pos = 4500000
     curr_max_pos = 5000000
 
-  min_bp = 2515752
-  max_bp = 2516697 
-  print 'Filtering kt-mers between', min_bp, max_bp
-  ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
+  # min_bp = 2119287 
+  # max_bp = 2119820
+  # print 'Filtering kt-mers between', min_bp, max_bp
+  # ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
   covered_range = []        # testing, stores a list of consensus positions so we don't overlap
   # ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
@@ -216,8 +216,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
                 overlaps = True
               if overlaps:
                 good_candidates.append(head)
-                criteria[head] = len(creads[head]) / 2 - 1
-              # print 'Overlap:', overlaps                  # testing
+                # criteria[head] = len(creads[head]) / 2 - 1    # Criteria = # of neighbors in 1-deg nhood
+                # print 'Overlap:', overlaps                  # testing
 
             if len(farthest_support) == 0:
               break
@@ -261,13 +261,17 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
 
           # Sort candidates by some criteria
           filtered_good_candidates.sort(key = lambda d: criteria[d], reverse = True)
+          # filtered_good_candidates.sort(key = lambda d: criteria[d])
           # random.shuffle(filtered_good_candidates)    # testing
+          print filtered_good_candidates
 
           # Once we choose a particular candidate
           consensus_temp = ''
           for i in range(len(filtered_good_candidates)):
             best_head = filtered_good_candidates[i]
             h = best_head
+            print 'CANDIDATE CHOSEN:'
+            test_overlap(h, rr[hr.index(h)], curr_contig[-1], direction, farthest_support, criteria, relaxed = False)     # testing
             if use_ecs and h in ecs:
               consensus_temp = ecs[h]
             else:
@@ -375,7 +379,9 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2          # Average alignment length
 
   # update criteria
-  criteria[head1] = length
+  # criteria[head1] = length
+  criteria[head1] = accuracy
+
 
   # Update farthest support, the distance to the end of the consensus that has support from 1deg nhood 
   if direction == 'right':
@@ -386,7 +392,7 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   if not relaxed:
     if direction == 'right':
       # if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 and beg_align_r2 < dist_from_end:
-        # print status                    # TESTING
+      print status                    # TESTING
       return accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 and beg_align_r2 < dist_from_end
     if direction == 'left':
       return accuracy >= acc_cutoff and length > len_cutoff and beg_align_r2 < dist_from_end and beg_align_r1 > beg_align_r2 and end_pos_r1 < dist_from_end
@@ -728,7 +734,7 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
   combined_files = [s for s in os.listdir(contigs_fold) if fnmatch.fnmatch(s, '*combined.fasta')]
   combined_files = [s for s in combined_files if s not in traversed]
   for fn in combined_files:
-    if fn.split('_')[1][:3] == parallel_prefix:
+    if fn.split('_')[1][:1] == parallel_prefix:
       curr_contig = fn
       cc_file = contigs_fold + curr_contig
       traversed.add(fn)
@@ -791,7 +797,7 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
     print 'after smoothing:', jump_pos, jump_denom
 
     # Split
-    if float(jump_score) / float(jump_denom) >= jump_pct_cutoff:
+    if jump_denom > 0 and float(jump_score) / float(jump_denom) >= jump_pct_cutoff:
       split_pts = []
       for k in jump_pos:
         if jump_pos[k] >= min_support:
