@@ -15,7 +15,7 @@ global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
 contigs_fold = '/home/mshen/research/contigs_temp/'  
 overlap_accuracy_cutoff = 75    # .
-overlap_length_cutoff = 5000     # .
+overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
 num_attempts = 2                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
@@ -271,7 +271,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             best_head = filtered_good_candidates[i]
             h = best_head
             print 'CANDIDATE CHOSEN:'
-            test_overlap(h, rr[hr.index(h)], curr_contig[-1], direction, farthest_support, criteria, relaxed = False)     # testing
+            test_overlap(h, rr[hr.index(h)], curr_contig[-1], direction, farthest_support, criteria, relaxed = False, print_alignment = True)     # testing
+            find_genomic_position(rr[hr.index(h)])  # testing
             if use_ecs and h in ecs:
               consensus_temp = ecs[h]
             else:
@@ -331,16 +332,21 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     print curr_ktmer_len - len(ktmers), ' kt-mers filtered from consensus'
 
 
-def find_genomic_position(read):
+def find_genomic_position(read, print_alignment = False):
   temp_file = 'temp_read' + temp_sig + '.fasta'
   with open(temp_file, 'w') as f:
     f.write('>1\n' + read)
+
+  if print_alignment:
+    temp_blasr_options = '-bestn 1 -m 0'
+    print commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + e_coli_genome + ' ' + temp_blasr_options)[1]
   status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + e_coli_genome + ' ' + blasr_options)[1]
 
   if len(status) > 0:
     acc = float(status.split()[5])
     beg = int(status.split()[6])
     end = int(status.split()[7])
+    print status
     print '\taligned to:', beg, end, acc
     return (beg + end) / 2
   else:
@@ -348,11 +354,13 @@ def find_genomic_position(read):
     return -1
   
 
-def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relaxed = False):
+def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relaxed = False, print_alignment = False):
   # Tests that seq1 is after seq2
   # farthest_support is a list that will contains distances 
   # from the end (depending on direction) of the current read
-  dist_from_end = 100
+
+  dist_from_end = 2000
+  # dist_from_end = 100
   acc_cutoff = overlap_accuracy_cutoff
   len_cutoff = overlap_length_cutoff
 
@@ -362,6 +370,10 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
     f.write('>1\n' + seq1)
   with open(temps2, 'w') as f:
     f.write('>2\n' + seq2)
+
+  if print_alignment:
+    temp_blasr_options = '-bestn 1 -m 0'
+    print commands.getstatusoutput(blasr_exe + ' ' + temps1 + ' ' + temps2 + ' ' + temp_blasr_options)[1]
 
   status = commands.getstatusoutput(blasr_exe + ' ' + temps1 + ' ' + temps2 + ' ' + blasr_options)[1]
   if len(status.strip()) == 0:
@@ -411,21 +423,18 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
 
   reads = []
 
-  # Traditional
-  num_neighbors = []
+  # Traditional 1-deg nhood
   for k in ktmers:
     next_read = find_extending_read(k, headers, hr, rr)
     if len(next_read) != 0:
       accepted = [nr for nr in next_read if nr not in traversed_headers and nr not in reads]
       reads += accepted
-      for nr in next_read:
-        num_neighbors.append(len(creads[nr]) / 2 - 1)
 
   # Bounded Nhood
-  reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
+  # reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
 
   if len(reads) != 0:
-    return [x for (y, x) in sorted(zip(num_neighbors, reads), reverse = True)]
+    return reads
 
   # Try finding a read that comes close to passing the current read
   for k in dist_to_end.keys():
@@ -637,18 +646,19 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
   reads = []
 
   # 1-deg nhood
-  # collected_h = set()
-  # ktmers = []
-  # if header not in creads or len(creads[header]) == 1:
-  #   return ''
-  # for i in range(len(creads[header])):
-  #   if i % 2 == 1:
-  #     ktmers.append(creads[header][i])
-  # for kt in ktmers:
-  #   for h in headers[kt]:
-  #     collected_h.add(h)
+  collected_h = set()
+  ktmers = []
+  if header not in creads or len(creads[header]) == 1:
+    return ''
+  for i in range(len(creads[header])):
+    if i % 2 == 1:
+      ktmers.append(creads[header][i])
+  for kt in ktmers:
+    for h in headers[kt]:
+      collected_h.add(h)
 
-  collected_h = get_nhood(header, headers, creads)
+  # n-degree nhood
+  # collected_h = get_nhood(header, headers, creads)
 
   # Use 2-deg nhood, no width bound (irrelevant reads, but ec tool should handle)
   # new_ktmers = []
