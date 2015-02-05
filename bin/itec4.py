@@ -30,7 +30,8 @@ nhood_it_limit = 3              # .
 blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_options = '-bestn 1 -m 1'   # Concise output
 e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
-ec_prefix = '3X_'
+# ec_prefix = '3X_'
+ec_prefix = '5X_'
 use_ecs = False
 
 def main():
@@ -38,9 +39,11 @@ def main():
   # creads_file = '/home/mshen/research/data/22.4_creads.out'
   # ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
   reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  creads_file = '/home/mshen/research/data/22.7_creads_20k.out'
-  ktmer_headers_file = '/home/mshen/research/data/22.7_ktmer_headers_20k.out'
-  ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
+  creads_file = '/home/mshen/research/data/22.8_creads_20k.out'
+  ktmer_headers_file = '/home/mshen/research/data/22.8_ktmer_headers_20k.out'
+
+  # ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
+  ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
   parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
@@ -656,6 +659,12 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
   for kt in ktmers:
     for h in headers[kt]:
       collected_h.add(h)
+
+  print 'POSITION OF BASE READ'
+  find_genomic_position(rr[hr.index(header)]) 
+  print 'FINDING POSITIONS OF 1-DEG NHOOD READS'  # testing
+  for ch in collected_h:                          # testing
+    find_genomic_position(rr[hr.index(ch)])       # testing
 
   # n-degree nhood
   # collected_h = get_nhood(header, headers, creads)
