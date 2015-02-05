@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs_temp/'  
+contigs_fold = '/home/mshen/research/contigs26/'  
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
@@ -30,20 +30,23 @@ nhood_it_limit = 3              # .
 blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_options = '-bestn 1 -m 1'   # Concise output
 e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
-# ec_prefix = '3X_'
-ec_prefix = '5X_'
+ec_prefix = '3X_'
+# ec_prefix = '5X_'
 use_ecs = False
 
 def main():
   # reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
   # creads_file = '/home/mshen/research/data/22.4_creads.out'
   # ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
-  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  creads_file = '/home/mshen/research/data/22.8_creads_20k.out'
-  ktmer_headers_file = '/home/mshen/research/data/22.8_ktmer_headers_20k.out'
 
-  # ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
-  ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
+  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  # creads_file = '/home/mshen/research/data/22.8_creads_20k.out'
+  # ktmer_headers_file = '/home/mshen/research/data/22.8_ktmer_headers_20k.out'
+  creads_file = '/home/mshen/research/data/temp_creads.out_40_5.out'
+  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_40_5.out'
+
+  ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
+  # ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
   parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
@@ -648,6 +651,9 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
     global temp_sig
   reads = []
 
+  print 'POSITION OF BASE READ'                     # testing
+  find_genomic_position(rr[hr.index(header)])       # testing
+  
   # 1-deg nhood
   collected_h = set()
   ktmers = []
@@ -657,14 +663,14 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
     if i % 2 == 1:
       ktmers.append(creads[header][i])
   for kt in ktmers:
+    print kt                                    # testing
     for h in headers[kt]:
       collected_h.add(h)
+      find_genomic_position(rr[hr.index(h)])    # testing
 
-  print 'POSITION OF BASE READ'
-  find_genomic_position(rr[hr.index(header)]) 
-  print 'FINDING POSITIONS OF 1-DEG NHOOD READS'  # testing
-  for ch in collected_h:                          # testing
-    find_genomic_position(rr[hr.index(ch)])       # testing
+  # print 'FINDING POSITIONS OF 1-DEG NHOOD READS'  # testing
+  # for ch in collected_h:                          # testing
+    # find_genomic_position(rr[hr.index(ch)])       # testing
 
   # n-degree nhood
   # collected_h = get_nhood(header, headers, creads)
@@ -703,7 +709,10 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
     return ''
 
   with open(ec_out, 'r') as f:  
-    consensus = f.readlines()[1].strip()
+    if len(f.readlines()) > 1:
+      consensus = f.readlines()[1].strip()
+    else:
+      consensus = ''
   print 'consensus len:', len(consensus), 'out of', len(rr[hr.index(header)])
   return consensus
 
@@ -733,10 +742,14 @@ def build_creads_dict(creads_file, reads_file):
 
 def build_headers_dict(ktmer_headers_file):
   headers = defaultdict(list)   # Key = ktmer, Val = [headers]
+  unique = set()
   with open(ktmer_headers_file) as f:
     for i, line in enumerate(f):
       words = line.split()
       headers[words[0]] = words[1:]
+      for w in words[1:]:
+        unique.add(w)
+  print 'Found', len(unique), 'reads with kt-mers'
   return headers
 
 
