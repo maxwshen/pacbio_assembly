@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs26/'  
+contigs_fold = '/home/mshen/research/contigs27/'  
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
@@ -30,23 +30,26 @@ nhood_it_limit = 3              # .
 blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_options = '-bestn 1 -m 1'   # Concise output
 e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
-ec_prefix = '3X_'
-# ec_prefix = '5X_'
+# ec_prefix = '3X_'
+ec_prefix = '5X_'
 use_ecs = False
 
 def main():
+  # OLD DATASET
   # reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
   # creads_file = '/home/mshen/research/data/22.4_creads.out'
   # ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
 
+  # NEW 20KB DATASET
   reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  
   # creads_file = '/home/mshen/research/data/22.8_creads_20k.out'
   # ktmer_headers_file = '/home/mshen/research/data/22.8_ktmer_headers_20k.out'
-  creads_file = '/home/mshen/research/data/temp_creads.out_40_5.out'
-  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_40_5.out'
+  creads_file = '/home/mshen/research/data/temp_creads.out_28_6.out'
+  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6.out'
 
-  ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
-  # ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
+  # ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
+  ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
   parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
@@ -131,7 +134,11 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     print 'STARTING HEADER:\n', h
     curr_contig = [error_correct(ec_tool, h, headers, creads, hr, rr)]
     print 'STARTING AT',                        # testing
-    pos = find_genomic_position(curr_contig[0])       # testing
+    if len(curr_contig[0]) == 0:
+      continue
+    if len(curr_contig) > 2500:
+      break
+    pos = find_genomic_position(curr_contig[0], hr, rr)       # testing
     if pos > curr_max_pos or pos < curr_min_pos:                   # testing
       continue                                  # testing
     for cr in covered_range:
@@ -204,15 +211,15 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
 
               # if len(possible_heads) < 50:                            # testing
                 # print head,                                           # testing
-                # find_genomic_position(candidate_read)       # testing
+                # find_genomic_position(candidate_read, hr, rr)       # testing
                 # num_neighbors = len(creads[head]) / 2 - 1   # testing
                 # print head, num_neighbors                   # testing
 
               # candidate_read = error_correct(ec_tool, head, headers, creads, hr, rr)    # testing
               # print 'consensus:',                         # testing
-              # find_genomic_position(candidate_read)       # testing
+              # find_genomic_position(candidate_read, hr, rr)       # testing
               # print' original:',                          # testing
-              # find_genomic_position(rr[hr.index(head)])   # testing
+              # find_genomic_position(rr[hr.index(head)], hr, rr)   # testing
 
               overlaps = False
               if direction == 'right' and test_overlap(head, candidate_read, curr_contig[-1], direction, farthest_support, criteria, relaxed = False):
@@ -241,7 +248,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
           print len(good_candidates), 'reads passed overlap filter'
 
           # for gc in good_candidates:                                # testing
-            # find_genomic_position(rr[hr.index(gc)])       # testing
+            # find_genomic_position(rr[hr.index(gc)], hr, rr)       # testing
 
           # Filter candidates by their support for each other
           filtered_good_candidates = []
@@ -278,7 +285,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             h = best_head
             print 'CANDIDATE CHOSEN:'
             test_overlap(h, rr[hr.index(h)], curr_contig[-1], direction, farthest_support, criteria, relaxed = False, print_alignment = True)     # testing
-            find_genomic_position(rr[hr.index(h)])  # testing
+            # find_genomic_position(rr[hr.index(h)], hr, rr)  # testing
             if use_ecs and h in ecs:
               consensus_temp = ecs[h]
             else:
@@ -291,7 +298,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
           else:
             print 'New header:', h, criteria[h]       # testing
             print 'SUCCESS!',                         # testing 
-            con_pos = find_genomic_position(consensus_temp)     # testing
+            con_pos = find_genomic_position(consensus_temp, hr, rr)     # testing
             covered_range.append(con_pos)
             if len(consensus_temp) == 0:
               print 'failed to error correct'
@@ -338,10 +345,14 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     print curr_ktmer_len - len(ktmers), ' kt-mers filtered from consensus'
 
 
-def find_genomic_position(read, print_alignment = False):
+def find_genomic_position(read, hr, rr, print_alignment = False):
+  if read in rr:
+    head = hr[rr.index(read)]
+  else:
+    head = '>none'
   temp_file = 'temp_read' + temp_sig + '.fasta'
   with open(temp_file, 'w') as f:
-    f.write('>1\n' + read)
+    f.write(head + '\n' + read)
 
   if print_alignment:
     temp_blasr_options = '-bestn 1 -m 0'
@@ -378,7 +389,7 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
     f.write('>2\n' + seq2)
 
   if print_alignment:
-    temp_blasr_options = '-bestn 1 -m 0'
+    temp_blasr_options = '-bestn 1 -m 1'
     print commands.getstatusoutput(blasr_exe + ' ' + temps1 + ' ' + temps2 + ' ' + temp_blasr_options)[1]
 
   status = commands.getstatusoutput(blasr_exe + ' ' + temps1 + ' ' + temps2 + ' ' + blasr_options)[1]
@@ -410,7 +421,7 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   if not relaxed:
     if direction == 'right':
       # if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 and beg_align_r2 < dist_from_end:
-      print status                    # TESTING
+      # print status                    # TESTING
       return accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 and beg_align_r2 < dist_from_end
     if direction == 'left':
       return accuracy >= acc_cutoff and length > len_cutoff and beg_align_r2 < dist_from_end and beg_align_r1 > beg_align_r2 and end_pos_r1 < dist_from_end
@@ -652,7 +663,7 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
   reads = []
 
   print 'POSITION OF BASE READ'                     # testing
-  find_genomic_position(rr[hr.index(header)])       # testing
+  find_genomic_position(rr[hr.index(header)], hr, rr)       # testing
   
   # 1-deg nhood
   collected_h = set()
@@ -663,14 +674,14 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
     if i % 2 == 1:
       ktmers.append(creads[header][i])
   for kt in ktmers:
-    print kt                                    # testing
+    # print kt                                    # testing
     for h in headers[kt]:
       collected_h.add(h)
-      find_genomic_position(rr[hr.index(h)])    # testing
+      # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
 
   # print 'FINDING POSITIONS OF 1-DEG NHOOD READS'  # testing
   # for ch in collected_h:                          # testing
-    # find_genomic_position(rr[hr.index(ch)])       # testing
+    # find_genomic_position(rr[hr.index(ch)], hr, rr)       # testing
 
   # n-degree nhood
   # collected_h = get_nhood(header, headers, creads)
@@ -709,8 +720,11 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
     return ''
 
   with open(ec_out, 'r') as f:  
-    if len(f.readlines()) > 1:
-      consensus = f.readlines()[1].strip()
+    text = f.readlines()
+    if len(text) > 1:
+      consensus = text[1].strip()
+      if len(consensus) == 0:
+        return ''
     else:
       consensus = ''
   print 'consensus len:', len(consensus), 'out of', len(rr[hr.index(header)])
@@ -857,7 +871,7 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
 
 
 def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
-  out_fold = '/home/mshen/research/1deg_nhoods/'
+  out_fold = '/home/mshen/research/1deg_nhoods_20kb_40_5/'
   hr, rr = rf.read_fasta(reads_file)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
@@ -866,12 +880,12 @@ def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool
 
   par_range = range(len(hr)) 
   if parallel_prefix == '000':
-    par_range = range(10000)
+    par_range = range(3000)
   if parallel_prefix == '100':
-    par_range = range(10000, 20000)
+    par_range = range(3000, 6000)
   if parallel_prefix == '200':
-    par_range = range(20000, len(hr))
-
+    par_range = range(6000, len(hr))
+    
   for i in par_range:
     print i
     header = hr[i]
