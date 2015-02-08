@@ -11,8 +11,9 @@ def main():
   # _k = int(sys.argv[3])
   # _t = int(sys.argv[4])
   # gv_file = sys.argv[5]
-  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
   # reads_file = '/home/mshen/research/sample.fasta'
+  # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
   _k = int(sys.argv[1])
   _t = int(sys.argv[2])
@@ -61,9 +62,9 @@ def assembly(reads, genome_file, _k, _t, gvname):
   cReads = convertReads(reads, ktmers, _k)
   print '... Done.', datetime.datetime.now()
 
-  headers_out_file = 'temp_ktmer_headers' + '_' + str(_k) + '_' + str(_t) + '.out'
-  edges_out_file = 'temp_ktmer_edges' + '_' + str(_k) + '_' + str(_t) + '.out'
-  creads_out_file = 'temp_creads.out' + '_' + str(_k) + '_' + str(_t) + '.out'
+  headers_out_file = 'temp_ktmer_headers' + '_' + str(_k) + '_' + str(_t) + '_rc.out'
+  edges_out_file = 'temp_ktmer_edges' + '_' + str(_k) + '_' + str(_t) + '_rc.out'
+  creads_out_file = 'temp_creads.out' + '_' + str(_k) + '_' + str(_t) + '_rc.out'
   a_bruijn_summary(cReads, reads, headers_out_file, edges_out_file, creads_out_file)
   return
 
@@ -386,12 +387,27 @@ def findKTmers(reads, _k, _t):
     curr_read = ''
   ans = set()
 
+  num_filtered = 0
   for key, val in counts.iteritems():
     if _t <= val:
-      if not_palindrome(key):
+      # Ensures kt-mers are not palindromes
+      if not_palindrome(key) and filter_homopolymers(kmer):
         ans.add(key)
+      else:
+        num_filtered += 1
   print 'Found', len(ans), 'ktmers in', readcount, 'reads'
+  print 'Filtered out', num_filtered, 'ktmers'
   return ans
+
+def filter_homopolymers(kmer):
+  cutoff = 0.75
+  counts = {'A': 0.0, 'C': 0.0, 'T': 0.0, 'G': 0.0}
+  for nt in kmer:
+    counts[nt] += 1.0
+  for key in counts:
+    if counts[key] / float(len(kmer)) > cutoff:
+      return False
+  return True
 
 
 def not_palindrome(kmer):
@@ -470,7 +486,7 @@ def convertReads(reads, ktmers, _k):
 
   # print cReads
   print num_reads_wo_ktmers, 'reads without any kt-mers out of', readcount, 'reads'
-  print cReads
+  # print cReads
   return cReads
 
 def hamming_dist(s1, s2):
