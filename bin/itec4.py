@@ -45,8 +45,8 @@ def main():
   
   # creads_file = '/home/mshen/research/data/22.8_creads_20k.out'
   # ktmer_headers_file = '/home/mshen/research/data/22.8_ktmer_headers_20k.out'
-  creads_file = '/home/mshen/research/data/temp_creads.out_28_6.out'
-  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6.out'
+  creads_file = '/home/mshen/research/data/temp_creads.out_38_5.out'
+  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_38_5.out'
 
   # ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
   ec_tool = '/home/lin/program/error_correction_5X_0204.sh'

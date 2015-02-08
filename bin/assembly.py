@@ -388,9 +388,21 @@ def findKTmers(reads, _k, _t):
 
   for key, val in counts.iteritems():
     if _t <= val:
-      ans.add(key)
+      if not_palindrome(key):
+        ans.add(key)
   print 'Found', len(ans), 'ktmers in', readcount, 'reads'
   return ans
+
+
+def not_palindrome(kmer):
+  if len(kmer) % 2 == 1:
+    if kmer[: len(kmer) / 2 + 1][::-1] == kmer[len(kmer) / 2 :]:
+      return False
+    return True 
+  else:
+    if kmer[: len(kmer) / 2][::-1] == kmer[len(kmer) / 2 :]:
+      return False
+    return True
 
 
 def convertReads(reads, ktmers, _k):
