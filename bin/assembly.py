@@ -62,9 +62,10 @@ def assembly(reads, genome_file, _k, _t, gvname):
   cReads = convertReads(reads, ktmers, _k)
   print '... Done.', datetime.datetime.now()
 
-  headers_out_file = 'temp_ktmer_headers' + '_' + str(_k) + '_' + str(_t) + '_rc.out'
-  edges_out_file = 'temp_ktmer_edges' + '_' + str(_k) + '_' + str(_t) + '_rc.out'
-  creads_out_file = 'temp_creads.out' + '_' + str(_k) + '_' + str(_t) + '_rc.out'
+  data_fold = '/home/mshen/research/data/'
+  headers_out_file = data_fold + 'temp_ktmer_headers' + '_' + str(_k) + '_' + str(_t) + '_rc.out'
+  edges_out_file = data_fold + 'temp_ktmer_edges' + '_' + str(_k) + '_' + str(_t) + '_rc.out'
+  creads_out_file = data_fold + 'temp_creads.out' + '_' + str(_k) + '_' + str(_t) + '_rc.out'
   a_bruijn_summary(cReads, reads, headers_out_file, edges_out_file, creads_out_file)
   return
 
