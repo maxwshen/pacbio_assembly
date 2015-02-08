@@ -15,11 +15,12 @@ def main():
 
   # New dataset
   ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
-  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   # creads_file = '/home/mshen/research/data/22.8_creads_20k.out'
   # ktmer_headers_file = '/home/mshen/research/data/22.8_ktmer_headers_20k.out'
-  creads_file = '/home/mshen/research/data/temp_creads.out_28_6.out'
-  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6.out'
+  creads_file = '/home/mshen/research/data/temp_creads.out_28_6_rc.out'
+  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
 
   creads = itec4.build_creads_dict(creads_file, reads_file)
   headers = itec4.build_headers_dict(ktmer_headers_file)

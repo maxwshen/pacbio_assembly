@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs28/'  
+contigs_fold = '/home/mshen/research/contigs27/'
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
@@ -41,13 +41,12 @@ def main():
   # ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
 
   # NEW 20KB DATASET
-  # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
+  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
   
   # creads_file = '/home/mshen/research/data/22.8_creads_20k.out'
   # ktmer_headers_file = '/home/mshen/research/data/22.8_ktmer_headers_20k.out'
-  creads_file = '/home/mshen/research/data/temp_creads.out_28_6_rc.out'
-  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
+  creads_file = '/home/mshen/research/data/temp_creads.out_38_5.out'
+  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_38_5.out'
 
   # ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
   ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
@@ -397,8 +396,6 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   if len(status.strip()) == 0:
     return False
   # print status                    # TESTING
-  r2_strand_dir = int(status.split()[2])
-  r1_strand_dir = int(status.split()[3])
   accuracy = float(status.split()[5])
   beg_align_r1 = int(status.split()[6])
   end_align_r1 = int(status.split()[7])
@@ -414,8 +411,6 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   # criteria[head1] = length
   criteria[head1] = accuracy
 
-  if r2_strand_dir != r1_strand_dir:
-    return False
 
   # Update farthest support, the distance to the end of the consensus that has support from 1deg nhood 
   if direction == 'right':

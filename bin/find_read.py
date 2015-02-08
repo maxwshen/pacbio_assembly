@@ -13,7 +13,8 @@ def main():
   # reads_file = sys.argv[2]
   # reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
   # reads_file = '/home/mshen/research/NEWREADS_22.4_rmhomo.fasta'
-  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   read = find_read('>' + header, reads_file)
   print read
 
