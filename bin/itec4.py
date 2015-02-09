@@ -17,15 +17,15 @@ contigs_fold = '/home/mshen/research/contigs28/'
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
-num_attempts = 2                # Number of times to try nhood extension.
+num_attempts = 0                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
 support_ratio = 0.6             # CANDIDATE: Required support for a chosen read from other candidates
 limit_km_times_total = 5        # How many times to attempt k-mer matching extension per direction
 km_k = 15                       # .
-km_cutoff = 10                  # .
+km_cutoff = 1000                # .
 support_dist_cutoff = 100000    # CONSENSUS: Bp. length, acceptable support distance from end of consensus
 support_t = 3                   # CONSENSUS: Req. # reads to support a position to determine farthest support
-nhood_header_limit = 50         # .
+nhood_header_limit = float('inf')         # .
 nhood_it_limit = 3              # .
 blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_options = '-bestn 1 -m 1'   # Concise output
@@ -46,8 +46,8 @@ def main():
   
   # creads_file = '/home/mshen/research/data/22.8_creads_20k.out'
   # ktmer_headers_file = '/home/mshen/research/data/22.8_ktmer_headers_20k.out'
-  creads_file = '/home/mshen/research/data/temp_creads.out_26_6_rc.out'
-  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_26_6_rc.out'
+  creads_file = '/home/mshen/research/data/temp_creads.out_22_5_rc.out'
+  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_22_5_rc.out'
 
   # ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
   ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
@@ -139,7 +139,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
       continue
     if len(curr_contig) > 2500:
       break
-    pos = find_genomic_position(curr_contig[0], hr, rr)       # testing
+    pos = find_genomic_position(curr_contig[0], hr, rr, align_consensus = True)       # testing
     if pos > curr_max_pos or pos < curr_min_pos:                   # testing
       continue                                  # testing
     for cr in covered_range:
@@ -191,12 +191,14 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
               possible_heads = kmer_matching.kmer_matching(curr_contig[-1], reads_file, km_k, km_cutoff, file_bool = False)
             if direction == 'left':
               possible_heads = kmer_matching.kmer_matching(curr_contig[0], reads_file, km_k, km_cutoff, file_bool = False)
-            if h in possible_heads:
-              possible_heads.remove(h)
             new_possible_heads = []
             for ph in possible_heads:
               new_possible_heads.append(ph.split()[0])
             possible_heads = new_possible_heads
+            if h in possible_heads:
+              possible_heads.remove(h)
+            print 'from k-mer matching, found', len(possible_heads), 'possible reads'
+
 
           # Filter candidates by overlapping test
           # If we find farthest_support is far, redo overlapping with trimmed consensus
@@ -218,7 +220,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
 
               # candidate_read = error_correct(ec_tool, head, headers, creads, hr, rr)    # testing
               # print 'consensus:',                         # testing
-              # find_genomic_position(candidate_read, hr, rr)       # testing
+              # find_genomic_position(candidate_read, hr, rr, align_consensus = True))       # testing
               # print' original:',                          # testing
               # find_genomic_position(rr[hr.index(head)], hr, rr)   # testing
 
@@ -299,7 +301,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
           else:
             print 'New header:', h, criteria[h]       # testing
             print 'SUCCESS!',                         # testing 
-            con_pos = find_genomic_position(consensus_temp, hr, rr)     # testing
+            con_pos = find_genomic_position(consensus_temp, hr, rr, align_consensus = True)     # testing
             covered_range.append(con_pos)
             if len(consensus_temp) == 0:
               print 'failed to error correct'
@@ -346,7 +348,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     print curr_ktmer_len - len(ktmers), ' kt-mers filtered from consensus'
 
 
-def find_genomic_position(read, hr, rr, print_alignment = False):
+def find_genomic_position(read, hr, rr, print_alignment = False, align_consensus = False):
   if read in rr:
     head = hr[rr.index(read)]
   else:
@@ -355,10 +357,17 @@ def find_genomic_position(read, hr, rr, print_alignment = False):
   with open(temp_file, 'w') as f:
     f.write(head + '\n' + read)
 
+  new_blasr_options = blasr_options
+  temp_blasr_options = ''
   if print_alignment:
     temp_blasr_options = '-bestn 1 -m 0'
+  if align_consensus:
+    temp_blasr_options += ' -maxMatch 20'
+    new_blasr_options += ' -maxMatch 20'
+
+  if print_alignment:
     print commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + e_coli_genome + ' ' + temp_blasr_options)[1]
-  status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + e_coli_genome + ' ' + blasr_options)[1]
+  status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + e_coli_genome + ' ' + new_blasr_options)[1]
 
   if len(status) > 0:
     acc = float(status.split()[5])
@@ -458,60 +467,66 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
   if len(reads) != 0:
     return reads
 
-  # Try finding a read that comes close to passing the current read
-  for k in dist_to_end.keys():
-    dist_to_end[k] -= leniency
+  # Try bounded n-deg nhood
+  print 'trying n-deg bounded nhood'
+  reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
+  print 'found', len(reads), 'possible reads'
+  return reads
 
-  print 'trying n-degree nhood extension'
-  traversed_ktmers = set(ktmers)
-  while True:
-    print '\tkmers considered:', len(traversed_ktmers)
-    new_ktmers = defaultdict(list)   # Key = new-ktmer, Val = [old ktmer that is connected]
-    if len(ktmers) > num_kmers_cutoff:
-      print 'Stopping - too many kt-mers'
-      return ''
-    for kt in ktmers:
-      for kn in find_neighboring_ktmers(kt, headers, creads):
-        if kn not in traversed_ktmers:
-          if kn not in new_ktmers.keys() or kt not in new_ktmers[kn]:
-            new_ktmers[kn].append(kt)
-    if len(new_ktmers.keys()) == 0:
-      print 'None found'
-      return ''
+  # # Try finding a read that comes close to passing the current read
+  # for k in dist_to_end.keys():
+  #   dist_to_end[k] -= leniency
 
-    print 'found', len(new_ktmers.keys()), 'ktmers from', len(ktmers), 'ktmers'
-    new_dist_to_end = dict()
-    reads = []
-    num_neighbors = []
-    for kt in new_ktmers.keys():
-      k = new_ktmers[kt][0]
-      dist = dist_bw_ktmers(kt, k, headers, creads)
-      if dist == None:
-        continue
-      if direction == 'right':
-        new_dist_to_end[kt] = dist_to_end[k] + dist
-      if direction == 'left':
-        new_dist_to_end[kt] = dist_to_end[k] - dist
-      next_read = find_extending_read(k, headers, hr, rr)
-      if len(next_read) != 0:
-        accepted = [nr for nr in next_read if nr not in traversed_headers and nr not in reads]
-        reads += accepted
-        for nr in next_read:
-          num_neighbors.append(len(creads[nr]) / 2 - 1)
-    if len(reads) != 0:
-      return [x for (y, x) in sorted(zip(num_neighbors, reads), reverse = True)]
+  # print 'trying n-degree nhood extension'
+  # traversed_ktmers = set(ktmers)
+  # while True:
+  #   print '\tkmers considered:', len(traversed_ktmers)
+  #   new_ktmers = defaultdict(list)   # Key = new-ktmer, Val = [old ktmer that is connected]
+  #   if len(ktmers) > num_kmers_cutoff:
+  #     print 'Stopping - too many kt-mers'
+  #     return ''
+  #   for kt in ktmers:
+  #     for kn in find_neighboring_ktmers(kt, headers, creads):
+  #       if kn not in traversed_ktmers:
+  #         if kn not in new_ktmers.keys() or kt not in new_ktmers[kn]:
+  #           new_ktmers[kn].append(kt)
+  #   if len(new_ktmers.keys()) == 0:
+  #     print 'None found'
+  #     return ''
 
-    # Filter out those who are too far
-    for k in ktmers:
-      traversed_ktmers.add(k)
+  #   print 'found', len(new_ktmers.keys()), 'ktmers from', len(ktmers), 'ktmers'
+  #   new_dist_to_end = dict()
+  #   reads = []
+  #   num_neighbors = []
+  #   for kt in new_ktmers.keys():
+  #     k = new_ktmers[kt][0]
+  #     dist = dist_bw_ktmers(kt, k, headers, creads)
+  #     if dist == None:
+  #       continue
+  #     if direction == 'right':
+  #       new_dist_to_end[kt] = dist_to_end[k] + dist
+  #     if direction == 'left':
+  #       new_dist_to_end[kt] = dist_to_end[k] - dist
+  #     next_read = find_extending_read(k, headers, hr, rr)
+  #     if len(next_read) != 0:
+  #       accepted = [nr for nr in next_read if nr not in traversed_headers and nr not in reads]
+  #       reads += accepted
+  #       for nr in next_read:
+  #         num_neighbors.append(len(creads[nr]) / 2 - 1)
+  #   if len(reads) != 0:
+  #     return [x for (y, x) in sorted(zip(num_neighbors, reads), reverse = True)]
 
-    # print new_dist_to_end
-    ktmers = []
-    for kt in new_ktmers.keys():
-      if new_dist_to_end[kt] < backtrack_limit and kt not in traversed_ktmers:
-        ktmers.append(kt)
+  #   # Filter out those who are too far
+  #   for k in ktmers:
+  #     traversed_ktmers.add(k)
 
-    dist_to_end = new_dist_to_end
+  #   # print new_dist_to_end
+  #   ktmers = []
+  #   for kt in new_ktmers.keys():
+  #     if new_dist_to_end[kt] < backtrack_limit and kt not in traversed_ktmers:
+  #       ktmers.append(kt)
+
+  #   dist_to_end = new_dist_to_end
 
 
 def find_neighboring_ktmers(ktmer, headers, creads):

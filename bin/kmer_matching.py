@@ -15,7 +15,7 @@ def main():
   read_file = sys.argv[4]
   # read_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
   out_file = 'km_' + ec_seq_file.translate(None, '/') + '.fasta'
-  kmer_matching(ec_seq_file, read_file, _k, cutoff, out_file)
+  kmer_matching(ec_seq_file, read_file, _k, cutoff, file_bool = True)
   return
 
   # Batch
@@ -37,13 +37,18 @@ def kmer_matching(ec_seq_file, read_file, _k, cutoff, file_bool = True):
   else:
     ec_seq = ec_seq_file
 
+  print 'Finding k-mers in base read...'
   kmers = set()
   for i in range(len(ec_seq) - _k + 1):
     kmers.add(ec_seq[i:i + _k])
+  print 'Found', len(kmers), 'kmers'
 
+  print 'Finding k-mers in all other reads...'
   reads = dict()    # Key = header, value = num shared kmers
   hr, rr = rf.read_fasta(read_file)
   for i in range(len(rr)):
+    if i % 1000 == 0:
+      print i
     r = rr[i]
     h = hr[i]
     score = sum([1 if r[i:i + _k] in kmers else 0 for i in range(len(r) - _k + 1)])
@@ -51,6 +56,7 @@ def kmer_matching(ec_seq_file, read_file, _k, cutoff, file_bool = True):
 
   filtered_heads = []
   for key in sorted(reads, key = reads.get, reverse = True):
+    print key, reads[key]
     if reads[key] < cutoff:
       break
     filtered_heads.append(key)
