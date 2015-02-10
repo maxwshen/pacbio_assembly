@@ -13,16 +13,16 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs28/'  
+contigs_fold = '/home/mshen/research/contigs29/'  
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
-num_attempts = 0                # Number of times to try nhood extension.
+num_attempts = 1                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
 support_ratio = 0.6             # CANDIDATE: Required support for a chosen read from other candidates
 limit_km_times_total = 5        # How many times to attempt k-mer matching extension per direction
 km_k = 15                       # .
-km_cutoff = 1000                # .
+km_cutoff = 100                 # .
 support_dist_cutoff = 100000    # CONSENSUS: Bp. length, acceptable support distance from end of consensus
 support_t = 3                   # CONSENSUS: Req. # reads to support a position to determine farthest support
 nhood_header_limit = float('inf')         # .
@@ -46,11 +46,12 @@ def main():
   
   # creads_file = '/home/mshen/research/data/22.8_creads_20k.out'
   # ktmer_headers_file = '/home/mshen/research/data/22.8_ktmer_headers_20k.out'
-  creads_file = '/home/mshen/research/data/temp_creads.out_22_5_rc.out'
-  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_22_5_rc.out'
+  creads_file = '/home/mshen/research/data/temp_creads.out_28_6_rc.out'
+  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
 
   # ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
-  ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
+  # ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
+  ec_tool = '/home/lin/program/error_correction_5X_0209.sh'
   parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
@@ -137,7 +138,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     print 'STARTING AT',                        # testing
     if len(curr_contig[0]) == 0:
       continue
-    if len(curr_contig) > 2500:
+    if len(curr_contig) > 500:
       break
     pos = find_genomic_position(curr_contig[0], hr, rr, align_consensus = True)       # testing
     if pos > curr_max_pos or pos < curr_min_pos:                   # testing
@@ -225,10 +226,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
               # find_genomic_position(rr[hr.index(head)], hr, rr)   # testing
 
               overlaps = False
-              if direction == 'right' and test_overlap(head, candidate_read, curr_contig[-1], direction, farthest_support, criteria, relaxed = False):
+              if direction == 'right' and test_overlap(head, candidate_read, curr_contig[-1], direction, farthest_support, criteria, relaxed = km):
                 # option: relaxed = km
                 overlaps = True
-              if direction == 'left' and test_overlap(head, curr_contig[0], candidate_read, direction, farthest_support, criteria, relaxed = False):
+              if direction == 'left' and test_overlap(head, curr_contig[0], candidate_read, direction, farthest_support, criteria, relaxed = km):
                 overlaps = True
               if overlaps:
                 good_candidates.append(head)
@@ -467,11 +468,13 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
   if len(reads) != 0:
     return reads
 
-  # Try bounded n-deg nhood
-  print 'trying n-deg bounded nhood'
-  reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
-  print 'found', len(reads), 'possible reads'
   return reads
+
+  # # Try bounded n-deg nhood
+  # print 'trying n-deg bounded nhood'
+  # reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
+  # print 'found', len(reads), 'possible reads'
+  # return reads
 
   # # Try finding a read that comes close to passing the current read
   # for k in dist_to_end.keys():
