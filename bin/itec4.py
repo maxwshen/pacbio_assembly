@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs29/'  
+contigs_fold = '/home/mshen/research/contigs30/'  
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
@@ -51,7 +51,8 @@ def main():
 
   # ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
   # ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
-  ec_tool = '/home/lin/program/error_correction_5X_0209.sh'
+  # ec_tool = '/home/lin/program/error_correction_5X_0209.sh'
+  ec_tool = '/home/lin/program/error_correction_5X_0210.sh'
   parallel_prefix = sys.argv[1]
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
 
@@ -119,8 +120,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   # ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
-  # num_contig_attempts = 2                   # testing
-  num_contig_attempts = len(ktmers)
+  num_contig_attempts = 1                   # testing
+  # num_contig_attempts = len(ktmers)
   for m in range(num_contig_attempts):
     print '\n' + str(datetime.datetime.now())
     curr_ktmer = ktmers[m]
@@ -138,8 +139,6 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     print 'STARTING AT',                        # testing
     if len(curr_contig[0]) == 0:
       continue
-    if len(curr_contig) > 500:
-      break
     pos = find_genomic_position(curr_contig[0], hr, rr, align_consensus = True)       # testing
     if pos > curr_max_pos or pos < curr_min_pos:                   # testing
       continue                                  # testing
@@ -153,7 +152,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
 
 
     # MAIN LOOP
-    for direction in ['right', 'left']:
+    # for direction in ['right', 'left']:
+    for direction in ['right']:
       counter = 0
       limit_km_times = limit_km_times_total
       h = master_h
@@ -161,6 +161,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         # Break condition: Current header doesn't change, meaning we couldn't find any extension candidates
         counter += 1
         print 'iteration', counter, direction
+        if counter > 350:
+          break
         old_h = h
         temp_traversed_headers = []
         if limit_km_times > 0:
@@ -677,6 +679,21 @@ def get_nhood(header, headers, creads):
 
   return nhood_headers
 
+def get_1_deg_nhood(header, creads, headers):
+  collected_h = set()
+  ktmers = []
+  if header not in creads or len(creads[header]) == 1:
+    print header
+    return ''
+  for i in range(len(creads[header])):
+    if i % 2 == 1:
+      ktmers.append(creads[header][i])
+  for kt in ktmers:
+    for h in headers[kt]:
+      if h != header:
+        collected_h.add(h)
+      # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
+  return collected_h
 
 def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None):
   if temp_sig_out is not None:
@@ -689,18 +706,7 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
   find_genomic_position(rr[hr.index(header)], hr, rr)       # testing
   
   # 1-deg nhood
-  collected_h = set()
-  ktmers = []
-  if header not in creads or len(creads[header]) == 1:
-    return ''
-  for i in range(len(creads[header])):
-    if i % 2 == 1:
-      ktmers.append(creads[header][i])
-  for kt in ktmers:
-    # print kt                                    # testing
-    for h in headers[kt]:
-      collected_h.add(h)
-      # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
+  collected_h = get_1_deg_nhood(header, creads, headers)
 
   # print 'FINDING POSITIONS OF 1-DEG NHOOD READS'  # testing
   # for ch in collected_h:                          # testing
@@ -894,7 +900,7 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
 
 
 def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
-  out_fold = '/home/mshen/research/1deg_nhoods_20kb_40_5/'
+  out_fold = '/home/mshen/research/1deg_nhoods_20kb_28_6_v2/'
   hr, rr = rf.read_fasta(reads_file)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
@@ -907,19 +913,21 @@ def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool
   if parallel_prefix == '100':
     par_range = range(3000, 6000)
   if parallel_prefix == '200':
-    par_range = range(6000, len(hr))
+    par_range = range(6000, 9000)
+  if parallel_prefix == '300':
+    par_range = range(9000, 12000)
+  if parallel_prefix == '400':
+    par_range = range(12000, 15000)
+  if parallel_prefix == '500':
+    par_range = range(15000, 18000)
+  if parallel_prefix == '600':
+    par_range = range(18000, len(hr))
+
     
   for i in par_range:
     print i
     header = hr[i]
-    collected_h = set()
-    ktmers = []
-    for j in range(len(creads[header])):
-      if j % 2 == 1:
-        ktmers.append(creads[header][j])
-    for kt in ktmers:
-      for h in headers[kt]:
-        collected_h.add(h)
+    collected_h = get_1_deg_nhood(header, creads, headers)
 
     base_file = str(i) + '_base.fasta'
     hood_file = str(i) + '_hood.fasta'
