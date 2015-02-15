@@ -58,9 +58,9 @@ def main():
 
 
   # Actions
-  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
-  # combine_contigs(contigs_fold)
+  combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # find_jumps_in_contigs(contigs_fold, parallel_prefix)
@@ -161,7 +161,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         # Break condition: Current header doesn't change, meaning we couldn't find any extension candidates
         counter += 1
         print 'iteration', counter, direction
-        if counter > 350:
+        if counter > 500:
           break
         old_h = h
         temp_traversed_headers = []
@@ -983,14 +983,15 @@ def check_contigs(contigs_fold, reads_file):
 
 def combine_contigs(contigs_fold):
   acc_cutoff = 0
-  dist_to_end = 100
+  dist_to_end = 2000
+  blasr_options = '-bestn 1 -m 1 -maxMatch 20'
   temp_base = 'temp_contigbase_' + temp_sig + '.fasta'
   temp_try = 'temp_contigtry_' + temp_sig + '.fasta'
   for fn in os.listdir(contigs_fold):
     if fnmatch.fnmatch(fn, '*[0-9].fasta'):
       print fn                              # TESTING
-      if fn.split('.')[0] + '_combined.fasta' in os.listdir(contigs_fold):
-        continue
+      # if fn.split('.')[0] + '_combined.fasta' in os.listdir(contigs_fold):
+        # continue
       hs, rs = rf.read_fasta(contigs_fold + fn)
       for i in range(len(hs)):
         hs[i] = hs[i].split()[0]
