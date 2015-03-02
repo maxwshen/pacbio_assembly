@@ -1024,7 +1024,39 @@ def combine_contigs(contigs_fold):
             total_len_r2 = int(status.split()[11])
             end_pos_r2 = total_len_r2 - end_align_r2
 
-            if end_pos_r1 < dist_to_end: # and beg_align_r2 < dist_to_end:
+            # If we wrap around
+            # START TERRIBLE COPY/PASTE
+            if beg_align_r1 == 0 and acc > acc_cutoff:
+              with open(temp_base, 'w') as f:
+                f.write('>base\n' + base[-10000:])
+              with open(temp_try, 'w') as f:
+                f.write('>try\n' + rs[i])
+              status = commands.getstatusoutput(blasr_exe + ' ' + temp_try + ' ' + temp_base + ' ' + blasr_options)[1]
+              if len(status) == 0:
+                print 'FAILED BLASR ALIGNMENT'
+                num_fails += 1
+                new_bases.append(new_base)
+                continue
+              else:
+                print status                      # TESTING
+                acc = float(status.split()[5])
+                beg_align_r1 = int(status.split()[6])
+                end_align_r1 = int(status.split()[7])
+                total_len_r1 = int(status.split()[8])
+                end_pos_r1 = total_len_r1 - end_align_r1
+                beg_align_r2 = int(status.split()[9])
+                end_align_r2 = int(status.split()[10])
+                total_len_r2 = int(status.split()[11])
+                end_pos_r2 = total_len_r2 - end_align_r2
+
+              if end_pos_r1 < dist_to_end: # and beg_align_r2 < dist_to_end:
+                if acc > acc_cutoff:
+                  new_base = base[: len(base) - end_align_r1]
+                  new_base += rs[i][end_align_r2 : ]
+
+            # END TERRIBLE COPY/PASTE
+
+            elif end_pos_r1 < dist_to_end: # and beg_align_r2 < dist_to_end:
               if acc > acc_cutoff:
                 new_base = base[: end_align_r1]
                 new_base += rs[i][end_align_r2 : ]
