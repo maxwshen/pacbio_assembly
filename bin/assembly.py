@@ -13,11 +13,15 @@ def main():
   # gv_file = sys.argv[5]
   # reads_file = '/home/mshen/research/sample.fasta'
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
+
+  reads_file = sys.argv[1]
+  # reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
   _k = int(sys.argv[1])
   _t = int(sys.argv[2])
   gv_file = 'temp.gv'
+  
+  print 'Using reads:', reads_file, 'k/t', _k, _t
   assembly(reads_file, genome_file, _k, _t, gv_file)
   return
 

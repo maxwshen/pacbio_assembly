@@ -1051,7 +1051,7 @@ def combine_contigs(contigs_fold):
 
               if end_pos_r1 < dist_to_end: # and beg_align_r2 < dist_to_end:
                 if acc > acc_cutoff:
-                  new_base = base[: len(base) - end_align_r1]
+                  new_base = base[: len(base) - end_pos_r1]
                   new_base += rs[i][end_align_r2 : ]
 
             # END TERRIBLE COPY/PASTE

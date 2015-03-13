@@ -4,8 +4,10 @@ from collections import defaultdict
 import find_read
 
 def main():
-  reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  new_reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
+  # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
+  num = sys.argv[1]
+  reads_file = '/home/jeyuan/reads.10k.cov' + num + '.fasta'
+  new_reads_file = '/home/mshen/research/data/reads.10k.' + num + 'x.rc.fasta'
   generate_revcompreads(reads_file, new_reads_file)
   return
 
