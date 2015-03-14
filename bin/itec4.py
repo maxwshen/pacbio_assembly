@@ -13,7 +13,7 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs30/'  
+contigs_fold = '/home/mshen/research/contigs_25x_1/'
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
@@ -40,29 +40,41 @@ def main():
   # creads_file = '/home/mshen/research/data/22.4_creads.out'
   # ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
 
+  # parallel_prefix = sys.argv[1]
+  parallel_prefix = 0
+  # cov = sys.argv[1]
+  # _k = sys.argv[2]
+  # _t = sys.argv[3]
+
   # NEW 20KB DATASET
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
   reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
-  
+  # reads_file = '/home/mshen/research/data/reads.20k.' + cov + 'x.rc.fasta'
+
   # creads_file = '/home/mshen/research/data/22.8_creads_20k.out'
   # ktmer_headers_file = '/home/mshen/research/data/22.8_ktmer_headers_20k.out'
   creads_file = '/home/mshen/research/data/temp_creads.out_28_6_rc.out'
   ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
+  # creads_file = '/home/mshen/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
+  # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
 
   # ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
   # ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
   # ec_tool = '/home/lin/program/error_correction_5X_0209.sh'
   ec_tool = '/home/lin/program/error_correction_5X_0210.sh'
-  parallel_prefix = sys.argv[1]
-  print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', ktmer_headers_file, '\nEC Tool:', ec_tool
+  print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', \
+    ktmer_headers_file, '\nEC Tool:', ec_tool
 
 
   # Actions
   # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
-  combine_contigs(contigs_fold)
+  # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
+  contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
+  output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktmer_headers_file, \
+    ec_tool)
   # find_jumps_in_contigs(contigs_fold, parallel_prefix)
 
 
@@ -150,6 +162,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     master_h = h
     master_traversed_headers = [h]
 
+    curr_time = datetime.datetime.now()
+
 
     # MAIN LOOP
     # for direction in ['right', 'left']:
@@ -160,7 +174,9 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
       while True:
         # Break condition: Current header doesn't change, meaning we couldn't find any extension candidates
         counter += 1
+        print datetime.datetime.now() - curr_time
         print 'iteration', counter, direction
+        curr_time = datetime.datetime.now()
         if counter > 500:
           break
         old_h = h
@@ -235,7 +251,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
                 overlaps = True
               if overlaps:
                 good_candidates.append(head)
-                # criteria[head] = len(creads[head]) / 2 - 1    # Criteria = # of neighbors in 1-deg nhood
+                criteria[head] = len(creads[head]) / 2 - 1    # Criteria = # of neighbors in 1-deg nhood
                 # print 'Overlap:', overlaps                  # testing
 
             if len(farthest_support) == 0:
@@ -284,6 +300,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
           # random.shuffle(filtered_good_candidates)    # testing
           print filtered_good_candidates
 
+          print 'TIME for candidates:', datetime.datetime.now() - curr_time
           # Once we choose a particular candidate
           consensus_temp = ''
           for i in range(len(filtered_good_candidates)):
@@ -898,9 +915,8 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
 
 
 
-
 def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
-  out_fold = '/home/mshen/research/1deg_nhoods_20kb_28_6_v2/'
+  out_fold = '/home/mshen/research/1deg_nhoods_20kb_c30full/'
   hr, rr = rf.read_fasta(reads_file)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
@@ -927,6 +943,48 @@ def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool
   for i in par_range:
     print i
     header = hr[i]
+    collected_h = get_1_deg_nhood(header, creads, headers)
+
+    base_file = str(i) + '_base.fasta'
+    hood_file = str(i) + '_hood.fasta'
+    with open(base_file, 'w') as f:
+      f.write(header + '\n' + rr[i])
+    with open(hood_file, 'w') as f:
+      for h in collected_h:
+        f.write(h + '\n' + rr[hr.index(h)] + '\n')
+
+    ec_out = ec_prefix + base_file
+    new_ec_out = str(i) + '_corr.fasta'
+    status = commands.getstatusoutput(ec_tool + ' ' + base_file + ' ' + hood_file)[1]
+    commands.getstatusoutput('mv ' + ec_out + ' ' + new_ec_out)
+    commands.getstatusoutput('mv ' + new_ec_out + ' ' + out_fold)
+    commands.getstatusoutput('mv ' + base_file + ' ' + out_fold)
+    commands.getstatusoutput('mv ' + hood_file + ' ' + out_fold)
+  return
+
+
+def output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktmer_headers_file, ec_tool):
+  out_fold = '/home/mshen/research/1deg_nhoods_20kb_c30full/'
+  hr, rr = rf.read_fasta(reads_file)
+  for i in range(len(hr)):
+    hr[i] = hr[i].split()[0]
+  
+  input_headers = []
+  with open(contigs_results_file) as f:
+    for i, line in enumerate(f):
+      h = '/'.join(line.split()[0].split('/')[:-1])
+      if h[-5:] == 'START':
+        h = h[:-5]
+      print h
+      input_headers.append(h)
+
+  creads = build_creads_dict(creads_file, reads_file)
+  headers = build_headers_dict(ktmer_headers_file)
+
+
+
+  for i in range(len(input_headers)):
+    header = input_headers[i]
     collected_h = get_1_deg_nhood(header, creads, headers)
 
     base_file = str(i) + '_base.fasta'
