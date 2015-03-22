@@ -13,7 +13,8 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
-contigs_fold = '/home/mshen/research/contigs_25x_1/'
+# contigs_fold = '/home/mshen/research/contigs_50x_1/'
+contigs_fold = '/home/max/research/contigs_20x_2/'
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
@@ -27,9 +28,13 @@ support_dist_cutoff = 100000    # CONSENSUS: Bp. length, acceptable support dist
 support_t = 3                   # CONSENSUS: Req. # reads to support a position to determine farthest support
 nhood_header_limit = float('inf')         # .
 nhood_it_limit = 3              # .
-blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
+# blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
+blasr_exe = 'blasr'
+blasr_zero = 4      # 0 on debruijn, 4 on Yu's computer
+blasr_zero_len = 8  # 0 on debruijn, 4 on Yu's computer
 blasr_options = '-bestn 1 -m 1'   # Concise output
-e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
+# e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
+e_coli_genome = '/home/max/research/data/e_coli_genome.fasta'
 # ec_prefix = '3X_'
 ec_prefix = '5X_'
 use_ecs = False
@@ -41,40 +46,39 @@ def main():
   # ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
 
   # parallel_prefix = sys.argv[1]
-  parallel_prefix = 0
-  # cov = sys.argv[1]
-  # _k = sys.argv[2]
-  # _t = sys.argv[3]
+  parallel_prefix = str(0)
+  cov = sys.argv[1]
+  _k = sys.argv[2]
+  _t = sys.argv[3]
 
   # NEW 20KB DATASET
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
+  # reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   # reads_file = '/home/mshen/research/data/reads.20k.' + cov + 'x.rc.fasta'
+  reads_file = '/home/max/research/data/reads.20k.' + cov + 'x.rc.fasta'
 
-  # creads_file = '/home/mshen/research/data/22.8_creads_20k.out'
-  # ktmer_headers_file = '/home/mshen/research/data/22.8_ktmer_headers_20k.out'
-  creads_file = '/home/mshen/research/data/temp_creads.out_28_6_rc.out'
-  ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
+  # creads_file = '/home/mshen/research/data/temp_creads.out_28_6_rc.out'
+  # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
   # creads_file = '/home/mshen/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
+  creads_file = '/home/max/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
+  ktmer_headers_file = '/home/max/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
 
-  # ec_tool = '/home/mshen/research/bin/error_correction_3X_0112.sh'
-  # ec_tool = '/home/lin/program/error_correction_5X_0204.sh'
-  # ec_tool = '/home/lin/program/error_correction_5X_0209.sh'
-  ec_tool = '/home/lin/program/error_correction_5X_0210.sh'
+  # ec_tool = '/home/lin/program/error_correction_5X_0210.sh'   
+  ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', \
     ktmer_headers_file, '\nEC Tool:', ec_tool
 
 
   # Actions
-  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
   # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
-  contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
-  output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktmer_headers_file, \
-    ec_tool)
+  # contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
+  # output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktmer_headers_file, \
+    # ec_tool)
   # find_jumps_in_contigs(contigs_fold, parallel_prefix)
 
 
@@ -132,7 +136,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   # ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
-  num_contig_attempts = 1                   # testing
+  num_contig_attempts = 10                   # testing
   # num_contig_attempts = len(ktmers)
   for m in range(num_contig_attempts):
     print '\n' + str(datetime.datetime.now())
@@ -390,9 +394,10 @@ def find_genomic_position(read, hr, rr, print_alignment = False, align_consensus
   status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + e_coli_genome + ' ' + new_blasr_options)[1]
 
   if len(status) > 0:
-    acc = float(status.split()[5])
-    beg = int(status.split()[6])
-    end = int(status.split()[7])
+    print status
+    acc = float(status.split()[blasr_zero + 5])
+    beg = int(status.split()[blasr_zero + 6])
+    end = int(status.split()[blasr_zero + 7])
     print status
     print '\taligned to:', beg, end, acc
     return (beg + end) / 2
@@ -423,19 +428,19 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
     print commands.getstatusoutput(blasr_exe + ' ' + temps1 + ' ' + temps2 + ' ' + temp_blasr_options)[1]
 
   status = commands.getstatusoutput(blasr_exe + ' ' + temps1 + ' ' + temps2 + ' ' + blasr_options)[1]
-  if len(status.strip()) == 0:
+  if len(status.split()) == blasr_zero_len:
     return False
   # print status                    # TESTING
-  r2_strand_dir = int(status.split()[2])
-  r1_strand_dir = int(status.split()[3])
-  accuracy = float(status.split()[5])
-  beg_align_r1 = int(status.split()[6])
-  end_align_r1 = int(status.split()[7])
-  total_len_r1 = int(status.split()[8])
+  r2_strand_dir = int(status.split()[blasr_zero + 2])
+  r1_strand_dir = int(status.split()[blasr_zero + 3])
+  accuracy = float(status.split()[blasr_zero + 5])
+  beg_align_r1 = int(status.split()[blasr_zero + 6])
+  end_align_r1 = int(status.split()[blasr_zero + 7])
+  total_len_r1 = int(status.split()[blasr_zero + 8])
   end_pos_r1 = total_len_r1 - end_align_r1
-  beg_align_r2 = int(status.split()[9])
-  end_align_r2 = int(status.split()[10])
-  total_len_r2 = int(status.split()[11])
+  beg_align_r2 = int(status.split()[blasr_zero + 9])
+  end_align_r2 = int(status.split()[blasr_zero + 10])
+  total_len_r2 = int(status.split()[blasr_zero + 11])
   end_pos_r2 = total_len_r2 - end_align_r2
   length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2          # Average alignment length
 
@@ -482,7 +487,7 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
       reads += accepted
 
   # Bounded Nhood
-  # reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
+  reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
 
   if len(reads) != 0:
     return reads
@@ -723,14 +728,14 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
   find_genomic_position(rr[hr.index(header)], hr, rr)       # testing
   
   # 1-deg nhood
-  collected_h = get_1_deg_nhood(header, creads, headers)
+  # collected_h = get_1_deg_nhood(header, creads, headers)
 
   # print 'FINDING POSITIONS OF 1-DEG NHOOD READS'  # testing
   # for ch in collected_h:                          # testing
     # find_genomic_position(rr[hr.index(ch)], hr, rr)       # testing
 
   # n-degree nhood
-  # collected_h = get_nhood(header, headers, creads)
+  collected_h = get_nhood(header, headers, creads)
 
   # Use 2-deg nhood, no width bound (irrelevant reads, but ec tool should handle)
   # new_ktmers = []
@@ -774,7 +779,7 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
     else:
       consensus = ''
   print 'consensus len:', len(consensus), 'out of', len(rr[hr.index(header)])
-  return consensus
+  return consensus.upper()
 
 
 def get_read_with_most_neighbors(ktmer, headers, creads):
@@ -842,19 +847,19 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
       if fnmatch.fnmatch(fn2, '*combined.fasta') and fn2 != curr_contig:
         fn_file = contigs_fold + fn2
         status = commands.getstatusoutput(blasr_exe + ' ' + cc_file + ' ' + fn_file + ' ' + blasr_options)[1]
-        if len(status) == 0:
+        if len(status) == blasr_zero_len:
           # print 'FAILED BLASR ALIGNMENT'    # testing
           continue
         else:
           # print status                      # TESTING
-          acc = float(status.split()[5])
-          beg_align_r1 = int(status.split()[6])
-          end_align_r1 = int(status.split()[7])
-          total_len_r1 = int(status.split()[8])
+          acc = float(status.split()[blasr_zero + 5])
+          beg_align_r1 = int(status.split()[blasr_zero + 6])
+          end_align_r1 = int(status.split()[blasr_zero + 7])
+          total_len_r1 = int(status.split()[blasr_zero + 8])
           end_pos_r1 = total_len_r1 - end_align_r1
-          beg_align_r2 = int(status.split()[9])
-          end_align_r2 = int(status.split()[10])
-          total_len_r2 = int(status.split()[11])
+          beg_align_r2 = int(status.split()[blasr_zero + 9])
+          end_align_r2 = int(status.split()[blasr_zero + 10])
+          total_len_r2 = int(status.split()[blasr_zero + 11])
           end_pos_r2 = total_len_r2 - end_align_r2
           length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2
 
@@ -1065,21 +1070,21 @@ def combine_contigs(contigs_fold):
           with open(temp_try, 'w') as f:
             f.write('>try\n' + rs[i])
           status = commands.getstatusoutput(blasr_exe + ' ' + temp_try + ' ' + temp_base + ' ' + blasr_options)[1]
-          if len(status) == 0:
+          if len(status) == blasr_zero_len:
             print 'FAILED BLASR ALIGNMENT'
             num_fails += 1
             new_bases.append(new_base)
             continue
           else:
             print status                      # TESTING
-            acc = float(status.split()[5])
-            beg_align_r1 = int(status.split()[6])
-            end_align_r1 = int(status.split()[7])
-            total_len_r1 = int(status.split()[8])
+            acc = float(status.split()[blasr_zero + 5])
+            beg_align_r1 = int(status.split()[blasr_zero + 6])
+            end_align_r1 = int(status.split()[blasr_zero + 7])
+            total_len_r1 = int(status.split()[blasr_zero + 8])
             end_pos_r1 = total_len_r1 - end_align_r1
-            beg_align_r2 = int(status.split()[9])
-            end_align_r2 = int(status.split()[10])
-            total_len_r2 = int(status.split()[11])
+            beg_align_r2 = int(status.split()[blasr_zero + 9])
+            end_align_r2 = int(status.split()[blasr_zero + 10])
+            total_len_r2 = int(status.split()[blasr_zero + 11])
             end_pos_r2 = total_len_r2 - end_align_r2
 
             # If we wrap around
@@ -1090,21 +1095,21 @@ def combine_contigs(contigs_fold):
               with open(temp_try, 'w') as f:
                 f.write('>try\n' + rs[i])
               status = commands.getstatusoutput(blasr_exe + ' ' + temp_try + ' ' + temp_base + ' ' + blasr_options)[1]
-              if len(status) == 0:
+              if len(status) == blasr_zero_len:
                 print 'FAILED BLASR ALIGNMENT'
                 num_fails += 1
                 new_bases.append(new_base)
                 continue
               else:
                 print status                      # TESTING
-                acc = float(status.split()[5])
-                beg_align_r1 = int(status.split()[6])
-                end_align_r1 = int(status.split()[7])
-                total_len_r1 = int(status.split()[8])
+                acc = float(status.split()[blasr_zero + 5])
+                beg_align_r1 = int(status.split()[blasr_zero + 6])
+                end_align_r1 = int(status.split()[blasr_zero + 7])
+                total_len_r1 = int(status.split()[blasr_zero + 8])
                 end_pos_r1 = total_len_r1 - end_align_r1
-                beg_align_r2 = int(status.split()[9])
-                end_align_r2 = int(status.split()[10])
-                total_len_r2 = int(status.split()[11])
+                beg_align_r2 = int(status.split()[blasr_zero + 9])
+                end_align_r2 = int(status.split()[blasr_zero + 10])
+                total_len_r2 = int(status.split()[blasr_zero + 11])
                 end_pos_r2 = total_len_r2 - end_align_r2
 
               if end_pos_r1 < dist_to_end: # and beg_align_r2 < dist_to_end:
@@ -1173,8 +1178,8 @@ def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
         f.write('>1\n' + rr[hr.index(h)]) 
       status = commands.getstatusoutput(blasr_exe + ' ' + tempfile + ' ' + e_coli_genome + ' ' + blasr_options)[1]
       if len(status) > 0:
-        beg = int(status.split()[6])
-        end = int(status.split()[7])
+        beg = int(status.split()[blasr_zero + 6])
+        end = int(status.split()[blasr_zero + 7])
         found = False
         for c in clusters:
           if within(c[0], c[1], beg, end):
@@ -1226,14 +1231,14 @@ def verify_against_candidates(h, candidate_headers, hr, rr):
     status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + temp_chfile + ' ' + blasr_options)[1]
     print status                        # TESTING
     if len(status) != 0:
-      acc = float(status.split()[5])
-      beg_align_r1 = int(status.split()[6])
-      end_align_r1 = int(status.split()[7])
-      total_len_r1 = int(status.split()[8])
+      acc = float(status.split()[blasr_zero + 5])
+      beg_align_r1 = int(status.split()[blasr_zero + 6])
+      end_align_r1 = int(status.split()[blasr_zero + 7])
+      total_len_r1 = int(status.split()[blasr_zero + 8])
       end_pos_r1 = total_len_r1 - end_align_r1
-      beg_align_r2 = int(status.split()[9])
-      end_align_r2 = int(status.split()[10])
-      total_len_r2 = int(status.split()[11])
+      beg_align_r2 = int(status.split()[blasr_zero + 9])
+      end_align_r2 = int(status.split()[blasr_zero + 10])
+      total_len_r2 = int(status.split()[blasr_zero + 11])
       end_pos_r2 = total_len_r2 - end_align_r2
       length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2     # Avg alignment length
 
@@ -1283,14 +1288,14 @@ def verify_against_candidates_longest(candidate_headers, hr, rr):
     print status                        # TESTING
     print commands.getstatusoutput(blasr_exe + ' ' + temp_chfile +' ' + e_coli_genome + ' ' + blasr_options)[1]
     if len(status) != 0:
-      acc = float(status.split()[5])
-      beg_align_r1 = int(status.split()[6])
-      end_align_r1 = int(status.split()[7])
-      total_len_r1 = int(status.split()[8])
+      acc = float(status.split()[blasr_zero + 5])
+      beg_align_r1 = int(status.split()[blasr_zero + 6])
+      end_align_r1 = int(status.split()[blasr_zero + 7])
+      total_len_r1 = int(status.split()[blasr_zero + 8])
       end_pos_r1 = total_len_r1 - end_align_r1
-      beg_align_r2 = int(status.split()[9])
-      end_align_r2 = int(status.split()[10])
-      total_len_r2 = int(status.split()[11])
+      beg_align_r2 = int(status.split()[blasr_zero + 9])
+      end_align_r2 = int(status.split()[blasr_zero + 10])
+      total_len_r2 = int(status.split()[blasr_zero + 11])
       end_pos_r2 = total_len_r2 - end_align_r2
       length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2     # Avg alignment length
 
