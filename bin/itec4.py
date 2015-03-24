@@ -14,7 +14,7 @@ import kmer_matching
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
 # contigs_fold = '/home/mshen/research/contigs_50x_1/'
-contigs_fold = '/home/max/research/contigs_20x_2/'
+contigs_fold = '/home/max/research/contigs_50x_3/'
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
@@ -40,6 +40,9 @@ ec_prefix = '5X_'
 use_ecs = False
 
 def main():
+  if not os.path.exists(contigs_fold):
+    os.makedirs(contigs_fold)
+
   # OLD DATASET
   # reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
   # creads_file = '/home/mshen/research/data/22.4_creads.out'
@@ -67,13 +70,13 @@ def main():
   # ec_tool = '/home/lin/program/error_correction_5X_0210.sh'   
   ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', \
-    ktmer_headers_file, '\nEC Tool:', ec_tool
+    ktmer_headers_file, '\nEC Tool:', ec_tool, '\nContigs fold', contigs_fold
 
 
   # Actions
-  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
-  # combine_contigs(contigs_fold)
+  combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
@@ -393,7 +396,7 @@ def find_genomic_position(read, hr, rr, print_alignment = False, align_consensus
     print commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + e_coli_genome + ' ' + temp_blasr_options)[1]
   status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + e_coli_genome + ' ' + new_blasr_options)[1]
 
-  if len(status) > 0:
+  if len(status.split()) > blasr_zero_len:
     print status
     acc = float(status.split()[blasr_zero + 5])
     beg = int(status.split()[blasr_zero + 6])
@@ -487,7 +490,7 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
       reads += accepted
 
   # Bounded Nhood
-  reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
+  # reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
 
   if len(reads) != 0:
     return reads
@@ -728,14 +731,14 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
   find_genomic_position(rr[hr.index(header)], hr, rr)       # testing
   
   # 1-deg nhood
-  # collected_h = get_1_deg_nhood(header, creads, headers)
+  collected_h = get_1_deg_nhood(header, creads, headers)
 
   # print 'FINDING POSITIONS OF 1-DEG NHOOD READS'  # testing
   # for ch in collected_h:                          # testing
     # find_genomic_position(rr[hr.index(ch)], hr, rr)       # testing
 
   # n-degree nhood
-  collected_h = get_nhood(header, headers, creads)
+  # collected_h = get_nhood(header, headers, creads)
 
   # Use 2-deg nhood, no width bound (irrelevant reads, but ec tool should handle)
   # new_ktmers = []
@@ -847,7 +850,7 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
       if fnmatch.fnmatch(fn2, '*combined.fasta') and fn2 != curr_contig:
         fn_file = contigs_fold + fn2
         status = commands.getstatusoutput(blasr_exe + ' ' + cc_file + ' ' + fn_file + ' ' + blasr_options)[1]
-        if len(status) == blasr_zero_len:
+        if len(status.split()) == blasr_zero_len:
           # print 'FAILED BLASR ALIGNMENT'    # testing
           continue
         else:
@@ -1070,13 +1073,13 @@ def combine_contigs(contigs_fold):
           with open(temp_try, 'w') as f:
             f.write('>try\n' + rs[i])
           status = commands.getstatusoutput(blasr_exe + ' ' + temp_try + ' ' + temp_base + ' ' + blasr_options)[1]
-          if len(status) == blasr_zero_len:
+          if len(status.split()) == blasr_zero_len:
             print 'FAILED BLASR ALIGNMENT'
             num_fails += 1
             new_bases.append(new_base)
             continue
           else:
-            print status                      # TESTING
+            print status, '\n', len(status.split())                      # TESTING
             acc = float(status.split()[blasr_zero + 5])
             beg_align_r1 = int(status.split()[blasr_zero + 6])
             end_align_r1 = int(status.split()[blasr_zero + 7])
@@ -1095,7 +1098,7 @@ def combine_contigs(contigs_fold):
               with open(temp_try, 'w') as f:
                 f.write('>try\n' + rs[i])
               status = commands.getstatusoutput(blasr_exe + ' ' + temp_try + ' ' + temp_base + ' ' + blasr_options)[1]
-              if len(status) == blasr_zero_len:
+              if len(status.split()) == blasr_zero_len:
                 print 'FAILED BLASR ALIGNMENT'
                 num_fails += 1
                 new_bases.append(new_base)
@@ -1177,7 +1180,7 @@ def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
       with open(tempfile, 'w') as f:
         f.write('>1\n' + rr[hr.index(h)]) 
       status = commands.getstatusoutput(blasr_exe + ' ' + tempfile + ' ' + e_coli_genome + ' ' + blasr_options)[1]
-      if len(status) > 0:
+      if len(status.split()) > blasr_zero_len:
         beg = int(status.split()[blasr_zero + 6])
         end = int(status.split()[blasr_zero + 7])
         found = False
@@ -1230,7 +1233,7 @@ def verify_against_candidates(h, candidate_headers, hr, rr):
       f.write(ch + '\n' + rr[hr.index(ch)])
     status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + temp_chfile + ' ' + blasr_options)[1]
     print status                        # TESTING
-    if len(status) != 0:
+    if len(status.split()) != blasr_zero_len:
       acc = float(status.split()[blasr_zero + 5])
       beg_align_r1 = int(status.split()[blasr_zero + 6])
       end_align_r1 = int(status.split()[blasr_zero + 7])
@@ -1287,7 +1290,7 @@ def verify_against_candidates_longest(candidate_headers, hr, rr):
     status = commands.getstatusoutput(blasr_exe + ' ' + temp_base +' ' + temp_chfile + ' ' + blasr_options)[1]
     print status                        # TESTING
     print commands.getstatusoutput(blasr_exe + ' ' + temp_chfile +' ' + e_coli_genome + ' ' + blasr_options)[1]
-    if len(status) != 0:
+    if len(status.split()) != blasr_zero_len:
       acc = float(status.split()[blasr_zero + 5])
       beg_align_r1 = int(status.split()[blasr_zero + 6])
       end_align_r1 = int(status.split()[blasr_zero + 7])
