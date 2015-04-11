@@ -13,8 +13,10 @@ import kmer_matching
 
 global temp_sig
 temp_sig = str(datetime.datetime.now()).split()[1]
+prior = '/home/yu/max/research/'
 # contigs_fold = '/home/mshen/research/contigs_50x_1/'
-contigs_fold = '/home/max/research/contigs_50x_3/'
+# contigs_fold = '/home/max/research/contigs_50x_3/'
+contigs_fold = prior + 'contigs_20kb_full_8/'
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
@@ -34,9 +36,11 @@ blasr_zero = 4      # 0 on debruijn, 4 on Yu's computer
 blasr_zero_len = 8  # 0 on debruijn, 4 on Yu's computer
 blasr_options = '-bestn 1 -m 1'   # Concise output
 # e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
-e_coli_genome = '/home/max/research/data/e_coli_genome.fasta'
+# e_coli_genome = '/home/max/research/data/e_coli_genome.fasta'
+e_coli_genome = '/home/yu/e_coli_genome.fasta'
 # ec_prefix = '3X_'
-ec_prefix = '5X_'
+# ec_prefix = '5X_'
+ec_prefix = 'C0410_'
 use_ecs = False
 
 def main():
@@ -50,33 +54,41 @@ def main():
 
   # parallel_prefix = sys.argv[1]
   parallel_prefix = str(0)
-  cov = sys.argv[1]
-  _k = sys.argv[2]
-  _t = sys.argv[3]
+  # cov = sys.argv[1]
+  # _k = sys.argv[2]
+  # _t = sys.argv[3]
 
   # NEW 20KB DATASET
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
   # reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   # reads_file = '/home/mshen/research/data/reads.20k.' + cov + 'x.rc.fasta'
-  reads_file = '/home/max/research/data/reads.20k.' + cov + 'x.rc.fasta'
+  # reads_file = '/home/max/research/data/reads.20k.' + cov + 'x.rc.fasta'
+  reads_file = prior + 'data/reads.20k.rc.fasta'
 
   # creads_file = '/home/mshen/research/data/temp_creads.out_28_6_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
   # creads_file = '/home/mshen/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
-  creads_file = '/home/max/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
-  ktmer_headers_file = '/home/max/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
+  # creads_file = '/home/max/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
+  # ktmer_headers_file = '/home/max/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
+
+  creads_file = prior + 'data/temp_creads.out_28_6_rc.out'
+  ktmer_headers_file = prior + 'data/temp_ktmer_headers_28_6_rc.out'
 
   # ec_tool = '/home/lin/program/error_correction_5X_0210.sh'   
-  ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
+  # ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
+  # ec_tool = '/home/yu/program/error_correction_0402.sh'
+  # ec_tool = '/home/yu/program/error_correction_test.sh'
+  ec_tool = '/home/yu/program/error_correction_0410.sh'
+
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', \
     ktmer_headers_file, '\nEC Tool:', ec_tool, '\nContigs fold', contigs_fold
 
 
   # Actions
-  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
-  combine_contigs(contigs_fold)
+  # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
