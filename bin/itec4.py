@@ -16,7 +16,7 @@ temp_sig = str(datetime.datetime.now()).split()[1]
 prior = '/home/yu/max/research/'
 # contigs_fold = '/home/mshen/research/contigs_50x_1/'
 # contigs_fold = '/home/max/research/contigs_50x_3/'
-contigs_fold = prior + 'contigs_20kb_full_8/'
+contigs_fold = prior + 'contigs_20kb_full_14/'
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
@@ -40,7 +40,7 @@ blasr_options = '-bestn 1 -m 1'   # Concise output
 e_coli_genome = '/home/yu/e_coli_genome.fasta'
 # ec_prefix = '3X_'
 # ec_prefix = '5X_'
-ec_prefix = 'C0410_'
+ec_prefix = 'C0413_'
 use_ecs = False
 
 def main():
@@ -79,7 +79,7 @@ def main():
   # ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
   # ec_tool = '/home/yu/program/error_correction_0402.sh'
   # ec_tool = '/home/yu/program/error_correction_test.sh'
-  ec_tool = '/home/yu/program/error_correction_0410.sh'
+  ec_tool = '/home/yu/program/error_correction_0413.sh'
 
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', \
     ktmer_headers_file, '\nEC Tool:', ec_tool, '\nContigs fold', contigs_fold
