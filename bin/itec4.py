@@ -12,6 +12,7 @@ import find_read
 import kmer_matching
 
 global temp_sig
+global contigs_fold
 temp_sig = str(datetime.datetime.now()).split()[1]
 prior = '/home/yu/max/research/'
 # contigs_fold = '/home/mshen/research/contigs_50x_1/'
@@ -30,33 +31,34 @@ support_dist_cutoff = 100000    # CONSENSUS: Bp. length, acceptable support dist
 support_t = 3                   # CONSENSUS: Req. # reads to support a position to determine farthest support
 nhood_header_limit = float('inf')         # .
 nhood_it_limit = 3              # .
+n21ratio_cutoff = 1             # If n2/n1 is greater than this, find another consensus
 # blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_exe = 'blasr'
 blasr_zero = 4      # 0 on debruijn, 4 on Yu's computer
-blasr_zero_len = 8  # 0 on debruijn, 4 on Yu's computer
+blasr_zero_len = 8  # 0 on debruijn, 8 on Yu's computer
 blasr_options = '-bestn 1 -m 1'   # Concise output
 # e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
 # e_coli_genome = '/home/max/research/data/e_coli_genome.fasta'
-e_coli_genome = '/home/yu/e_coli_genome.fasta'
+# e_coli_genome = '/home/yu/e_coli_genome.fasta'
+e_coli_genome = '/home/yu/data/ecoli_consensus_mark.fasta'
 # ec_prefix = '3X_'
 # ec_prefix = '5X_'
 ec_prefix = 'C0413_'
 use_ecs = False
 
 def main():
+  global contigs_fold
+ 
+  cf_dir = sys.argv[1]
+  contigs_fold = prior + cf_dir
+  # parallel_prefix = sys.argv[2]
+  parallel_prefix = str(0)
+  # cov = sys.argv[3]
+  # _k = sys.argv[4]
+  # _t = sys.argv[5]
+
   if not os.path.exists(contigs_fold):
     os.makedirs(contigs_fold)
-
-  # OLD DATASET
-  # reads_file = '/home/mshen/research/data/PacBioCLR/PacBio_10kb_CLR_mapped_removed_homopolymers.fasta'
-  # creads_file = '/home/mshen/research/data/22.4_creads.out'
-  # ktmer_headers_file = '/home/mshen/research/data/22.4_ktmer_headers.out'
-
-  # parallel_prefix = sys.argv[1]
-  parallel_prefix = str(0)
-  # cov = sys.argv[1]
-  # _k = sys.argv[2]
-  # _t = sys.argv[3]
 
   # NEW 20KB DATASET
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
@@ -788,12 +790,18 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
   with open(ec_out, 'r') as f:  
     text = f.readlines()
     if len(text) > 1:
+      header = text[0].strip()
       consensus = text[1].strip()
       if len(consensus) == 0:
         return ''
     else:
       consensus = ''
-  print 'consensus len:', len(consensus), 'out of', len(rr[hr.index(header)])
+  n1 = float(header.split('_')[1])
+  n2 = float(header.split('_')[2])
+  n21ratio = n2 / n1
+  print 'consensus len:', len(consensus), 'out of', len(rr[hr.index(header)]), ' approx. quality:', n21ratio
+  if n21ratio > n21ratio_cutoff:
+    return ''
   return consensus.upper()
 
 
