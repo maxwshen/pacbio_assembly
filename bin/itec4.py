@@ -17,7 +17,7 @@ temp_sig = str(datetime.datetime.now()).split()[1]
 prior = '/home/yu/max/research/'
 # contigs_fold = '/home/mshen/research/contigs_50x_1/'
 # contigs_fold = '/home/max/research/contigs_50x_3/'
-contigs_fold = prior + 'contigs_20kb_full_14/'
+contigs_fold = prior + 'contigs_20kb_full_18/'
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 # overlap_length_cutoff = 300     # .
@@ -43,7 +43,7 @@ blasr_options = '-bestn 1 -m 1'   # Concise output
 e_coli_genome = '/home/yu/data/ecoli_consensus_mark.fasta'
 # ec_prefix = '3X_'
 # ec_prefix = '5X_'
-ec_prefix = 'C0413_'
+ec_prefix = 'C0419_'
 use_ecs = False
 
 def main():
@@ -81,16 +81,16 @@ def main():
   # ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
   # ec_tool = '/home/yu/program/error_correction_0402.sh'
   # ec_tool = '/home/yu/program/error_correction_test.sh'
-  ec_tool = '/home/yu/program/error_correction_0413.sh'
+  ec_tool = '/home/yu/program/error_correction_0419.sh'
 
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', \
     ktmer_headers_file, '\nEC Tool:', ec_tool, '\nContigs fold', contigs_fold
 
 
   # Actions
-  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
-  # combine_contigs(contigs_fold)
+  combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
