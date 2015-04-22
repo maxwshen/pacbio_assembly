@@ -168,7 +168,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/22681/0_4859/0_4859'  # 4 iterations  before jump ex
     # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/1326/0_5814/0_5814' # a little farther from jump ex
     print 'STARTING HEADER:\n', h
-    curr_contig = [error_correct(ec_tool, h, headers, creads, hr, rr)]
+    curr_contig = [error_correct(ec_tool, h, headers, creads, hr, rr)[0]]
     print 'STARTING AT',                        # testing
     if len(curr_contig[0]) == 0:
       continue
@@ -258,7 +258,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
                 # num_neighbors = len(creads[head]) / 2 - 1   # testing
                 # print head, num_neighbors                   # testing
 
-              # candidate_read = error_correct(ec_tool, head, headers, creads, hr, rr)    # testing
+              # candidate_read = error_correct(ec_tool, head, headers, creads, hr, rr)[0]    # testing
               # print 'consensus:',                         # testing
               # find_genomic_position(candidate_read, hr, rr, align_consensus = True))       # testing
               # print' original:',                          # testing
@@ -333,7 +333,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             if use_ecs and h in ecs:
               consensus_temp = ecs[h]
             else:
-              consensus_temp = error_correct(ec_tool, h, headers, creads, hr, rr)
+              consensus_temp, n1, n2 = error_correct(ec_tool, h, headers, creads, hr, rr)
             if len(consensus_temp) != 0 and consensus_temp not in curr_contig:
               break  
           if len(consensus_temp) == 0:
@@ -349,10 +349,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
               continue
             if direction == 'right':
               curr_contig.append(consensus_temp)
-              curr_contig_headers.append(h)
+              curr_contig_headers.append(h + '_' + str(n1) + '_' + str(n2))
             if direction == 'left':
               curr_contig.insert(0, consensus_temp)
-              curr_contig_headers.insert(0, h)
+              curr_contig_headers.insert(0, h + '_' + str(n1) + '_' + str(n2))
             master_traversed_headers.append(h)
 
           if h == old_h:
@@ -803,7 +803,7 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
   print 'consensus len:', len(consensus), 'out of', len(rr[hr.index(header)]), ' error ratio (bp):', n21ratio
   if n21ratio > n21ratio_cutoff:
     return ''
-  return consensus.upper()
+  return consensus.upper(), n1, n2
 
 
 def get_read_with_most_neighbors(ktmer, headers, creads):
