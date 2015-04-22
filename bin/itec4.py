@@ -88,9 +88,9 @@ def main():
 
 
   # Actions
-  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
-  combine_contigs(contigs_fold)
+  # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
@@ -790,16 +790,17 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
   with open(ec_out, 'r') as f:  
     text = f.readlines()
     if len(text) > 1:
-      header = text[0].strip()
+      header_con = text[0].strip()
       consensus = text[1].strip()
       if len(consensus) == 0:
         return ''
     else:
       consensus = ''
-  n1 = float(header.split('_')[1])
-  n2 = float(header.split('_')[2])
+  print header_con
+  n1 = float(header_con.split('_')[2])
+  n2 = float(header_con.split('_')[3].split('(')[0])
   n21ratio = n2 / n1
-  print 'consensus len:', len(consensus), 'out of', len(rr[hr.index(header)]), ' approx. quality:', n21ratio
+  print 'consensus len:', len(consensus), 'out of', len(rr[hr.index(header)]), ' error ratio (bp):', n21ratio
   if n21ratio > n21ratio_cutoff:
     return ''
   return consensus.upper()
