@@ -343,7 +343,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             if use_ecs and h in ecs:
               consensus_temp = ecs[h]
             else:
-              consensus_temp, n1, n2 = error_correct(ec_tool, h, headers, creads, hr, rr)
+              consensus_temp, n1, n2 = error_correct(ec_tool, h, headers, creads, hr, rr, \
+              candidates = filtered_good_candidates)
             if len(consensus_temp) != 0 and consensus_temp not in curr_contig:
               if direction == 'right' and test_overlap(h, consensus_temp, curr_contig[-1], \
               direction, farthest_support, criteria, print_alignment = True, consensus = True):
@@ -756,7 +757,22 @@ def get_1_deg_nhood(header, creads, headers):
       # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
   return collected_h
 
-def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None):
+def keep_duplicates_only(inp):
+  # Given a list, returns a new list with 1 copy of any duplicates
+  # Ex: [a, a, b] -> [a]
+  d = dict()
+  for item in inp:
+    if item not in d:
+      d[item] = 1
+    else:
+      d[item] += 1
+  new_list = []
+  for key in d.keys():
+    if d[key] > 1:
+      new_list.append(key)
+  return new_list
+
+def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None, candidates = []):
   if temp_sig_out is not None:
     temp_sig = temp_sig_out
   else:
@@ -768,6 +784,11 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None)
   
   # 1-deg nhood
   collected_h = get_1_deg_nhood(header, creads, headers)
+
+  if len(candidates) > 0:
+    for cd in candidates:
+      collected_h += get_1_deg_nhood(cd, creads, headers)
+    collected_h = keep_duplicates_only(collected_h)
 
   # print 'FINDING POSITIONS OF 1-DEG NHOOD READS'  # testing
   # for ch in collected_h:                          # testing
