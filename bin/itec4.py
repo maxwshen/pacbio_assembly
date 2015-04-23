@@ -20,6 +20,8 @@ prior = '/home/yu/max/research/'
 contigs_fold = prior + 'contigs_20kb_full_18/'
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
+overlap_accuracy_cutoff_consensus = 98
+overlap_length_cutoff_consensus = 7000
 # overlap_length_cutoff = 300     # .
 num_attempts = 1                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
@@ -328,14 +330,27 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             best_head = filtered_good_candidates[i]
             h = best_head
             print 'CANDIDATE CHOSEN:'
-            test_overlap(h, rr[hr.index(h)], curr_contig[-1], direction, farthest_support, criteria, relaxed = False, print_alignment = True)     # testing
+
+            # just for my own info
+            if direction == 'right':
+              test_overlap(h, rr[hr.index(h)], curr_contig[-1], direction, farthest_support, \
+              criteria, relaxed = False, print_alignment = True)     # testing
+            if direction == 'left':
+              test_overlap(h, curr_contig[0], rr[hr.index(h)], direction, farthest_support, \
+              criteria, relaxed = False, print_alignment = True)     # testing
+
             # find_genomic_position(rr[hr.index(h)], hr, rr)  # testing
             if use_ecs and h in ecs:
               consensus_temp = ecs[h]
             else:
               consensus_temp, n1, n2 = error_correct(ec_tool, h, headers, creads, hr, rr)
             if len(consensus_temp) != 0 and consensus_temp not in curr_contig:
-              break  
+              if direction == 'right' and test_overlap(h, consensus_temp, curr_contig[-1], \
+              direction, farthest_support, criteria, consensus = True):
+                break
+              if direction == 'left' and test_overlap(h, curr_contig[0], consensus_temp, \
+              direction, farthest_support, critera, consensus = True):
+                break
           if len(consensus_temp) == 0:
             print 'COULD NOT ERROR CORRECT ANY FILTERED GOOD CANDIDATES'
             h = old_h
@@ -421,17 +436,23 @@ def find_genomic_position(read, hr, rr, print_alignment = False, align_consensus
   else:
     print '\tFAILED ALIGNMENT'
     return -1
-  
 
-def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relaxed = False, print_alignment = False):
+def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relaxed = False, print_alignment = False, consensus = False):
   # Tests that seq1 is after seq2
   # farthest_support is a list that will contains distances 
   # from the end (depending on direction) of the current read
+  # Optional consensus boolean toggles the case where we're aligning one consensus to another
 
-  dist_from_end = 2000
-  # dist_from_end = 100
-  acc_cutoff = overlap_accuracy_cutoff
-  len_cutoff = overlap_length_cutoff
+  if not consensus:
+    dist_from_end = 2000
+    # dist_from_end = 100
+    acc_cutoff = overlap_accuracy_cutoff
+    len_cutoff = overlap_length_cutoff
+  if consensus:
+    dist_from_end = 100
+    acc_cutoff = overlap_accuracy_cutoff_consensus
+    len_cutoff = overlap_length_cutoff_consensus
+
 
   temps1 = 'temp_seq1' + temp_sig + '.fasta'
   temps2 = 'temp_seq2' + temp_sig + '.fasta'
@@ -461,18 +482,19 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   end_pos_r2 = total_len_r2 - end_align_r2
   length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2          # Average alignment length
 
-  # update criteria
-  # criteria[head1] = length
-  criteria[head1] = accuracy
-
   if r2_strand_dir != r1_strand_dir:
     return False
 
   # Update farthest support, the distance to the end of the consensus that has support from 1deg nhood 
-  if direction == 'right':
-    farthest_support.append(end_pos_r1)
-  if direction == 'left':
-    farthest_support.append(beg_align_r2)
+  if not consensus:
+    # update criteria
+    # criteria[head1] = length
+    criteria[head1] = accuracy
+    
+    if direction == 'right':
+      farthest_support.append(end_pos_r1)
+    if direction == 'left':
+      farthest_support.append(beg_align_r2)
 
   if not relaxed:
     if direction == 'right':
