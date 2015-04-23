@@ -770,7 +770,6 @@ def keep_duplicates_only(inp):
   for key in d.keys():
     if d[key] > 1:
       new_list.append(key)
-  print 'Before:', len(inp), ' only duplicates:', len(new_list)     # testing
   return new_list
 
 def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None, candidates = []):
@@ -786,12 +785,14 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
   # 1-deg nhood
   collected_h = get_1_deg_nhood(header, creads, headers)
   collected_h = list(collected_h) 
+  print 'Original 1deg nhood:', len(collected_h)
 
   if len(candidates) > 0:
     for cd in candidates:
       new_h = get_1_deg_nhood(cd, creads, headers)
       collected_h += list(new_h)
     collected_h = keep_duplicates_only(collected_h)
+    print 'Duplicates only after combine:', len(collected_h)
 
   # print 'FINDING POSITIONS OF 1-DEG NHOOD READS'  # testing
   # for ch in collected_h:                          # testing
