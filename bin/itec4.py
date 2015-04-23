@@ -346,10 +346,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
               consensus_temp, n1, n2 = error_correct(ec_tool, h, headers, creads, hr, rr)
             if len(consensus_temp) != 0 and consensus_temp not in curr_contig:
               if direction == 'right' and test_overlap(h, consensus_temp, curr_contig[-1], \
-              direction, farthest_support, criteria, consensus = True):
+              direction, farthest_support, criteria, print_alignment = True, consensus = True):
                 break
               if direction == 'left' and test_overlap(h, curr_contig[0], consensus_temp, \
-              direction, farthest_support, critera, consensus = True):
+              direction, farthest_support, criteria, print_alignment = True, consensus = True):
                 break
           if len(consensus_temp) == 0:
             print 'COULD NOT ERROR CORRECT ANY FILTERED GOOD CANDIDATES'
