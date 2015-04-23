@@ -45,7 +45,7 @@ blasr_options = '-bestn 1 -m 1'   # Concise output
 e_coli_genome = '/home/yu/data/ecoli_consensus_mark.fasta'
 # ec_prefix = '3X_'
 # ec_prefix = '5X_'
-ec_prefix = 'C0419_'
+ec_prefix = 'C0422_'
 use_ecs = False
 
 def main():
@@ -83,7 +83,8 @@ def main():
   # ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
   # ec_tool = '/home/yu/program/error_correction_0402.sh'
   # ec_tool = '/home/yu/program/error_correction_test.sh'
-  ec_tool = '/home/yu/program/error_correction_0419.sh'
+  # ec_tool = '/home/yu/program/error_correction_0419.sh'
+  ec_tool = '/home/yu/program/' + sys.argv[2]
 
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', \
     ktmer_headers_file, '\nEC Tool:', ec_tool, '\nContigs fold', contigs_fold
