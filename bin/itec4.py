@@ -770,6 +770,7 @@ def keep_duplicates_only(inp):
   for key in d.keys():
     if d[key] > 1:
       new_list.append(key)
+  print 'Before:', len(inp), ' only duplicates:', len(new_list)     # testing
   return new_list
 
 def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None, candidates = []):
