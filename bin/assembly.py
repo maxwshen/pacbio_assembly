@@ -1,4 +1,8 @@
 # A-Bruijn Graph Construction
+# Deprecated, now used to generate necessary neighborhood files for itec4.py
+# > ktmer_headers (list of headers for all reads that contain a kt-mer, for all kt-mers)
+# > creads (dist - ktmer - dist format for all reads, by header)
+# > ktmer_edges - unused
 
 import sys, string, datetime, random, copy, os
 import numpy as np
