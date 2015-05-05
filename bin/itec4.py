@@ -95,8 +95,7 @@ def main():
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
-  # output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktmer_headers_file, \
-    # ec_tool)
+  # output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktmer_headers_file, ec_tool)
   # find_jumps_in_contigs(contigs_fold, parallel_prefix)
 
 
@@ -332,24 +331,19 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
 
             # just for my own info
             if direction == 'right':
-              test_overlap(h, rr[hr.index(h)], curr_contig[-1], direction, farthest_support, \
-              criteria, relaxed = False, print_alignment = True)     # testing
+              test_overlap(h, rr[hr.index(h)], curr_contig[-1], direction, farthest_support, criteria, relaxed = False, print_alignment = True)     # testing
             if direction == 'left':
-              test_overlap(h, curr_contig[0], rr[hr.index(h)], direction, farthest_support, \
-              criteria, relaxed = False, print_alignment = True)     # testing
+              test_overlap(h, curr_contig[0], rr[hr.index(h)], direction, farthest_support, criteria, relaxed = False, print_alignment = True)     # testing
 
             # find_genomic_position(rr[hr.index(h)], hr, rr)  # testing
             if use_ecs and h in ecs:
               consensus_temp = ecs[h]
             else:
-              consensus_temp, n1, n2 = error_correct(ec_tool, h, headers, creads, hr, rr, \
-              candidates = filtered_good_candidates)
+              consensus_temp, n1, n2 = error_correct(ec_tool, h, headers, creads, hr, rr, candidates = filtered_good_candidates)
             if len(consensus_temp) != 0 and consensus_temp not in curr_contig:
-              if direction == 'right' and test_overlap(h, consensus_temp, curr_contig[-1], \
-              direction, farthest_support, criteria, print_alignment = True, consensus = True):
+              if direction == 'right' and test_overlap(h, consensus_temp, curr_contig[-1], direction, farthest_support, criteria, print_alignment = True, consensus = True):
                 break
-              if direction == 'left' and test_overlap(h, curr_contig[0], consensus_temp, \
-              direction, farthest_support, criteria, print_alignment = True, consensus = True):
+              if direction == 'left' and test_overlap(h, curr_contig[0], consensus_temp, direction, farthest_support, criteria, print_alignment = True, consensus = True):
                 break
           if len(consensus_temp) == 0:
             print 'COULD NOT ERROR CORRECT ANY FILTERED GOOD CANDIDATES'
@@ -831,7 +825,7 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
   print status
   if 'ERROR' in status or 'No such file or directory' in status:
     print status
-    return ''
+    return '', -1, 1
 
   with open(ec_out, 'r') as f:  
     text = f.readlines()
@@ -839,7 +833,7 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
       header_con = text[0].strip()
       consensus = text[1].strip()
       if len(consensus) == 0:
-        return ''
+        return '', -1, 1
     else:
       consensus = ''
   print header_con
@@ -848,7 +842,7 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
   n21ratio = n2 / n1
   print 'consensus len:', len(consensus), 'out of', len(rr[hr.index(header)]), ' error ratio (bp):', n21ratio
   if n21ratio > n21ratio_cutoff:
-    return ''
+    return '', -1, 1
   return consensus.upper(), n1, n2
 
 
