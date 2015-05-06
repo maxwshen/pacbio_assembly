@@ -46,7 +46,7 @@ e_coli_genome = '/home/yu/data/ecoli_consensus_mark.fasta'
 use_ecs = False
 
 # IMPORTANT - CHANGE THIS WHEN CHANGING EC TOOL
-ec_prefix = 'C0419_'
+ec_prefix = 'C0422_'
 
 def main():
   global contigs_fold
