@@ -43,8 +43,10 @@ blasr_options = '-bestn 1 -m 1'   # Concise output
 # e_coli_genome = '/home/max/research/data/e_coli_genome.fasta'
 # e_coli_genome = '/home/yu/e_coli_genome.fasta'
 e_coli_genome = '/home/yu/data/ecoli_consensus_mark.fasta'
-ec_prefix = 'C0419_'
 use_ecs = False
+
+# IMPORTANT - CHANGE THIS WHEN CHANGING EC TOOL
+ec_prefix = 'C0419_'
 
 def main():
   global contigs_fold
