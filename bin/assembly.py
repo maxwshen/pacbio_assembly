@@ -3,6 +3,12 @@
 # > ktmer_headers (list of headers for all reads that contain a kt-mer, for all kt-mers)
 # > creads (dist - ktmer - dist format for all reads, by header)
 # > ktmer_edges - unused
+#
+# Filters: homopolymers, t floor and ceiling, and palindrome
+#
+# IMPORTANT:
+# If you are generating new (k,t)-mers, be sure to change ~line 400:
+#  t_cutoff = 55        it should match coverage probably
 
 import sys, string, datetime, random, copy, os
 import numpy as np
@@ -18,11 +24,11 @@ def main():
   # reads_file = '/home/mshen/research/sample.fasta'
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
 
-  # reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
+  reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
   _k = int(sys.argv[1])
   _t = int(sys.argv[2])
-  reads_file = sys.argv[3]
+  # reads_file = sys.argv[3]
   cov = reads_file.split('.')[2][:-1]
   gv_file = 'temp.gv'
 
@@ -72,9 +78,9 @@ def assembly(reads, genome_file, _k, _t, cov, gvname):
   print '... Done.', datetime.datetime.now()
 
   data_fold = '/home/mshen/research/data/'
-  headers_out_file = data_fold + 'temp_ktmer_headers' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc.out'
-  edges_out_file = data_fold + 'temp_ktmer_edges' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc.out'
-  creads_out_file = data_fold + 'temp_creads.out' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc.out'
+  headers_out_file = data_fold + 'temp_ktmer_headers' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc_v2.out'
+  edges_out_file = data_fold + 'temp_ktmer_edges' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc_v2.out'
+  creads_out_file = data_fold + 'temp_creads.out' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc_v2.out'
   a_bruijn_summary(cReads, reads, headers_out_file, edges_out_file, creads_out_file)
   return
 
@@ -397,11 +403,14 @@ def findKTmers(reads, _k, _t):
     curr_read = ''
   ans = set()
 
+  # IMPORTANT: CHANGE THIS TO MATCH COVERAGE
+  t_cutoff = 55
+
   num_filtered = 0
   for key, val in counts.iteritems():
     if _t <= val:
       # Ensures kt-mers are not palindromes
-      if not_palindrome(key) and filter_homopolymers(kmer):
+      if not_palindrome(key) and filter_homopolymers(kmer) and val <= t_cutoff:
         ans.add(key)
       else:
         num_filtered += 1
@@ -421,15 +430,14 @@ def filter_homopolymers(kmer):
 
 
 def not_palindrome(kmer):
-  if len(kmer) % 2 == 1:
-    if kmer[: len(kmer) / 2 + 1][::-1] == kmer[len(kmer) / 2 :]:
-      return False
-    return True 
-  else:
-    if kmer[: len(kmer) / 2][::-1] == kmer[len(kmer) / 2 :]:
-      return False
-    return True
+  # Detects reverse complement palindrome
+  if reverse_complement(kmer) == kmer:
+    return False
+  return True
 
+def reverse_complement(dna):
+  mapping = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A'}
+  return ''.join([mapping[s] for s in dna[::-1]])
 
 def convertReads(reads, ktmers, _k):
   # Input:
