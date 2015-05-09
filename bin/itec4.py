@@ -569,7 +569,7 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
       reads += accepted
 
   # Filter 1-deg nhood
-  reads = filter_special_1_deg_nhood(reads)
+  reads = filter_special_1_deg_nhood(header, reads, creads)
 
   # Bounded Nhood
   # reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
@@ -802,7 +802,7 @@ def get_1_deg_nhood(header, creads, headers):
       # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
 
   # Special 1-deg nhood
-  collected_h = filter_special_1_deg_nhood(list(collected_h))
+  collected_h = filter_special_1_deg_nhood(header, list(collected_h), creads)
 
   return collected_h
 
