@@ -503,19 +503,49 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
     return accuracy >= acc_cutoff and length > len_cutoff
 
 def filter_special_1_deg_nhood(header, nhood_headers, creads):
+  # Filters a neighborhood of reads to a master_read. Searches for overlapping kmers
+  #   Span of overlapping kmers must be greater than min_bp_shared
+  #   Distance b/w consecutive shared kmers must be less than max_dist
+
+  def get_relative_dist(kmer1, kmer2, cread):
+    # Returns 0 if there are no elements between kmer1 and kmer2, kmer1 must be before kmer2
+    ki1 = cread.index(kmer1)
+    ki2 = cread.index(kmer2)
+    return sum(int(cread[s]) for s in range(ki1, ki2 + 1) if s % 2 == 0)
+
   leniency = 100    # 100bp leniency for comparing relative distances between kmers
   max_dist = 2000   # If at least one read does not have a shared kmer within this distance, False
   min_bp_shared = 7000
 
+  new_nhood = []
+
   master_cread = creads[header]
   for candidate in nhood_headers:
     cand_cread = creads[candidate]
-    
+    master_dists = []
+    cand_dists = []
+    prev_cand = ''
+    for m_kmer in [creads[s] for s in range(len(creads)) if s % 2 == 1]:
+      if m_kmer in cand_cread:
+        if prev_cand == '':
+          prev_cand = m_kmer
+        else:
+          m_dist = get_relative_dist(prev_cand, m_kmer, master_cread)
+          if m_dist != 0:
+            master_dists.append(m_dist)
+          c_dist = get_relative_dist(prev_cand, m_kmer, cand_cread)
+          if c_dist != 0:
+            cand_dists.append(c_dist)
 
-  def get_relative_dist(kmer1, kmer2, cread):
-    ki1 = cread.index(kmer1)
-    ki2 = cread.index(kmer2)
-    return sum(int(cread[s]) for s in range(ki1, ki2 + 1) if s % 2 == 0)
+    for s in master_dists + cand_dists:
+      if s > max_dist:
+        continue
+    if sum(master_dists) < min_bp_shared or sum(cand_dists) < min_bp_shared:
+      continue
+    new_nhood.append(candidate)
+  print 'Filtering nhood - prev:', len(nhood_headers), ' after:', len(new_nhood)
+  return new_nhood
+
 
 
 def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
