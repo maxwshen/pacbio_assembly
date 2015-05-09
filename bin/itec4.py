@@ -502,8 +502,25 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   else:
     return accuracy >= acc_cutoff and length > len_cutoff
 
+def filter_special_1_deg_nhood(header, nhood_headers, creads):
+  leniency = 100    # 100bp leniency for comparing relative distances between kmers
+  max_dist = 2000   # If at least one read does not have a shared kmer within this distance, False
+  min_bp_shared = 7000
+
+  master_cread = creads[header]
+  for candidate in nhood_headers:
+    cand_cread = creads[candidate]
+    
+
+  def get_relative_dist(kmer1, kmer2, cread):
+    ki1 = cread.index(kmer1)
+    ki2 = cread.index(kmer2)
+    return sum(int(cread[s]) for s in range(ki1, ki2 + 1) if s % 2 == 0)
+
 
 def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
+  # Returns possible candidates for extension based on the 1-deg or multi-deg nhood of a raw read
+
   leniency = 100    # If 1-degree nhood fails, we accept a read that extends beyond border - leniency
   backtrack_limit = 1000       # Don't backtrack too far
   num_kmers_cutoff = 500       # If we start considering this many kt-mers in nhood extension, stop.
