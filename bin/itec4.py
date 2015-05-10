@@ -40,7 +40,6 @@ blasr_zero = 4      # 0 on debruijn, 4 on Yu's computer
 blasr_zero_len = 8  # 0 on debruijn, 8 on Yu's computer
 blasr_options = '-bestn 1 -m 1'   # Concise output
 # e_coli_genome = '/home/mshen/research/data/e_coli_genome.fasta'
-# e_coli_genome = '/home/max/research/data/e_coli_genome.fasta'
 # e_coli_genome = '/home/yu/e_coli_genome.fasta'
 e_coli_genome = '/home/yu/data/ecoli_consensus_mark.fasta'
 use_ecs = False
@@ -537,6 +536,7 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
           if c_dist != 0:
             cand_dists.append(c_dist)
 
+    print 'master_dists', master_dists, 'cand_dists:', cand_dists
     for s in master_dists + cand_dists:
       if s > max_dist:
         continue
