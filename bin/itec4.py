@@ -91,11 +91,11 @@ def main():
 
 
   # Actions
-  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
   # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
-  # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
+  output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
   # output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktmer_headers_file, ec_tool)
   # find_jumps_in_contigs(contigs_fold, parallel_prefix)
@@ -514,8 +514,8 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
     return sum(int(cread[s]) for s in range(ki1, ki2 + 1) if s % 2 == 0)
 
   leniency = 100    # 100bp leniency for comparing relative distances between kmers
-  max_dist = 2000   # If at least one read does not have a shared kmer within this distance, False
-  min_bp_shared = 7000
+  max_dist = 5000   # If at least one read does not have a shared kmer within this distance, False
+  min_bp_shared = 100
 
   new_nhood = []
 
