@@ -45,7 +45,7 @@ e_coli_genome = '/home/yu/data/ecoli_consensus_mark.fasta'
 use_ecs = False
 
 # IMPORTANT - CHANGE THIS WHEN CHANGING EC TOOL
-ec_prefix = 'C0422_'
+ec_prefix = 'C0423_'
 
 def main():
   global contigs_fold
@@ -90,11 +90,11 @@ def main():
 
 
   # Actions
-  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
   # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
-  output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
+  # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
   # output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktmer_headers_file, ec_tool)
   # find_jumps_in_contigs(contigs_fold, parallel_prefix)
@@ -512,9 +512,9 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
     ki2 = cread.index(kmer2)
     return sum(int(cread[s]) for s in range(ki1, ki2 + 1) if s % 2 == 0)
 
-  leniency = 100    # 100bp leniency for comparing relative distances between kmers
-  max_dist = 5000   # If at least one read does not have a shared kmer within this distance, False
-  min_bp_shared = 100
+  # leniency = 100    # 100bp leniency for comparing relative distances between kmers. currently unused
+  max_dist = 2000   # If at least one read does not have a shared kmer within this distance, False
+  min_bp_shared = 7000
 
   new_nhood = []
 
@@ -524,7 +524,7 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
     master_dists = []
     cand_dists = []
     prev_cand = ''
-    for m_kmer in [creads[s] for s in range(len(creads)) if s % 2 == 1]:
+    for m_kmer in [master_cread[s] for s in range(len(master_cread)) if s % 2 == 1]:
       if m_kmer in cand_cread:
         if prev_cand == '':
           prev_cand = m_kmer
@@ -535,8 +535,9 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
           c_dist = get_relative_dist(prev_cand, m_kmer, cand_cread)
           if c_dist != 0:
             cand_dists.append(c_dist)
+        prev_cand = m_kmer
+    # print master_dists, cand_dists
 
-    print 'master_dists', master_dists, 'cand_dists:', cand_dists
     for s in master_dists + cand_dists:
       if s > max_dist:
         continue
