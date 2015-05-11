@@ -386,7 +386,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         contig += '>' + curr_contig_headers[j] + '\n' + curr_contig[j] + '\n'
     with open(contig_file, 'w') as f:
       f.write(contig)
-    status = commands.getstatusoutput(blasr_exe + ' ' + contig_file +' ' + e_coli_genome + ' ' + blasr_options + ' > ' + contig_result)[1]
+    status = commands.getstatusoutput(blasr_exe + ' ' + contig_file +' ' + e_coli_genome + ' ' + blasr_options + ' -maxMatch 20 > ' + contig_result)[1]
 
     # Filter kt-mers
     curr_ktmer_len = len(ktmers)
