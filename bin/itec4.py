@@ -15,9 +15,6 @@ global temp_sig
 global contigs_fold
 temp_sig = str(datetime.datetime.now()).split()[1]
 prior = '/home/yu/max/research/'
-# contigs_fold = '/home/mshen/research/contigs_50x_1/'
-# contigs_fold = '/home/max/research/contigs_50x_3/'
-contigs_fold = prior + 'contigs_20kb_full_18/'
 overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 overlap_accuracy_cutoff_consensus = 98
@@ -45,7 +42,7 @@ e_coli_genome = '/home/yu/data/ecoli_consensus_mark.fasta'
 use_ecs = False
 
 # IMPORTANT - CHANGE THIS WHEN CHANGING EC TOOL
-ec_prefix = 'C0423_'
+ec_prefix = 'C0424_'
 
 def main():
   global contigs_fold
@@ -75,8 +72,10 @@ def main():
   # creads_file = '/home/max/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
   # ktmer_headers_file = '/home/max/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
 
-  creads_file = prior + 'data/temp_creads.out_28_6_rc.out'
-  ktmer_headers_file = prior + 'data/temp_ktmer_headers_28_6_rc.out'
+  # creads_file = prior + 'data/temp_creads.out_28_6_rc.out'
+  # ktmer_headers_file = prior + 'data/temp_ktmer_headers_28_6_rc.out'
+  creads_file = prior + 'data/temp_creads.outrx_28_6_rc_v2.out'
+  ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_28_6_rc_v2.out'
 
   # ec_tool = '/home/lin/program/error_correction_5X_0210.sh'   
   # ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
