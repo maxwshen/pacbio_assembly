@@ -12,8 +12,8 @@ import random
 
 def main():
   input_file = sys.argv[1]
-  plot_1group(input_file)
-  # plot_2groups(input_file)
+  # plot_1group(input_file)
+  plot_2groups(input_file)
   # plot_2groups_2files(input_file)
 
 def plot_1group(input_file):
@@ -47,21 +47,16 @@ def plot_2groups(input_file):
   for i, line in enumerate(fileh):  
     words = line.strip().split()
 
-    data = int(words[1])
-    correctness = words[2]
-    
-    if correctness == 'correct':
-      data1.append(data)
-    else:
-      data2.append(data)
+    data1.append(int(words[0]))
+    data2.append(int(words[1]))
 
-  largest = [max(correct_deg), max(wrong_deg)]
-  binrange = range(0, max(largest))
+  largest = [max(data1), max(data2)]
+  binrange = range(0, max(largest), 3)
 
-  plt.hist(data1, color = 'green', bins = binrange, alpha = 0.4, log = True)
-  plt.hist(data2, color = 'red', bins = binrange, alpha = 0.4, log = True)
+  plt.hist(data1, color = 'green', bins = binrange, alpha = 0.4, log = False)
+  plt.hist(data2, color = 'red', bins = binrange, alpha = 0.4, log = False)
 
-  plt.xlabel('Degree')
+  plt.xlabel('Nhood size')
   plt.ylabel('Quantity')
   plt.show()
 
