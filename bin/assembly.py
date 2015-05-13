@@ -24,16 +24,17 @@ def main():
   # reads_file = '/home/mshen/research/sample.fasta'
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
 
-  reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
+  # reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
   _k = int(sys.argv[1])
   _t = int(sys.argv[2])
-  # reads_file = sys.argv[3]
+  reads_file = sys.argv[3]
+  suffix = sys.argv[4]
   cov = reads_file.split('.')[2][:-1]
   gv_file = 'temp.gv'
 
-  print 'Using reads:', reads_file, 'k/t', _k, _t
-  assembly(reads_file, genome_file, _k, _t, cov, gv_file)
+  print 'Using reads:', reads_file, 'k/t', _k, _t, ' suffix', suffix
+  assembly(reads_file, genome_file, _k, _t, cov, gv_file, suffix)
   return
 
 def dist_bw_ktmers_in_genome(ktmers, _k, genome_file, out_file):
@@ -57,7 +58,7 @@ def dist_bw_ktmers_in_genome(ktmers, _k, genome_file, out_file):
   return
 
 
-def assembly(reads, genome_file, _k, _t, cov, gvname):
+def assembly(reads, genome_file, _k, _t, cov, gvname, suffix):
   # Given input reads in fasta format, assemble the genome
   # Procedure:
   #   1. Find all (k,T)-mers in reads
@@ -78,9 +79,9 @@ def assembly(reads, genome_file, _k, _t, cov, gvname):
   print '... Done.', datetime.datetime.now()
 
   data_fold = '/home/mshen/research/data/'
-  headers_out_file = data_fold + 'temp_ktmer_headers' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc_v2.out'
-  edges_out_file = data_fold + 'temp_ktmer_edges' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc_v2.out'
-  creads_out_file = data_fold + 'temp_creads.out' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc_v2.out'
+  headers_out_file = data_fold + 'temp_ktmer_headers' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc_v2_' + suffix + '.out'
+  edges_out_file = data_fold + 'temp_ktmer_edges' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc_v2_' + suffix + '.out'
+  creads_out_file = data_fold + 'temp_creads.out' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc_v2_' + suffix + '.out'
   a_bruijn_summary(cReads, reads, headers_out_file, edges_out_file, creads_out_file)
   return
 
