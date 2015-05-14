@@ -15,6 +15,8 @@ def convert_creads_to_nhoods(reads_file, creads_file, ktmer_headers_file):
   creads = itec4.build_creads_dict(creads_file, reads_file)
   headers = itec4.build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
+  for i in range(len(hr)):
+    hr[i] = hr[i].split()[0]
 
   new_text = ''
   for i in range(len(hr)):
