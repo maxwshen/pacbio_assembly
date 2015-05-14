@@ -74,6 +74,8 @@ def assembly(reads, genome_file, _k, _t, cov, gvname, suffix):
   out_file = 'dists_' + str(_k) + '_' + str(_t) + '_genome.txt'
   dist_bw_ktmers_in_genome(ktmers, _k, genome_file, out_file)
 
+  return
+
   print 'Converting reads...'
   cReads = convertReads(reads, ktmers, _k)
   print '... Done.', datetime.datetime.now()

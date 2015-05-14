@@ -31,11 +31,11 @@ def plot_1group(input_file):
   # step = 1
   binrange = range(0, largest + step, step)
 
-  # plt.hist(data, color = 'green', bins = binrange, log = True)
-  plt.hist(data, color = 'green', bins = binrange)
+  plt.hist(data, color = 'green', bins = binrange, log = True)
+  # plt.hist(data, color = 'green', bins = binrange)
 
-
-  plt.xlabel('Distances between seed kt-mers')
+  print step
+  plt.xlabel('Distances between (27,6)-mers in 55x E. coli dataset')
   plt.ylabel('Quantity')
   plt.show()
 
