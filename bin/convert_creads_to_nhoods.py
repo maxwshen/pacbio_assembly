@@ -22,6 +22,7 @@ def convert_creads_to_nhoods(reads_file, creads_file, ktmer_headers_file):
       print i, datetime.datetime.now()
     header = hr[i]
     nh = itec4.get_1_deg_nhood(header, creads, headers)
+    print nh
     new_text += str(i) + ' '
     neighbors_indices = []
     for neighbor_header in nh:
