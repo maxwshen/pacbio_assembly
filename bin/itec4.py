@@ -10,6 +10,7 @@ from collections import defaultdict
 import read_fasta as rf
 import find_read
 import kmer_matching
+import convert_creads_to_nhoods
 
 global temp_sig
 global contigs_fold
