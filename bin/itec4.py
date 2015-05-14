@@ -74,8 +74,8 @@ def main():
 
   # creads_file = prior + 'data/temp_creads.out_28_6_rc.out'
   # ktmer_headers_file = prior + 'data/temp_ktmer_headers_28_6_rc.out'
-  creads_file = prior + 'data/temp_creads.outrx_28_6_rc_v2.out'
-  ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_28_6_rc_v2.out'
+  creads_file = prior + 'data/temp_creads.outrx_27_6_rc_v2.out'
+  ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_27_6_rc_v2.out'
 
   # ec_tool = '/home/lin/program/error_correction_5X_0210.sh'   
   # ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
@@ -89,9 +89,9 @@ def main():
 
 
   # Actions
-  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
-  # combine_contigs(contigs_fold)
+  combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
@@ -1196,7 +1196,7 @@ def combine_contigs(contigs_fold):
             new_bases.append(new_base)
             continue
           else:
-            print status, '\n', len(status.split())                      # TESTING
+            print status                      # TESTING
             acc = float(status.split()[blasr_zero + 5])
             beg_align_r1 = int(status.split()[blasr_zero + 6])
             end_align_r1 = int(status.split()[blasr_zero + 7])
