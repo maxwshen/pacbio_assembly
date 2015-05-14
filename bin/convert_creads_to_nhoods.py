@@ -11,9 +11,9 @@ def main():
 
 
 def convert_creads_to_nhoods(reads_file, creads_file, ktmer_headers_file):
-  out_file = '/'.join(creads_file.split('/')[:-1]) + '/nhoods_' + creads_file.split('/')[-1]
-  creads = build_creads_dict(creads_file, reads_file)
-  headers = build_headers_dict(ktmer_headers_file)
+  out_file = '/' + '/'.join(creads_file.split('/')[:-1]) + '/nhoods_' + creads_file.split('/')[-1]
+  creads = itec4.build_creads_dict(creads_file, reads_file)
+  headers = itec4.build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
 
   new_text = ''
