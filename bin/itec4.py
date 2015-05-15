@@ -1043,6 +1043,8 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
 
 def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
   out_fold = '/home/yu/max/research/1deg_nhoods_27.6_55x/'
+  if not os.path.exists(out_fold):
+    os.makedirs(out_fold)
   hr, rr = rf.read_fasta(reads_file)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
