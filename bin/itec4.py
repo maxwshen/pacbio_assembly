@@ -1068,7 +1068,7 @@ def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool
     par_range = range(18000, len(hr))
 
     
-  for i in par_range:
+  for i in [s for s in par_range if s % 2 == 1]:
     print i
     header = hr[i]
     collected_h = get_1_deg_nhood(header, creads, headers)
