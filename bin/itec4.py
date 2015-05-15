@@ -51,7 +51,7 @@ def main():
   cf_dir = sys.argv[1]
   contigs_fold = prior + cf_dir
   # parallel_prefix = sys.argv[2]
-  parallel_prefix = str(0)
+  parallel_prefix = str(000)
   # cov = sys.argv[3]
   # _k = sys.argv[4]
   # _t = sys.argv[5]
@@ -82,8 +82,8 @@ def main():
   # ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
   # ec_tool = '/home/yu/program/error_correction_0402.sh'
   # ec_tool = '/home/yu/program/error_correction_test.sh'
-  # ec_tool = '/home/yu/program/error_correction_0419.sh'
-  ec_tool = '/home/yu/program/' + sys.argv[2]
+  ec_tool = '/home/yu/program/error_correction_0424.sh'
+  # ec_tool = '/home/yu/program/' + sys.argv[2]
 
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', \
     ktmer_headers_file, '\nEC Tool:', ec_tool, '\nContigs fold', contigs_fold
@@ -94,11 +94,11 @@ def main():
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
   # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
-  # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
+  output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
   # output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktmer_headers_file, ec_tool)
   # find_jumps_in_contigs(contigs_fold, parallel_prefix)
-  convert_creads_to_nhoods.convert_creads_to_nhoods(reads_file, creads_file, ktmer_headers_file)
+  # convert_creads_to_nhoods.convert_creads_to_nhoods(reads_file, creads_file, ktmer_headers_file)
 
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix):
   creads = build_creads_dict(creads_file, reads_file)
@@ -1042,7 +1042,7 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
 
 
 def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
-  out_fold = '/home/mshen/research/1deg_nhoods_20kb_c30full/'
+  out_fold = '/home/yu/max/research/1deg_nhoods_27.6_55x/'
   hr, rr = rf.read_fasta(reads_file)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
