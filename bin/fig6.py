@@ -23,8 +23,8 @@ def reducer(fold, fn):
 
   print len(r)
 
-  r = r[:-len(r) % step]   # Make r's len divisible by step
-  h = h[:-len(h) % step]
+  r = r[:-(len(r) % step)]   # Make r's len divisible by step
+  h = h[:-(len(h) % step)]
   print len(r)
 
   while len(r) > 0:
