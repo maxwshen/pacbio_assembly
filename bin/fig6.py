@@ -21,11 +21,16 @@ def reducer(fold, fn):
   random.shuffle(combined)
   h[:], r[:] = zip(*combined)
 
+  print len(r)
+
   r = r[:-len(r) % step]   # Make r's len divisible by step
   h = h[:-len(h) % step]
+  print len(r)
+
   while len(r) > 0:
+    print len(r)
     new_f = fold + str(len(r)) + 'x_' + fn
-    with open(new_f) as f:
+    with open(new_f, 'w') as f:
       for i in range(len(r)):
         f.write(h[i] + '\n')
         f.write(r[i] + '\n')
