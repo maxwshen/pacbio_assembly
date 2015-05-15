@@ -15,7 +15,7 @@ def reducer(fold, fn):
   step = 5
 
   with open(fold + fn) as f:
-    h, r = rf.read_fasta(fn)
+    h, r = rf.read_fasta(fold + fn)
 
   combined = zip(h, r)
   random.shuffle(combined)
