@@ -19,6 +19,5 @@ def read_fasta(fasta_file):
   if curr_read != '':
     reads.append(curr_read)
   if len(headers) == 0 or len(reads) == 0:
-    print 'ERROR: Bad fasta file', fasta_file
-    sys.exit(0)
+    print 'ERROR: Empty fasta file', fasta_file
   return headers, reads

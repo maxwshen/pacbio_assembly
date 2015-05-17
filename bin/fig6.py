@@ -16,6 +16,8 @@ def reducer(fold, fn):
 
   with open(fold + fn) as f:
     h, r = rf.read_fasta(fold + fn)
+  if len(r) == 0:
+    return
 
   combined = zip(h, r)
   random.shuffle(combined)
@@ -23,13 +25,15 @@ def reducer(fold, fn):
 
   print len(r)
 
-  r = r[:-(len(r) % step)]   # Make r's len divisible by step
-  h = h[:-(len(h) % step)]
+  cutoff = -(len(r) % step)
+  if cutoff != 0:
+    r = r[:-(len(r) % step)]   # Make r's len divisible by step
+    h = h[:-(len(h) % step)]
   print len(r)
 
   while len(r) > 0:
     print len(r)
-    new_f = fold + str(len(r)) + 'x_' + fn
+    new_f = fold + str(len(r)) + 'x_' + fn.split('.')[0] + '_reduced.fasta'
     with open(new_f, 'w') as f:
       for i in range(len(r)):
         f.write(h[i] + '\n')
