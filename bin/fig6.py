@@ -16,7 +16,9 @@ def main():
 def batch_ec(fold):
   # ex reduced nhood file: 40x_999_hood_reduced.fasta 
   # ex base file: 4101_base.fasta
-  ec_tool = '/home/yu/program/error_correction_0424.sh'
+  # NEEDS TO BE RUN INSIDE 1DEG_NHOOD FOLDER
+  # BECAUSE yu's EC_tool can't handle directory input
+  ec_tool = '/home/yu/program/error_correction_0421.sh'
   blasr_exe = 'blasr'
   blasr_zero = 4      # 0 on debruijn, 4 on Yu's computer
   blasr_zero_len = 8  # 0 on debruijn, 8 on Yu's computer
@@ -27,19 +29,23 @@ def batch_ec(fold):
   for rf in reduced_files:
     num = rf.split('_')[1]
     base = num + '_base.fasta'
-    status = commands.getstatusoutput(ec_tool + ' ' + fold + base + ' ' + fold + rf)[1]
-    ec_out = '0424_' + base
-    new_ec_out = fold + rf.split('.')[0] + '_corr.fasta'
+    print base, rf
+    status = commands.getstatusoutput(ec_tool + ' ' + base + ' ' + rf)[1]
+    ec_out = 'C0421_' + base
+    status = commands.getstatusoutput('ls ' + ec_out)
+    if 'No such file or directory' in status[1]:
+      print status
+      continue
+    new_ec_out = rf.split('.')[0] + '_corr_0421.fasta'
     commands.getstatusoutput('mv ' + ec_out + ' ' + new_ec_out)
-    commands.getstatusoutput('mv ' + new_ec_out + ' ' + fold)
 
     # First with canonical
-    e_coli_genome = '/home/yu/data/e_coli_genome.fasta'     # Canonical
-    status = commands.getstatusoutput(blasr_exe + ' ' + fold + new_ec_out + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+    e_coli_genome = '/home/yu/e_coli_genome.fasta'     # Canonical
+    status = commands.getstatusoutput(blasr_exe + ' ' + new_ec_out + ' ' + e_coli_genome + ' ' + blasr_options)[1]
 
     if len(status.split()) > blasr_zero_len:
       print status
-      acc = float(status.split()[blasr_zero + 5])
+      acc = status.split()[blasr_zero + 5]
       beg_align = int(status.split()[blasr_zero + 9])
       end_align = int(status.split()[blasr_zero + 10])
       total_len = int(status.split()[blasr_zero + 11])
@@ -50,11 +56,11 @@ def batch_ec(fold):
 
     # Then with quiver
     e_coli_genome = '/home/yu/data/ecoli_consensus_mark.fasta'
-    status = commands.getstatusoutput(blasr_exe + ' ' + fold + new_ec_out + ' ' + e_coli_genome + ' ' + blasr_options)[1]
+    status = commands.getstatusoutput(blasr_exe + ' ' + new_ec_out + ' ' + e_coli_genome + ' ' + blasr_options)[1]
 
     if len(status.split()) > blasr_zero_len:
       print status
-      acc = float(status.split()[blasr_zero + 5])
+      acc = status.split()[blasr_zero + 5]
       beg_align = int(status.split()[blasr_zero + 9])
       end_align = int(status.split()[blasr_zero + 10])
       total_len = int(status.split()[blasr_zero + 11])
