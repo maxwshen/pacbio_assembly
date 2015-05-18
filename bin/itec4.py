@@ -20,6 +20,7 @@ overlap_accuracy_cutoff = 75    # .
 overlap_length_cutoff = 7000     # .
 overlap_accuracy_cutoff_consensus = 98
 overlap_length_cutoff_consensus = 7000
+min_extension = 0               # Min. bp extension candidates need to extend
 # overlap_length_cutoff = 300     # .
 num_attempts = 1                # Number of times to try nhood extension.
 support_cutoff = 70             # CANDIDATE: Required pct accuracy for support to count
@@ -475,7 +476,7 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   end_align_r2 = int(status.split()[blasr_zero + 10])
   total_len_r2 = int(status.split()[blasr_zero + 11])
   end_pos_r2 = total_len_r2 - end_align_r2
-  length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2          # Average alignment length
+  length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2   # Average alignment length
 
   if r2_strand_dir != r1_strand_dir:
     return False
@@ -495,9 +496,9 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
     if direction == 'right':
       # if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 and beg_align_r2 < dist_from_end:
       # print status                    # TESTING
-      return accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 and beg_align_r2 < dist_from_end
+      return accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 + min_extension and beg_align_r2 < dist_from_end
     if direction == 'left':
-      return accuracy >= acc_cutoff and length > len_cutoff and beg_align_r2 < dist_from_end and beg_align_r1 > beg_align_r2 and end_pos_r1 < dist_from_end
+      return accuracy >= acc_cutoff and length > len_cutoff and beg_align_r2 < dist_from_end and beg_align_r1 > beg_align_r2 + min_extension and end_pos_r1 < dist_from_end
   else:
     return accuracy >= acc_cutoff and length > len_cutoff
 
@@ -562,15 +563,7 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
 
   reads = []
 
-  # Traditional 1-deg nhood
-  for k in ktmers:
-    next_read = find_extending_read(k, headers, hr, rr)
-    if len(next_read) != 0:
-      accepted = [nr for nr in next_read if nr not in traversed_headers and nr not in reads]
-      reads += accepted
-
-  # Filter 1-deg nhood
-  reads = filter_special_1_deg_nhood(header, reads, creads)
+  reads = get_1_deg_nhood(header, creads, headers)
 
   # Bounded Nhood
   # reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
@@ -804,8 +797,27 @@ def get_1_deg_nhood(header, creads, headers):
 
   # Special 1-deg nhood
   collected_h = filter_special_1_deg_nhood(header, list(collected_h), creads)
+  collected_h = remove_rc_duplicate_in_headers(collected_h)
 
   return collected_h
+
+def remove_rc_duplicate_in_headers(headers):
+  # Randomly removes one of the dulpicate reads (rc and normal) in a set of headers
+  # We can remove randomly because we pass into Yu's EC which uses BLASR to align
+  # all headers to the base read, which will automatically flip if needed
+  past = []
+  prefixes = []
+  for h in headers:
+    trimmed_h = '_'.join(h.split('_')[1:])
+    prefix = h.split('_')[0]
+    if trimmed_h not in past:
+      past.append(trimmed_h)
+      prefixes.append(prefix)
+  
+  ans = []
+  for i in range(len(past)):
+    ans.append(prefixes[i] + '_' + past[i])
+  return ans
 
 def keep_duplicates_only(inp):
   # Given a list, returns a new list with 1 copy of any duplicates
