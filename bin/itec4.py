@@ -52,10 +52,11 @@ def main():
   cf_dir = sys.argv[1]
   contigs_fold = prior + cf_dir
   # parallel_prefix = sys.argv[2]
-  parallel_prefix = str(000)
-  # cov = sys.argv[3]
-  # _k = sys.argv[4]
-  # _t = sys.argv[5]
+  # parallel_prefix = str(000)
+  parallel_prefix = str(-1)
+  cov = sys.argv[2]
+  _k = sys.argv[3]
+  _t = sys.argv[4]
 
   if not os.path.exists(contigs_fold):
     os.makedirs(contigs_fold)
@@ -64,20 +65,20 @@ def main():
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
   # reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   # reads_file = '/home/mshen/research/data/reads.20k.' + cov + 'x.rc.fasta'
-  # reads_file = '/home/max/research/data/reads.20k.' + cov + 'x.rc.fasta'
-  reads_file = prior + 'data/reads.20k.rc.fasta'
+  reads_file = prior + 'data/reads.20k.' + cov + 'x.rc.fasta'
+  # reads_file = prior + 'data/reads.20k.rc.fasta'
 
   # creads_file = '/home/mshen/research/data/temp_creads.out_28_6_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
   # creads_file = '/home/mshen/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
-  # creads_file = '/home/max/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
-  # ktmer_headers_file = '/home/max/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
+  creads_file = '/home/max/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
+  ktmer_headers_file = '/home/max/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
 
   # creads_file = prior + 'data/temp_creads.out_28_6_rc.out'
   # ktmer_headers_file = prior + 'data/temp_ktmer_headers_28_6_rc.out'
-  creads_file = prior + 'data/temp_creads.outrx_27_6_rc_v2.out'
-  ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_27_6_rc_v2.out'
+  # creads_file = prior + 'data/temp_creads.outrx_27_6_rc_v2.out'
+  # ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_27_6_rc_v2.out'
 
   # ec_tool = '/home/lin/program/error_correction_5X_0210.sh'   
   # ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
@@ -91,11 +92,11 @@ def main():
 
 
   # Actions
-  # iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
   # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
-  output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
+  # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'
   # output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktmer_headers_file, ec_tool)
   # find_jumps_in_contigs(contigs_fold, parallel_prefix)
