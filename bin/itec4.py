@@ -52,7 +52,7 @@ def main():
   cf_dir = sys.argv[1]
   contigs_fold = prior + cf_dir
   # parallel_prefix = sys.argv[2]
-  parallel_prefix = str(000)
+  parallel_prefix = '0'
   # cov = sys.argv[3]
   # _k = sys.argv[4]
   # _t = sys.argv[5]
