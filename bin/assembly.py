@@ -25,7 +25,8 @@ def main():
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
 
   # reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
-  genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
+  # genome_file = '/home/mshen/research/data/e_coli_genome.fasta'
+  genome_file = '/home/mshen/research/data/ecoli_consensus_mark.fasta'
   _k = int(sys.argv[1])
   _t = int(sys.argv[2])
   reads_file = sys.argv[3]
