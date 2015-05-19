@@ -12,8 +12,8 @@ import random
 
 def main():
   input_file = sys.argv[1]
-  # plot_1group(input_file)
-  plot_2groups(input_file)
+  plot_1group(input_file)
+  # plot_2groups(input_file)
   # plot_2groups_2files(input_file)
 
 def plot_1group(input_file):
@@ -35,7 +35,7 @@ def plot_1group(input_file):
   # plt.hist(data, color = 'green', bins = binrange)
 
   print step
-  plt.xlabel('Distances between (27,6)-mers in 55x E. coli dataset')
+  plt.xlabel('Distances between (27,6)-mers in Quiver Genome')
   plt.ylabel('Quantity')
   plt.show()
 

@@ -43,7 +43,7 @@ def dist_bw_ktmers_in_genome(ktmers, _k, genome_file, out_file):
   with open(genome_file) as f:
     for i, line in enumerate(f):
       if i > 0:
-        genome += line.strip()
+        genome += line.strip().upper()
 
   dists = []
   curr = 0
