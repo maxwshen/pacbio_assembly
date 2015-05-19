@@ -35,6 +35,7 @@ def main():
   gv_file = 'temp.gv'
 
   print 'Using reads:', reads_file, 'k/t', _k, _t, ' suffix', suffix
+  print 'Using genome file:', genome_file
   assembly(reads_file, genome_file, _k, _t, cov, gv_file, suffix)
   return
 

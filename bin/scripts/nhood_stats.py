@@ -6,6 +6,7 @@ import sys, string, datetime, random, copy, os, commands, fnmatch
 from collections import defaultdict
 
 ground_truth = '/home/mshen/research/data/genome_nhood.txt'
+# ground_truth = '/home/mshen/research/data/genome_nhood_all.txt'
 inp = '/home/mshen/research/data/nhoods_temp_creads.outrx_27_6_rc_v2.out'
 
 true_nhoods = defaultdict(list)
@@ -30,9 +31,10 @@ sensitivity = []
 num_false_nhood = 0
 for key in nhood.keys():
   if key not in true_nhoods:
-    specificity.append(0)
+    # specificity.append(0)
     # print key, 'has no ground truth nhood'
     num_false_nhood += 1
+    # print key, nhood[key]
   if key in true_nhoods:
     intersect = len(set(nhood[key]).intersection(true_nhoods[key]))
     sensitivity.append(float(intersect) / float(len(true_nhoods[key])))
@@ -42,5 +44,5 @@ print 'sensitivity:', float(sum(sensitivity)) / float(len(sensitivity))
 print 'specificity:', float(sum(specificity)) / float(len(specificity))
 print 'found', num_false_nhood, 'number of false nhoods (where no ground truth nhood exists)'
 
-print 'sensitivity list:', '\n'.join(str(s) for s in sensitivity)
-print 'specificity list:', '\n'.join(str(s) for s in specificity)
+# print 'sensitivity list:', '\n'.join(str(s) for s in sensitivity)
+# print 'specificity list:', '\n'.join(str(s) for s in specificity)
