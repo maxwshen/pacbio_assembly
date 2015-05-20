@@ -657,8 +657,23 @@ def find_extending_read(ktmer, headers, hr, rr):
   valid = headers[ktmer]  
   return valid
 
+def nhood_stats(base_index, nhood_indices):
+  ground_truth = '/home/mshen/research/data/genome_nhood.txt'
+  rest = []
+  with open(ground_truth) as f:
+    for i, line in enumerate(f):
+      base = line.split(':')[0]
+      if base == base_index:
+        rest = ' '.join(line.split(':')[1:]).split()
+        break
+  intersect = len(set(nhood_indices).intersection(rest))
+  sensitivity.append(float(intersect) / float(len(rest)))
+  specificity.append(float(intersect) / float(len(nhood_indices)))
 
-def get_nhood(header, headers, creads):
+  print 'sensitivity:', float(sum(sensitivity)) / float(len(sensitivity))
+  print 'specificity:', float(sum(specificity)) / float(len(specificity))
+
+def get_nhood(header, headers, creads, hr):
   def len_read(cread):
     return sum([cread[s] for s in range(len(cread)) if s % 2 == 0])
 
@@ -666,6 +681,10 @@ def get_nhood(header, headers, creads):
   collected_headers = [nhood_headers]   # List of lists
   collected_windows = [windows]
   collected = set(nhood_headers)
+
+  base_index = hr.index(header)
+  nhood_indices = [hr.index(s) for s in list(collected)]
+  nhood_stats(base_index, nhood_indices)
 
   depth = 3
   for i in range(depth):
@@ -689,6 +708,10 @@ def get_nhood(header, headers, creads):
     collected_headers.append(new_headers)
     collected_windows.append(new_windows)
 
+    print 'degree', i + 1
+    base_index = hr.index(header)
+    nhood_indices = [hr.index(s) for s in list(collected)]
+    nhood_stats(base_index, nhood_indices)
 
   return list(collected)
 
@@ -864,10 +887,7 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
     # find_genomic_position(rr[hr.index(ch)], hr, rr)       # testing
 
   # n-degree nhood
-  collected_h = get_nhood(header, headers, creads)
-  print hr.index(header)
-  for ch in collected_h:
-    print hr.index(ch),
+  collected_h = get_nhood(header, headers, creads, hr)
 
   # Use 2-deg nhood, no width bound (irrelevant reads, but ec tool should handle)
   # new_ktmers = []
