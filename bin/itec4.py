@@ -513,7 +513,7 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
       print 'error:', kmer, 'not in', cread
 
   def len_read(cread):
-    return sum([cread[s] for s in range(len(cread)) if s % 2 == 0])
+    return sum([int(cread[s]) for s in range(len(cread)) if s % 2 == 0])
 
   def get_relative_dist(kmer1, kmer2, cread):
     # Returns 0 if there are no elements between kmer1 and kmer2, kmer1 must be before kmer2
@@ -550,7 +550,7 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
             cand_dists.append(c_dist)
         prev_cand = m_kmer
     # print master_dists, cand_dists
-    window[1] = min(get_pos_in_read(prev_cand, cand_cread) + extend_range, len(cand_cread))
+    window[1] = min(get_pos_in_read(prev_cand, cand_cread) + extend_range, len_read(cand_cread))
 
     for s in master_dists + cand_dists:
       if s > max_dist:
