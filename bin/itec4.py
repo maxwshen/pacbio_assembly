@@ -521,12 +521,15 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
 
   master_cread = creads[header]
   for candidate in nhood_headers:
+    print 'trying candidate...'
     cand_cread = creads[candidate]
     master_dists = []
     cand_dists = []
     prev_cand = ''
     for m_kmer in [master_cread[s] for s in range(len(master_cread)) if s % 2 == 1]:
       if m_kmer in cand_cread:
+        if m_kmer == master_cread[1] or m_kmer == master_cread[-2]:
+          print 'yes end'
         if prev_cand == '':
           prev_cand = m_kmer
         else:
@@ -779,6 +782,7 @@ def get_nhood(header, headers, creads):
     ktmers = copy.copy(new_ktmers)
 
   return nhood_headers
+
 
 def get_1_deg_nhood(header, creads, headers):
   collected_h = set()
