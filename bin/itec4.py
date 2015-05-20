@@ -538,7 +538,7 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads, n_range):
     prev_cand = ''
 
     # Assists in n-deg nhood, only look for overlapping ktmers in range
-    if n_range = []:
+    if n_range == []:
       master_cread_range = range(len(master_cread))
     else:
       master_cread_range = range(n_range[0], n_range[1])
@@ -737,7 +737,7 @@ def get_nhood(header, headers, creads):
   nhood_headers, windows = get_1_deg_nhood(header, creads, headers)
   collected_headers = [nhood_headers]   # List of lists
   collected_windows = [windows]
-  collected = set(collected_headers)
+  collected = set(nhood_headers)
 
   depth = 3
   for i in range(depth):
@@ -745,11 +745,13 @@ def get_nhood(header, headers, creads):
     new_windows = []
     curr_level_headers = collected_headers[-1]
     curr_level_windows = collected_windows[-1]
+    print curr_level_windows, collected_windows
 
     print len(curr_level_headers), curr_level_headers
     for j in range(len(curr_level_headers)):
       curr_head = curr_level_headers[j]
       curr_window = curr_level_windows[j]
+      print curr_window
       new_nhood_headers, new_nhood_windows = get_1_deg_nhood(curr_head, creads, headers, curr_window)
       for k in range(len(new_nhood_headers)):
         if new_nhood_headers[k] not in collected:
@@ -757,7 +759,7 @@ def get_nhood(header, headers, creads):
           new_headers.append(new_nhood_headers[k])
           new_windows.append(new_nhood_windows[k])
     collected_headers.append(new_headers)
-    collected_windows.append(new_windows)
+    collected_windows.append([new_windows])
 
 
   return list(collected)
