@@ -53,10 +53,10 @@ def main():
   contigs_fold = prior + cf_dir
   # parallel_prefix = sys.argv[2]
   parallel_prefix = '0'
-  cov = sys.argv[2]
-  _k = sys.argv[3]
-  _t = sys.argv[4]
-  _num = sys.argv[5]
+  # cov = sys.argv[2]
+  # _k = sys.argv[3]
+  # _t = sys.argv[4]
+  # _num = sys.argv[5]
 
   if not os.path.exists(contigs_fold):
     os.makedirs(contigs_fold)
@@ -65,20 +65,18 @@ def main():
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
   # reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   # reads_file = '/home/mshen/research/data/reads.20k.' + cov + 'x.rc.fasta'
-  reads_file = prior + 'data/reads.20k.' + cov + 'x.rc.fasta'
-  # reads_file = prior + 'data/reads.20k.rc.fasta'
+  # reads_file = prior + 'data/reads.20k.' + cov + 'x.rc.fasta'
+  reads_file = prior + 'data/reads.20k.rc.fasta'
 
   # creads_file = '/home/mshen/research/data/temp_creads.out_28_6_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
   # creads_file = '/home/mshen/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
-  creads_file = prior + 'data/20k_v2/temp_creads.outcov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
-  ktmer_headers_file = prior + 'data/20k_v2/temp_ktmer_headerscov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
+  # creads_file = prior + 'data/20k_v2/temp_creads.outcov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
+  # ktmer_headers_file = prior + 'data/20k_v2/temp_ktmer_headerscov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
 
-  # creads_file = prior + 'data/temp_creads.out_28_6_rc.out'
-  # ktmer_headers_file = prior + 'data/temp_ktmer_headers_28_6_rc.out'
-  # creads_file = prior + 'data/temp_creads.outrx_27_6_rc_v2.out'
-  # ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_27_6_rc_v2.out'
+  creads_file = prior + 'data/temp_creads.outrx_27_6_rc_v2.out'
+  ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_27_6_rc_v2.out'
 
   # ec_tool = '/home/lin/program/error_correction_5X_0210.sh'   
   # ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
