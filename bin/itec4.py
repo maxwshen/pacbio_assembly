@@ -817,14 +817,17 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
       master_dists = new_master_dists
       cand_dists = new_cand_dists
 
-      print hr.index(candidate), master_dists, cand_dists   # testing
-
+      failed = False
       for s in master_dists + cand_dists:
         if s > max_dist:
+          failed = True
           continue
       if sum(master_dists) < min_bp_shared or sum(cand_dists) < min_bp_shared:
+        failed = True
+      if failed:
         continue
 
+      print hr.index(candidate), master_dists, cand_dists   # testing
       # print window      # testing
       windows.append(window)
       new_nhood.append(candidate)
