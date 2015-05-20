@@ -789,11 +789,10 @@ def get_1_deg_nhood(header, creads, headers, n_range = []):
             prev_cand = m_kmer
           else:
             m_dist = get_relative_dist(prev_cand, m_kmer, master_cread)
-            if m_dist != 0:
-              master_dists.append(m_dist)
             c_dist = get_relative_dist(prev_cand, m_kmer, cand_cread)
-            if c_dist != 0:
+            if c_dist != 0 and m_dist != 0:
               cand_dists.append(c_dist)
+              master_dists.append(m_dist)
           prev_cand = m_kmer
       # print master_dists, cand_dists
       if prev_cand != '':
