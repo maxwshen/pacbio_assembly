@@ -515,10 +515,7 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
 
   reads = []
 
-  reads, windows = get_1_deg_nhood(header, creads, headers)
-
-  # Bounded Nhood
-  # reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
+  reads, windows = get_1_deg_nhood(header, creads, headers, hr)
 
   if len(reads) != 0:
     return reads
@@ -527,7 +524,7 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
 
   # # Try bounded n-deg nhood
   # print 'trying n-deg bounded nhood'
-  # reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
+  # reads = [s for s in get_nhood(header, headers, creads, hr) if s not in traversed_headers]
   # print 'found', len(reads), 'possible reads'
   # return reads
 
@@ -693,7 +690,7 @@ def get_nhood(header, headers, creads, hr):
   nhood_indices = [hr.index(s) for s in list(collected)]
   nhood_stats(base_index, nhood_indices)
 
-  depth = 3
+  depth = 2
   for i in range(depth):
     new_headers = []
     new_windows = []
@@ -899,13 +896,13 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
   find_genomic_position(rr[hr.index(header)], hr, rr)       # testing
   
   # # 1-deg nhood
-  # collected_h, windows = get_1_deg_nhood(header, creads, headers)
+  # collected_h, windows = get_1_deg_nhood(header, creads, headers, hr)
   # collected_h = list(collected_h) 
   # print 'Original 1deg nhood:', len(collected_h)
 
   # if len(candidates) > 0:
   #   for cd in candidates:
-  #     new_h, windows = get_1_deg_nhood(cd, creads, headers)
+  #     new_h, windows = get_1_deg_nhood(cd, creads, headers, hr)
   #     collected_h += list(new_h)
   #   collected_h = keep_duplicates_only(collected_h)
   #   print 'Duplicates only after combine:', len(collected_h)
@@ -1134,7 +1131,7 @@ def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool
   for i in [s for s in par_range if s % 2 == 1]:
     print i
     header = hr[i]
-    collected_h, windows = get_1_deg_nhood(header, creads, headers)
+    collected_h, windows = get_1_deg_nhood(header, creads, headers, hr)
 
     base_file = str(i) + '_base.fasta'
     hood_file = str(i) + '_hood.fasta'
@@ -1176,7 +1173,7 @@ def output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktme
 
   for i in range(len(input_headers)):
     header = input_headers[i]
-    collected_h, windows = get_1_deg_nhood(header, creads, headers)
+    collected_h, windows = get_1_deg_nhood(header, creads, headers, hr)
 
     base_file = str(i) + '_base.fasta'
     hood_file = str(i) + '_hood.fasta'
