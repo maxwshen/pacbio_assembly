@@ -506,6 +506,15 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
   #   Span of overlapping kmers must be greater than min_bp_shared
   #   Distance b/w consecutive shared kmers must be less than max_dist
 
+  def get_pos_in_read(kmer, cread):
+    if kmer in cread:
+      return sum([int(cread[s]) for s in range(len(cread.index(kmer) if s % 2 == 0))])
+    else:
+      print 'error:', kmer, 'not in', cread
+
+  def len_read(cread):
+    return sum([cread[s] for s in range(len(cread)) if s % 2 == 0])
+
   def get_relative_dist(kmer1, kmer2, cread):
     # Returns 0 if there are no elements between kmer1 and kmer2, kmer1 must be before kmer2
     ki1 = cread.index(kmer1)
@@ -515,21 +524,22 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
   # leniency = 100    # 100bp leniency for comparing relative distances between kmers. currently unused
   max_dist = 2000   # If at least one read does not have a shared kmer within this distance, False
   min_bp_shared = 7000
+  extend_range = 100
 
   new_nhood = []
 
   master_cread = creads[header]
   for candidate in nhood_headers:
-    print 'trying candidate...'
+    window = []
     cand_cread = creads[candidate]
     master_dists = []
     cand_dists = []
     prev_cand = ''
     for m_kmer in [master_cread[s] for s in range(len(master_cread)) if s % 2 == 1]:
       if m_kmer in cand_cread:
-        if m_kmer == master_cread[1] or m_kmer == master_cread[-2]:
-          print 'yes end'
         if prev_cand == '':
+          # First overlapping kmer
+          window.append(max(get_pos_in_read(m_kmer, cand_cread)) - extend_range, 0)
           prev_cand = m_kmer
         else:
           m_dist = get_relative_dist(prev_cand, m_kmer, master_cread)
@@ -540,16 +550,18 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
             cand_dists.append(c_dist)
         prev_cand = m_kmer
     # print master_dists, cand_dists
+    window.append(min(get_pos_in_read(m_kmer, cand_cread)) + extend_range, len(read))
 
     for s in master_dists + cand_dists:
       if s > max_dist:
         continue
     if sum(master_dists) < min_bp_shared or sum(cand_dists) < min_bp_shared:
       continue
+
+    print window
     new_nhood.append(candidate)
   print 'Filtering nhood - prev:', len(nhood_headers), ' after:', len(new_nhood)
   return new_nhood
-
 
 
 def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
@@ -709,6 +721,9 @@ def find_extending_read(ktmer, headers, hr, rr):
 
 
 def get_nhood(header, headers, creads):
+  def len_read(cread):
+    return sum([cread[s] for s in range(len(cread)) if s % 2 == 0])
+
   def find_acceptable_neighbors(ktmer, header, creads, left, right):
     ktmers = []
     dists = dict()
