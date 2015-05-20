@@ -72,8 +72,8 @@ def main():
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
   # creads_file = '/home/mshen/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
-  creads_file = prior + '/data/20k_v2/temp_creads.outcov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
-  ktmer_headers_file = prior + '/data/20k_v2/temp_ktmer_headerscov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
+  creads_file = prior + 'data/20k_v2/temp_creads.outcov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
+  ktmer_headers_file = prior + 'data/20k_v2/temp_ktmer_headerscov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
 
   # creads_file = prior + 'data/temp_creads.out_28_6_rc.out'
   # ktmer_headers_file = prior + 'data/temp_ktmer_headers_28_6_rc.out'
