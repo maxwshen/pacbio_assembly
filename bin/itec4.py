@@ -501,7 +501,7 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   else:
     return accuracy >= acc_cutoff and length > len_cutoff
 
-def filter_special_1_deg_nhood(header, nhood_headers, creads):
+def filter_special_1_deg_nhood(header, nhood_headers, creads, n_range):
   # Filters a neighborhood of reads to a master_read. Searches for overlapping kmers
   #   Span of overlapping kmers must be greater than min_bp_shared
   #   Distance b/w consecutive shared kmers must be less than max_dist
@@ -527,6 +527,7 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
   extend_range = 100
 
   new_nhood = []
+  windows = []
 
   master_cread = creads[header]
   for candidate in nhood_headers:
@@ -535,7 +536,15 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
     master_dists = []
     cand_dists = []
     prev_cand = ''
-    for m_kmer in [master_cread[s] for s in range(len(master_cread)) if s % 2 == 1]:
+
+    # Assists in n-deg nhood, only look for overlapping ktmers in range
+    if n_range = []:
+      master_cread_range = range(len(master_cread))
+    else:
+      master_cread_range = range(n_range[0], n_range[1])
+
+    # Search for overlapping kmers between master_cread and cand_cread
+    for m_kmer in [master_cread[s] for s in master_cread_range if s % 2 == 1]:
       if m_kmer in cand_cread:
         if prev_cand == '':
           # First overlapping kmer
@@ -558,10 +567,11 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
     if sum(master_dists) < min_bp_shared or sum(cand_dists) < min_bp_shared:
       continue
 
-    print window
+    # print window      # testing
+    windows.append(window)
     new_nhood.append(candidate)
   print 'Filtering nhood - prev:', len(nhood_headers), ' after:', len(new_nhood)
-  return new_nhood
+  return new_nhood, windows
 
 
 def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
@@ -577,7 +587,7 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
 
   reads = []
 
-  reads = get_1_deg_nhood(header, creads, headers)
+  reads, windows = get_1_deg_nhood(header, creads, headers)
 
   # Bounded Nhood
   # reads = [s for s in get_nhood(header, headers, creads) if s not in traversed_headers]
@@ -724,81 +734,36 @@ def get_nhood(header, headers, creads):
   def len_read(cread):
     return sum([cread[s] for s in range(len(cread)) if s % 2 == 0])
 
-  def find_acceptable_neighbors(ktmer, header, creads, left, right):
-    ktmers = []
-    dists = dict()
-    kt_pos = -1
-    temp_total = 0
-    for i in range(len(creads[header])):
-      if i % 2 == 1:
-        ktmers.append(creads[header][i])
-        dists[creads[header][i]] = temp_total
-        if creads[header][i] == ktmer:
-          kt_pos = temp_total
-      else:
-        temp_total += int(creads[header][i])
+  nhood_headers, windows = get_1_deg_nhood(header, creads, headers)
+  collected_headers = [nhood_headers]   # List of lists
+  collected_windows = [windows]
+  collected = set(collected_headers)
 
-    for key in dists.keys():
-      dists[key] -= kt_pos
-      if -left <= dists[key] <= right and key != ktmer:
-        ktmers.append(key)
-    return ktmers, dists
+  depth = 3
+  for i in range(depth):
+    new_headers = []
+    new_windows = []
+    curr_level_headers = collected_headers[-1]
+    curr_level_windows = collected_windows[-1]
 
-  ktmers = []
-  nhood_headers = []
-  dist_to_left = dict()     # Key = ktmer, Val = int dist
-  dist_to_right = dict()     # Key = ktmer, Val = int dist
-  temp_total = 0
-
-  for i in range(len(creads[header])):
-    if i % 2 == 1:
-      kt = creads[header][i]
-      ktmers.append(kt)
-      for h in headers[kt]:
-        if h not in nhood_headers:
-          nhood_headers.append(h)
-      dist_to_left[kt] = temp_total
-    else:
-      temp_total += int(creads[header][i])
-  for kt in dist_to_left.keys():
-    dist_to_right[kt] = temp_total - dist_to_left[kt]
-
-  # print len(nhood_headers)
-  num_iterations = 0
-  used_ktmers = set(ktmers)
-  exit = False
-  print 'starting w/', len(nhood_headers), 'headers'
-  while len(nhood_headers) < nhood_header_limit and num_iterations < nhood_it_limit:
-    num_iterations += 1
-    print num_iterations
-    # print 'loop'              # testing
-    # new_ktmers = copy.copy(ktmers)
-    new_ktmers = []
-    for kt in ktmers:
-      for h in headers[kt]:
-        kts_new, dists = find_acceptable_neighbors(kt, h, creads, dist_to_left[kt], dist_to_right[kt])
-        for kt_new in kts_new:
-          if kt_new not in ktmers and kt_new not in used_ktmers:
-            new_ktmers.append(kt_new)
-            dist_to_left[kt_new] = dist_to_left[kt] + dists[kt_new]
-            dist_to_right[kt_new] = dist_to_right[kt] - dists[kt_new]
-            nhood_headers += [s for s in headers[kt_new] if s not in nhood_headers]
-            if len(nhood_headers) >= nhood_header_limit:
-              exit = True
-              break
-        if exit:
-          break
-      if exit:
-        break
-      print len(nhood_headers), len(new_ktmers), len(used_ktmers)              # testing
-    for s in new_ktmers:
-      used_ktmers.add(s)
-    ktmers = copy.copy(new_ktmers)
-
-  return nhood_headers
+    print len(curr_level_headers), curr_level_headers
+    for j in range(len(curr_level_headers)):
+      curr_head = curr_level_headers[j]
+      curr_window = curr_level_windows[j]
+      new_nhood_headers, new_nhood_windows = get_1_deg_nhood(curr_head, creads, headers, curr_window)
+      for k in range(len(new_nhood_headers)):
+        if new_nhood_headers[k] not in collected:
+          collected.add(new_nhood_headers[k])
+          new_headers.append(new_nhood_headers[k])
+          new_windows.append(new_nhood_windows[k])
+    collected_headers.append(new_headers)
+    collected_windows.append(new_windows)
 
 
-def get_1_deg_nhood(header, creads, headers):
+  return list(collected)
+
+
+def get_1_deg_nhood(header, creads, headers, n_range = []):
   collected_h = set()
   ktmers = []
   if header not in creads or len(creads[header]) == 1:
@@ -814,10 +779,10 @@ def get_1_deg_nhood(header, creads, headers):
       # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
 
   # Special 1-deg nhood
-  collected_h = filter_special_1_deg_nhood(header, list(collected_h), creads)
+  collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
   collected_h = remove_rc_duplicate_in_headers(collected_h)
 
-  return collected_h
+  return collected_h, windows
 
 def remove_rc_duplicate_in_headers(headers):
   # Randomly removes one of the dulpicate reads (rc and normal) in a set of headers
@@ -862,24 +827,24 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
   print 'POSITION OF BASE READ'                     # testing
   find_genomic_position(rr[hr.index(header)], hr, rr)       # testing
   
-  # 1-deg nhood
-  collected_h = get_1_deg_nhood(header, creads, headers)
-  collected_h = list(collected_h) 
-  print 'Original 1deg nhood:', len(collected_h)
+  # # 1-deg nhood
+  # collected_h, windows = get_1_deg_nhood(header, creads, headers)
+  # collected_h = list(collected_h) 
+  # print 'Original 1deg nhood:', len(collected_h)
 
-  if len(candidates) > 0:
-    for cd in candidates:
-      new_h = get_1_deg_nhood(cd, creads, headers)
-      collected_h += list(new_h)
-    collected_h = keep_duplicates_only(collected_h)
-    print 'Duplicates only after combine:', len(collected_h)
+  # if len(candidates) > 0:
+  #   for cd in candidates:
+  #     new_h, windows = get_1_deg_nhood(cd, creads, headers)
+  #     collected_h += list(new_h)
+  #   collected_h = keep_duplicates_only(collected_h)
+  #   print 'Duplicates only after combine:', len(collected_h)
 
   # print 'FINDING POSITIONS OF 1-DEG NHOOD READS'  # testing
   # for ch in collected_h:                          # testing
     # find_genomic_position(rr[hr.index(ch)], hr, rr)       # testing
 
   # n-degree nhood
-  # collected_h = get_nhood(header, headers, creads)
+  collected_h = get_nhood(header, headers, creads)
 
   # Use 2-deg nhood, no width bound (irrelevant reads, but ec tool should handle)
   # new_ktmers = []
@@ -1101,7 +1066,7 @@ def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool
   for i in [s for s in par_range if s % 2 == 1]:
     print i
     header = hr[i]
-    collected_h = get_1_deg_nhood(header, creads, headers)
+    collected_h, windows = get_1_deg_nhood(header, creads, headers)
 
     base_file = str(i) + '_base.fasta'
     hood_file = str(i) + '_hood.fasta'
@@ -1143,7 +1108,7 @@ def output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktme
 
   for i in range(len(input_headers)):
     header = input_headers[i]
-    collected_h = get_1_deg_nhood(header, creads, headers)
+    collected_h, windows = get_1_deg_nhood(header, creads, headers)
 
     base_file = str(i) + '_base.fasta'
     hood_file = str(i) + '_hood.fasta'
