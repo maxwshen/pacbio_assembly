@@ -508,7 +508,7 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
 
   def get_pos_in_read(kmer, cread):
     if kmer in cread:
-      return sum([int(cread[s]) for s in range(len(cread.index(kmer) if s % 2 == 0))])
+      return sum([int(cread[s]) for s in range(len(cread.index(kmer))) if s % 2 == 0])
     else:
       print 'error:', kmer, 'not in', cread
 
