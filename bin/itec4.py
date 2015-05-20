@@ -757,7 +757,7 @@ def get_1_deg_nhood(header, creads, headers, n_range = []):
             break
       return indices
 
-    # leniency = 100    # 100bp leniency for comparing relative distances between kmers. currently unused
+    leniency = 100    # 100bp leniency for comparing relative distances between kmers
     max_dist = 2000   # If at least one read does not have a shared kmer within this distance, False
     min_bp_shared = 10000
     extend_range = 0
@@ -798,6 +798,23 @@ def get_1_deg_nhood(header, creads, headers, n_range = []):
       # print master_dists, cand_dists
       if prev_cand != '':
         window[1] = min(get_pos_in_read(prev_cand, cand_cread) + extend_range, len_read(cand_cread))
+
+      # Filter for ktmers that are too far apart
+      new_master_dists = []
+      new_cand_dists = []
+      rs_master = 0
+      rs_cand = 0
+      for i in range(len(master_dists)):
+        if abs(master_dists[i] - cand_dists[i]) < leniency:
+          new_master_dists.append(master_dists[i] + rs_master)
+          new_cand_dists.append(cand_dists[i] + rs_cand)
+          rs_master = 0
+          rs_cand = 0
+        else:
+          rs_master += master_dists[i]
+          rs_cand += cand_dists[i]
+      master_dists = new_master_dists
+      cand_dists = new_cand_dists
 
       for s in master_dists + cand_dists:
         if s > max_dist:
