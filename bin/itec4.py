@@ -501,78 +501,6 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   else:
     return accuracy >= acc_cutoff and length > len_cutoff
 
-def filter_special_1_deg_nhood(header, nhood_headers, creads, n_range):
-  # Filters a neighborhood of reads to a master_read. Searches for overlapping kmers
-  #   Span of overlapping kmers must be greater than min_bp_shared
-  #   Distance b/w consecutive shared kmers must be less than max_dist
-
-  def get_pos_in_read(kmer, cread):
-    if kmer in cread:
-      return sum([int(cread[s]) for s in range(cread.index(kmer)) if s % 2 == 0])
-    else:
-      print 'error:', kmer, 'not in', cread
-
-  def len_read(cread):
-    return sum([int(cread[s]) for s in range(len(cread)) if s % 2 == 0])
-
-  def get_relative_dist(kmer1, kmer2, cread):
-    # Returns 0 if there are no elements between kmer1 and kmer2, kmer1 must be before kmer2
-    ki1 = cread.index(kmer1)
-    ki2 = cread.index(kmer2)
-    return sum(int(cread[s]) for s in range(ki1, ki2 + 1) if s % 2 == 0)
-
-  # leniency = 100    # 100bp leniency for comparing relative distances between kmers. currently unused
-  max_dist = 2000   # If at least one read does not have a shared kmer within this distance, False
-  min_bp_shared = 7000
-  extend_range = 100
-
-  new_nhood = []
-  windows = []
-
-  master_cread = creads[header]
-  for candidate in nhood_headers:
-    window = [-1, -1]
-    cand_cread = creads[candidate]
-    master_dists = []
-    cand_dists = []
-    prev_cand = ''
-
-    # Assists in n-deg nhood, only look for overlapping ktmers in range
-    if n_range == []:
-      master_cread_range = range(len(master_cread))
-    else:
-      master_cread_range = range(n_range[0], n_range[1])
-
-    # Search for overlapping kmers between master_cread and cand_cread
-    for m_kmer in [master_cread[s] for s in master_cread_range if s % 2 == 1]:
-      if m_kmer in cand_cread:
-        if prev_cand == '':
-          # First overlapping kmer
-          window[0] = max(get_pos_in_read(m_kmer, cand_cread) - extend_range, 0)
-          prev_cand = m_kmer
-        else:
-          m_dist = get_relative_dist(prev_cand, m_kmer, master_cread)
-          if m_dist != 0:
-            master_dists.append(m_dist)
-          c_dist = get_relative_dist(prev_cand, m_kmer, cand_cread)
-          if c_dist != 0:
-            cand_dists.append(c_dist)
-        prev_cand = m_kmer
-    # print master_dists, cand_dists
-    window[1] = min(get_pos_in_read(prev_cand, cand_cread) + extend_range, len_read(cand_cread))
-
-    for s in master_dists + cand_dists:
-      if s > max_dist:
-        continue
-    if sum(master_dists) < min_bp_shared or sum(cand_dists) < min_bp_shared:
-      continue
-
-    # print window      # testing
-    windows.append(window)
-    new_nhood.append(candidate)
-  print 'Filtering nhood - prev:', len(nhood_headers), ' after:', len(new_nhood)
-  return new_nhood, windows
-
 
 def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
   # Returns possible candidates for extension based on the 1-deg or multi-deg nhood of a raw read
@@ -766,6 +694,112 @@ def get_nhood(header, headers, creads):
 
 
 def get_1_deg_nhood(header, creads, headers, n_range = []):
+  # Gets the special 1-deg nhood
+
+  def filter_special_1_deg_nhood(header, nhood_headers, creads, n_range):
+  # Filters a neighborhood of reads to a master_read. Searches for overlapping kmers
+  #   Span of overlapping kmers must be greater than min_bp_shared
+  #   Distance b/w consecutive shared kmers must be less than max_dist
+
+    def get_pos_in_read(kmer, cread):
+      if kmer in cread:
+        return sum([int(cread[s]) for s in range(cread.index(kmer)) if s % 2 == 0])
+      else:
+        print 'error:', kmer, 'not in', cread
+
+    def len_read(cread):
+      return sum([int(cread[s]) for s in range(len(cread)) if s % 2 == 0])
+
+    def get_relative_dist(kmer1, kmer2, cread):
+      # Returns 0 if there are no elements between kmer1 and kmer2, kmer1 must be before kmer2
+      ki1 = cread.index(kmer1)
+      ki2 = cread.index(kmer2)
+      return sum(int(cread[s]) for s in range(ki1, ki2 + 1) if s % 2 == 0)
+
+    def convert_pos_range_to_indices(n_range, cread):
+      total = 0
+      indices = [-1, -1]
+      for i in range(len(cread)):
+        if i % 2 == 0:
+          total += int(cread[i])
+          if total == n_range[0] and indices[0] == -1:
+            indices[0] = i
+          if total == n_range[1] and indices[1] == -1:
+            indices[1] = i
+            break
+      return indices
+
+    # leniency = 100    # 100bp leniency for comparing relative distances between kmers. currently unused
+    max_dist = 2000   # If at least one read does not have a shared kmer within this distance, False
+    min_bp_shared = 7000
+    extend_range = 100
+
+    new_nhood = []
+    windows = []
+
+    master_cread = creads[header]
+    for candidate in nhood_headers:
+      window = [-1, -1]
+      cand_cread = creads[candidate]
+      master_dists = []
+      cand_dists = []
+      prev_cand = ''
+
+      # Assists in n-deg nhood, only look for overlapping ktmers in range
+      if n_range == []:
+        master_cread_range = range(len(master_cread))
+      else:
+        indices = convert_pos_range_to_indices(n_range, cread)
+        master_cread_range = range(indices[0], indices[1])
+
+      # Search for overlapping kmers between master_cread and cand_cread
+      for m_kmer in [master_cread[s] for s in master_cread_range if s % 2 == 1]:
+        if m_kmer in cand_cread:
+          if prev_cand == '':
+            # First overlapping kmer
+            window[0] = max(get_pos_in_read(m_kmer, cand_cread) - extend_range, 0)
+            prev_cand = m_kmer
+          else:
+            m_dist = get_relative_dist(prev_cand, m_kmer, master_cread)
+            if m_dist != 0:
+              master_dists.append(m_dist)
+            c_dist = get_relative_dist(prev_cand, m_kmer, cand_cread)
+            if c_dist != 0:
+              cand_dists.append(c_dist)
+          prev_cand = m_kmer
+      # print master_dists, cand_dists
+      window[1] = min(get_pos_in_read(prev_cand, cand_cread) + extend_range, len_read(cand_cread))
+
+      for s in master_dists + cand_dists:
+        if s > max_dist:
+          continue
+      if sum(master_dists) < min_bp_shared or sum(cand_dists) < min_bp_shared:
+        continue
+
+      # print window      # testing
+      windows.append(window)
+      new_nhood.append(candidate)
+    print 'Filtering nhood - prev:', len(nhood_headers), ' after:', len(new_nhood)
+    return new_nhood, windows
+
+  def remove_rc_duplicate_in_headers(headers):
+    # Randomly removes one of the dulpicate reads (rc and normal) in a set of headers
+    # We can remove randomly because we pass into Yu's EC which uses BLASR to align
+    # all headers to the base read, which will automatically flip if needed
+    past = []
+    prefixes = []
+    for h in headers:
+      trimmed_h = '_'.join(h.split('_')[1:])
+      prefix = h.split('_')[0]
+      if trimmed_h not in past:
+        past.append(trimmed_h)
+        prefixes.append(prefix)
+    
+    ans = []
+    for i in range(len(past)):
+      ans.append(prefixes[i] + '_' + past[i])
+    return ans
+
   collected_h = set()
   ktmers = []
   if header not in creads or len(creads[header]) == 1:
@@ -786,24 +820,6 @@ def get_1_deg_nhood(header, creads, headers, n_range = []):
 
   return collected_h, windows
 
-def remove_rc_duplicate_in_headers(headers):
-  # Randomly removes one of the dulpicate reads (rc and normal) in a set of headers
-  # We can remove randomly because we pass into Yu's EC which uses BLASR to align
-  # all headers to the base read, which will automatically flip if needed
-  past = []
-  prefixes = []
-  for h in headers:
-    trimmed_h = '_'.join(h.split('_')[1:])
-    prefix = h.split('_')[0]
-    if trimmed_h not in past:
-      past.append(trimmed_h)
-      prefixes.append(prefix)
-  
-  ans = []
-  for i in range(len(past)):
-    ans.append(prefixes[i] + '_' + past[i])
-  return ans
-
 def keep_duplicates_only(inp):
   # Given a list, returns a new list with 1 copy of any duplicates
   # Ex: [a, a, b] -> [a]
@@ -818,6 +834,7 @@ def keep_duplicates_only(inp):
     if d[key] > 1:
       new_list.append(key)
   return new_list
+
 
 def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None, candidates = []):
   if temp_sig_out is not None:
@@ -936,7 +953,6 @@ def build_headers_dict(ktmer_headers_file):
   return headers
 
 
-
 def find_jumps_in_contigs(contigs_fold, parallel_prefix):
   sc_overlap_len = 10000
   sc_overlap_acc = 90
@@ -1034,8 +1050,6 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
       new_contig_file = contigs_fold + curr_contig[: -6] + '_split_' + str(i) + '.fasta'
       with open(new_contig_file, 'w') as f:
         f.write(ch + '_split_' + str(i) + '\n' + cr[split_pts[i] : split_pts[i + 1]])
-
-
 
 
 def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix):
