@@ -550,7 +550,7 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
             cand_dists.append(c_dist)
         prev_cand = m_kmer
     # print master_dists, cand_dists
-    window[1] = min(get_pos_in_read(m_kmer, cand_cread) + extend_range, len(read))
+    window[1] = min(get_pos_in_read(prev_cand, cand_cread) + extend_range, len(cand_cread))
 
     for s in master_dists + cand_dists:
       if s > max_dist:
