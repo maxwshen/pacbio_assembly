@@ -672,17 +672,19 @@ def nhood_stats(base_index, nhood_indices):
     print 'no true nhood'
     return
   intersect = len(set([str(s) for s in nhood_indices]).intersection(rest))
+  false_reads = [s for s in nhood_indices if str(s) not in rest]
   sensitivity.append(float(intersect) / float(len(rest)))
   specificity.append(float(intersect) / float(len(nhood_indices)))
 
   print 'sensitivity:', float(sum(sensitivity)) / float(len(sensitivity))
   print 'specificity:', float(sum(specificity)) / float(len(specificity))
+  return false_reads
 
 def get_nhood(header, headers, creads, hr):
   def len_read(cread):
     return sum([cread[s] for s in range(len(cread)) if s % 2 == 0])
 
-  nhood_headers, windows = get_1_deg_nhood(header, creads, headers)
+  nhood_headers, windows = get_1_deg_nhood(header, creads, headers, hr)
   collected_headers = [nhood_headers]   # List of lists
   collected_windows = [windows]
   collected = set(nhood_headers)
@@ -704,7 +706,7 @@ def get_nhood(header, headers, creads, hr):
       curr_head = curr_level_headers[j]
       curr_window = curr_level_windows[j]
       # print curr_window
-      new_nhood_headers, new_nhood_windows = get_1_deg_nhood(curr_head, creads, headers, curr_window)
+      new_nhood_headers, new_nhood_windows = get_1_deg_nhood(curr_head, creads, headers, hr, curr_window)
       for k in range(len(new_nhood_headers)):
         if new_nhood_headers[k] not in collected:
           collected.add(new_nhood_headers[k])
@@ -713,15 +715,16 @@ def get_nhood(header, headers, creads, hr):
     collected_headers.append(new_headers)
     collected_windows.append(new_windows)
 
-    print 'degree', i + 1
+    print 'degree', i + 2     # testing
     base_index = hr.index(header)
     nhood_indices = [hr.index(s) for s in list(collected)]
-    nhood_stats(base_index, nhood_indices)
+    false_reads = nhood_stats(base_index, nhood_indices)
+    print false_reads
 
   return list(collected)
 
 
-def get_1_deg_nhood(header, creads, headers, n_range = []):
+def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
   # Gets the special 1-deg nhood
 
   def filter_special_1_deg_nhood(header, nhood_headers, creads, n_range):
@@ -795,7 +798,6 @@ def get_1_deg_nhood(header, creads, headers, n_range = []):
             if c_dist != 0:
               cand_dists.append(c_dist)
           prev_cand = m_kmer
-      # print master_dists, cand_dists
       if prev_cand != '':
         window[1] = min(get_pos_in_read(prev_cand, cand_cread) + extend_range, len_read(cand_cread))
 
@@ -815,6 +817,8 @@ def get_1_deg_nhood(header, creads, headers, n_range = []):
           rs_cand += cand_dists[i]
       master_dists = new_master_dists
       cand_dists = new_cand_dists
+
+      print hr.index(candidate), master_dists, cand_dists   # testing
 
       for s in master_dists + cand_dists:
         if s > max_dist:
