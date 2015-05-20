@@ -865,6 +865,9 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
 
   # n-degree nhood
   collected_h = get_nhood(header, headers, creads)
+  print hr.index(header)
+  for ch in collected_h:
+    print hr.index(ch),
 
   # Use 2-deg nhood, no width bound (irrelevant reads, but ec tool should handle)
   # new_ktmers = []
