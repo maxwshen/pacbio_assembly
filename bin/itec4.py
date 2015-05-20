@@ -658,15 +658,20 @@ def find_extending_read(ktmer, headers, hr, rr):
   return valid
 
 def nhood_stats(base_index, nhood_indices):
-  ground_truth = '/home/mshen/research/data/genome_nhood.txt'
+  specificity = []
+  sensitivity = []
+  ground_truth = '/home/yu/max/research/data/genome_nhood.txt'
   rest = []
   with open(ground_truth) as f:
     for i, line in enumerate(f):
       base = line.split(':')[0]
-      if base == base_index:
+      if base == str(base_index):
         rest = ' '.join(line.split(':')[1:]).split()
         break
-  intersect = len(set(nhood_indices).intersection(rest))
+  if len(rest) == 0:
+    print 'no true nhood'
+    return
+  intersect = len(set([str(s) for s in nhood_indices]).intersection(rest))
   sensitivity.append(float(intersect) / float(len(rest)))
   specificity.append(float(intersect) / float(len(nhood_indices)))
 
@@ -692,13 +697,13 @@ def get_nhood(header, headers, creads, hr):
     new_windows = []
     curr_level_headers = collected_headers[-1]
     curr_level_windows = collected_windows[-1]
-    print curr_level_windows, collected_windows
+    # print curr_level_windows, collected_windows
 
-    print len(curr_level_headers), curr_level_headers
+    # print len(curr_level_headers), curr_level_headers
     for j in range(len(curr_level_headers)):
       curr_head = curr_level_headers[j]
       curr_window = curr_level_windows[j]
-      print curr_window
+      # print curr_window
       new_nhood_headers, new_nhood_windows = get_1_deg_nhood(curr_head, creads, headers, curr_window)
       for k in range(len(new_nhood_headers)):
         if new_nhood_headers[k] not in collected:
@@ -754,8 +759,8 @@ def get_1_deg_nhood(header, creads, headers, n_range = []):
 
     # leniency = 100    # 100bp leniency for comparing relative distances between kmers. currently unused
     max_dist = 2000   # If at least one read does not have a shared kmer within this distance, False
-    min_bp_shared = 7000
-    extend_range = 100
+    min_bp_shared = 10000
+    extend_range = 0
 
     new_nhood = []
     windows = []
