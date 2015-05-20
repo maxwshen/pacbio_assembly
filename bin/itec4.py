@@ -530,7 +530,7 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
 
   master_cread = creads[header]
   for candidate in nhood_headers:
-    window = []
+    window = [-1, -1]
     cand_cread = creads[candidate]
     master_dists = []
     cand_dists = []
@@ -539,7 +539,7 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
       if m_kmer in cand_cread:
         if prev_cand == '':
           # First overlapping kmer
-          window.append(max(get_pos_in_read(m_kmer, cand_cread)) - extend_range, 0)
+          window[0] = max(get_pos_in_read(m_kmer, cand_cread) - extend_range, 0)
           prev_cand = m_kmer
         else:
           m_dist = get_relative_dist(prev_cand, m_kmer, master_cread)
@@ -550,7 +550,7 @@ def filter_special_1_deg_nhood(header, nhood_headers, creads):
             cand_dists.append(c_dist)
         prev_cand = m_kmer
     # print master_dists, cand_dists
-    window.append(min(get_pos_in_read(m_kmer, cand_cread)) + extend_range, len(read))
+    window[1] = min(get_pos_in_read(m_kmer, cand_cread) + extend_range, len(read))
 
     for s in master_dists + cand_dists:
       if s > max_dist:
