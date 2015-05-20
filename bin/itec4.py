@@ -687,7 +687,7 @@ def get_nhood(header, headers, creads):
           new_headers.append(new_nhood_headers[k])
           new_windows.append(new_nhood_windows[k])
     collected_headers.append(new_headers)
-    collected_windows.append([new_windows])
+    collected_windows.append(new_windows)
 
 
   return list(collected)
@@ -749,7 +749,7 @@ def get_1_deg_nhood(header, creads, headers, n_range = []):
       if n_range == []:
         master_cread_range = range(len(master_cread))
       else:
-        indices = convert_pos_range_to_indices(n_range, cread)
+        indices = convert_pos_range_to_indices(n_range, master_cread)
         master_cread_range = range(indices[0], indices[1])
 
       # Search for overlapping kmers between master_cread and cand_cread
@@ -768,7 +768,8 @@ def get_1_deg_nhood(header, creads, headers, n_range = []):
               cand_dists.append(c_dist)
           prev_cand = m_kmer
       # print master_dists, cand_dists
-      window[1] = min(get_pos_in_read(prev_cand, cand_cread) + extend_range, len_read(cand_cread))
+      if prev_cand != '':
+        window[1] = min(get_pos_in_read(prev_cand, cand_cread) + extend_range, len_read(cand_cread))
 
       for s in master_dists + cand_dists:
         if s > max_dist:
