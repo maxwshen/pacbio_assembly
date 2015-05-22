@@ -655,6 +655,9 @@ def find_extending_read(ktmer, headers, hr, rr):
   return valid
 
 def nhood_stats(base_index, nhood_indices):
+  if len(nhood_indices) == 0:
+    print 'empty nhood'
+    return
   specificity = []
   sensitivity = []
   ground_truth = '/home/yu/max/research/data/genome_nhood.txt'
@@ -712,11 +715,12 @@ def get_nhood(header, headers, creads, hr):
     collected_headers.append(new_headers)
     collected_windows.append(new_windows)
 
-    print 'degree', i + 2     # testing
+    print 'degree', i + 2, len(list(collected))     # testing
     base_index = hr.index(header)
     nhood_indices = [hr.index(s) for s in list(collected)]
     false_reads = nhood_stats(base_index, nhood_indices)
-    print false_reads
+    print false_reads, [hr[s] for s in false_reads]
+    print header
 
   return list(collected)
 
@@ -757,9 +761,9 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
             break
       return indices
 
-    leniency = 100    # 100bp leniency for comparing relative distances between kmers
-    max_dist = 2000   # If at least one read does not have a shared kmer within this distance, False
-    min_bp_shared = 10000
+    leniency = 500    # 100bp leniency for comparing relative distances between kmers
+    max_dist = 3500   # If at least one read does not have a shared kmer within this distance, False
+    min_bp_shared = 7000
     extend_range = 0
 
     new_nhood = []
@@ -824,7 +828,7 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
       if failed:
         continue
 
-      print hr.index(candidate), master_dists, cand_dists   # testing
+      # print hr.index(candidate), master_dists, cand_dists   # testing
       # print window      # testing
       windows.append(window)
       new_nhood.append(candidate)
@@ -913,6 +917,11 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
 
   # n-degree nhood
   collected_h = get_nhood(header, headers, creads, hr)
+
+  # FOR PLOTTING A-BRUIJN GRAPH OF NHOODS
+  # print creads[header]
+  # for ch in collected_h:
+  #  print creads[ch]
 
   # Use 2-deg nhood, no width bound (irrelevant reads, but ec tool should handle)
   # new_ktmers = []
