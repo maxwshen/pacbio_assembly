@@ -15,7 +15,7 @@ def read_fasta(fasta_file):
         headers.append(line.strip())
         get_read = True
       elif get_read:
-        curr_read += line.strip()
+        curr_read += line.strip().upper()
   if curr_read != '':
     reads.append(curr_read)
   if len(headers) == 0 or len(reads) == 0:
