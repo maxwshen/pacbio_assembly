@@ -101,9 +101,9 @@ def main():
   # convert_creads_to_nhoods.convert_creads_to_nhoods(reads_file, creads_file, ktmer_headers_file)
 
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix):
-  creads = build_creads_dict(creads_file, reads_file)
-  headers = build_headers_dict(ktmer_headers_file)
   hr, rr = rf.read_fasta(reads_file)
+  headers = build_headers_dict(ktmer_headers_file)
+  creads = build_creads_dict(creads_file, hr, rr)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
   if use_ecs:
@@ -987,9 +987,8 @@ def get_read_with_most_neighbors(ktmer, headers, creads):
   return best_h
 
 
-def build_creads_dict(creads_file, reads_file):
+def build_creads_dict(creads_file, h, r):
   creads = defaultdict(list)   # Key = header, Val = creads 
-  h, r = rf.read_fasta(reads_file)
   for i in range(len(h)):
     h[i] = h[i].split()[0]
   with open(creads_file) as f:
@@ -1117,7 +1116,7 @@ def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool
   hr, rr = rf.read_fasta(reads_file)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
-  creads = build_creads_dict(creads_file, reads_file)
+  creads = build_creads_dict(creads_file, hr, rr)
   headers = build_headers_dict(ktmer_headers_file)
 
   par_range = range(len(hr)) 
@@ -1175,7 +1174,7 @@ def output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktme
       print h
       input_headers.append(h)
 
-  creads = build_creads_dict(creads_file, reads_file)
+  creads = build_creads_dict(creads_file, hr, rr)
   headers = build_headers_dict(ktmer_headers_file)
 
 
