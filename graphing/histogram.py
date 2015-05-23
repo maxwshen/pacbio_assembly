@@ -23,20 +23,20 @@ def plot_1group(input_file):
   for i, line in enumerate(fileh):  
     words = line.strip().split()
 
-    if float(words[0]) > 0:
+    if float(words[0]) >= 0:
       data.append(float(words[0]))
 
   largest = max(data)
-  step = int(np.log2(largest))
-  # step = 1
+  # step = int(np.log2(largest)) / 2
+  step = 1
   binrange = range(0, largest + step, step)
 
-  plt.hist(data, color = 'green', bins = binrange, log = True)
-  # plt.hist(data, color = 'green', bins = binrange)
+  # plt.hist(data, color = 'green', bins = binrange, log = True)
+  plt.hist(data, color = 'green', bins = binrange)
 
   print step
-  plt.xlabel('Distances between (27,6)-mers in Quiver Genome')
-  plt.ylabel('Quantity')
+  plt.xlabel('Number of (27,6)-mers per read')
+  plt.ylabel('Quantity of Reads')
   plt.show()
 
 def plot_2groups(input_file):
