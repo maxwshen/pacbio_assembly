@@ -693,7 +693,7 @@ def get_nhood(header, headers, creads, hr):
   nhood_indices = [hr.index(s) for s in list(collected)]
   nhood_stats(base_index, nhood_indices)
 
-  depth = 2
+  depth = 1
   for i in range(depth):
     new_headers = []
     new_windows = []
