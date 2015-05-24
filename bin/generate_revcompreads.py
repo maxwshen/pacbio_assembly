@@ -5,10 +5,13 @@ import find_read
 
 def main():
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  num = sys.argv[1]
-  reads_file = '/home/jeyuan/reads.10k.cov' + num + '.fasta'
-  new_reads_file = '/home/mshen/research/data/reads.10k.' + num + 'x.rc.fasta'
-  generate_revcompreads(reads_file, new_reads_file)
+  for num in range(5, 60, 5):
+    for samp in range(1, 4):
+      snum = str(num)
+      ssamp = str(samp)
+      reads_file = '/home/jeyuan/pacbio_undersample/new_reads/reads.20k.cov' + snum + '.samp' + ssamp + '.fasta'
+      new_reads_file = '/home/mshen/research/data/undersampled_20k_rc/reads.20k.' + snum + 'x.' + ssamp + 'rc.fasta'
+      generate_revcompreads(reads_file, new_reads_file)
   return
 
 
