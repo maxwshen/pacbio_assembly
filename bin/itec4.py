@@ -723,6 +723,7 @@ def get_nhood(header, headers, creads, hr):
     print false_reads, [hr[s] for s in false_reads]
     print header
 
+  print [hr[s] for s in collected]        # testing
   return list(collected)
 
 
@@ -854,6 +855,7 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
       ans.append(prefixes[i] + '_' + past[i])
     return ans
 
+  # Start actual code for get_1_deg_nhood(...)
   collected_h = set()
   ktmers = []
   if header not in creads or len(creads[header]) == 1:
