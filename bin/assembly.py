@@ -29,14 +29,15 @@ def main():
   genome_file = '/home/mshen/research/data/ecoli_consensus_mark.fasta'
   _k = int(sys.argv[1])
   _t = int(sys.argv[2])
-  reads_file = sys.argv[3]
-  suffix = sys.argv[4]
-  cov = reads_file.split('.')[2][:-1]
+  cov = sys.argv[3]
   gv_file = 'temp.gv'
 
-  print 'Using reads:', reads_file, 'k/t', _k, _t, ' suffix', suffix
-  print 'Using genome file:', genome_file
-  assembly(reads_file, genome_file, _k, _t, cov, gv_file, suffix)
+  for sf in range(1, 4):
+    suffix = str(sf)
+    reads_file = '/home/mshen/research/data/undersampled_20k_rc/reads.20k.' + str(cov) + 'x.' + suffix + 'rc.fasta'
+    print 'Using reads:', reads_file, 'k/t', _k, _t, ' suffix', suffix
+    print 'Using genome file:', genome_file
+    assembly(reads_file, genome_file, _k, _t, cov, gv_file, suffix)
   return
 
 def dist_bw_ktmers_in_genome(ktmers, _k, genome_file, out_file):
@@ -76,13 +77,11 @@ def assembly(reads, genome_file, _k, _t, cov, gvname, suffix):
   out_file = 'dists_' + str(_k) + '_' + str(_t) + '_genome.txt'
   dist_bw_ktmers_in_genome(ktmers, _k, genome_file, out_file)
 
-  return
-
   print 'Converting reads...'
   cReads = convertReads(reads, ktmers, _k)
   print '... Done.', datetime.datetime.now()
 
-  data_fold = '/home/mshen/research/data/'
+  data_fold = '/home/mshen/research/data/undersampled_20k_rc/'
   headers_out_file = data_fold + 'temp_ktmer_headers' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc_v2_' + suffix + '.out'
   edges_out_file = data_fold + 'temp_ktmer_edges' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc_v2_' + suffix + '.out'
   creads_out_file = data_fold + 'temp_creads.out' + cov + 'x_' + str(_k) + '_' + str(_t) + '_rc_v2_' + suffix + '.out'
