@@ -660,7 +660,7 @@ def nhood_stats(base_index, nhood_indices):
     return
   specificity = []
   sensitivity = []
-  ground_truth = '/home/yu/max/research/data/genome_nhood.txt'
+  ground_truth = '/home/yu/max/research/data/overlap_filter_7k_0524.txt'
   rest = []
   with open(ground_truth) as f:
     for i, line in enumerate(f):
@@ -690,6 +690,7 @@ def get_nhood(header, headers, creads, hr):
   collected = set(nhood_headers)
 
   base_index = hr.index(header)
+  print header, base_index
   nhood_indices = [hr.index(s) for s in list(collected)]
   nhood_stats(base_index, nhood_indices)
 
@@ -761,8 +762,8 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
             break
       return indices
 
-    leniency = 100000    # for comparing relative distances between kmers
-    max_dist = 100000   # If at least one read does not have a shared kmer within this distance, False
+    leniency = 500    # for comparing relative distances between kmers
+    max_dist = 3500   # If at least one read does not have a shared kmer within this distance, False
     min_bp_shared = 7000
     extend_range = 0
 
