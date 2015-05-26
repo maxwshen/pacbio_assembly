@@ -690,11 +690,11 @@ def get_nhood(header, headers, creads, hr):
   collected = set(nhood_headers)
 
   base_index = hr.index(header)
-  print header, base_index
+  print header, base_index, len(list(collected))
   nhood_indices = [hr.index(s) for s in list(collected)]
   nhood_stats(base_index, nhood_indices)
 
-  depth = 0
+  depth = 1 
   for i in range(depth):
     new_headers = []
     new_windows = []
@@ -720,8 +720,8 @@ def get_nhood(header, headers, creads, hr):
     base_index = hr.index(header)
     nhood_indices = [hr.index(s) for s in list(collected)]
     false_reads = nhood_stats(base_index, nhood_indices)
-    print false_reads, [hr[s] for s in false_reads]
-    print header
+    # print false_reads, [hr[s] for s in false_reads]
+    # print header
 
   print [hr.index(s) for s in collected]        # testing
   return list(collected)
@@ -856,20 +856,21 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
     else:
       print 'error:', kmer, 'not in', cread
 
-  # # Start actual code for get_1_deg_nhood(...)
-  # collected_h = set()
-  # ktmers = []
-  # if header not in creads or len(creads[header]) == 1:
-  #   print header
-  #   return ''
-  # for i in range(len(creads[header])):
-  #   if i % 2 == 1:
-  #     ktmers.append(creads[header][i])
-  # for kt in ktmers:
-  #   for h in headers[kt]:
-  #     if h != header:
-  #       collected_h.add(h)
-  #     # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
+  # Start actual code for get_1_deg_nhood(...)
+  collected_h = set()
+  ktmers = []
+  if header not in creads or len(creads[header]) == 1:
+    print header
+    return ''
+  for i in range(len(creads[header])):
+    if i % 2 == 1:
+      ktmers.append(creads[header][i])
+  for kt in ktmers:
+    for h in headers[kt]:
+      if h != header:
+        collected_h.add(h)
+        # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
+  nhood_stats(header, [hr.index(s) for s in collected_h])
 
   # # Special 1-deg nhood
   # collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
@@ -891,7 +892,7 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
       curr_dist += int(creads[header][i])
 
   collected_h = set()
-  max_dist = 100000
+  max_dist = 200000
   min_bp_shared = 7000
   for k in positions.keys():
     curr_list = positions[k]
@@ -900,7 +901,7 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
       if i % 2 == 1:
         dists.append(int(curr_list[i]) - dists[-1])
     dists = dists[1:]
-    print dists
+    # print dists
 
     failed = False
     for d in dists:
@@ -913,11 +914,12 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
     else:
       collected_h.add(k)
 
+  collected_h = list(collected_h)
   windows = []
   for ch in collected_h:
     window = [get_pos_in_read(positions[ch][0], creads[ch]), get_pos_in_read(positions[ch][-2], creads[ch])]
     windows.append(window)
-    print window
+    # print window
 
   return collected_h, windows
 
