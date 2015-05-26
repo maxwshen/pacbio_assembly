@@ -730,6 +730,19 @@ def get_nhood(header, headers, creads, hr):
 def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
   # Gets the special 1-deg nhood
 
+  def convert_pos_range_to_indices(n_range, cread):
+    total = 0
+    indices = [-1, -1]
+    for i in range(len(cread)):
+      if i % 2 == 0:
+        total += int(cread[i])
+        if total == n_range[0] and indices[0] == -1:
+          indices[0] = i
+        if total == n_range[1] and indices[1] == -1:
+          indices[1] = i
+          break
+    return indices
+
   def filter_special_1_deg_nhood(header, nhood_headers, creads, n_range):
   # Filters a neighborhood of reads to a master_read. Searches for overlapping kmers
   #   Span of overlapping kmers must be greater than min_bp_shared
@@ -744,18 +757,6 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
       ki2 = cread.index(kmer2)
       return sum(int(cread[s]) for s in range(ki1, ki2 + 1) if s % 2 == 0)
 
-    def convert_pos_range_to_indices(n_range, cread):
-      total = 0
-      indices = [-1, -1]
-      for i in range(len(cread)):
-        if i % 2 == 0:
-          total += int(cread[i])
-          if total == n_range[0] and indices[0] == -1:
-            indices[0] = i
-          if total == n_range[1] and indices[1] == -1:
-            indices[1] = i
-            break
-      return indices
 
     leniency = 100000    # for comparing relative distances between kmers
     max_dist = 100000   # If at least one read does not have a shared kmer within this distance, False
@@ -870,7 +871,7 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
       if h != header:
         collected_h.add(h)
         # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
-  nhood_stats(header, [hr.index(s) for s in collected_h])
+  nhood_stats(header, [hr.index(s) for s in list(collected_h)])
 
   # # Special 1-deg nhood
   # collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
@@ -896,10 +897,18 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
   min_bp_shared = 7000
   for k in positions.keys():
     curr_list = positions[k]
-    dists = [int(curr_list[1])]
-    for i in range(3, len(curr_list)):
+    dists = []
+    if len(n_range) == 0:
+      master_range = range(len(curr_list))
+    else:
+      indices = convert_pos_range_to_indices(n_range, curr_list)
+      master_range = range(indices[0], indices[1])    
+    for i in master_range:
       if i % 2 == 1:
-        dists.append(int(curr_list[i]) - dists[-1])
+        if len(dists) == 0:
+          dists.append(int(curr_list[i]))
+        else:
+          dists.append(int(curr_list[i]) - dists[-1])
     dists = dists[1:]
     # print dists
 
