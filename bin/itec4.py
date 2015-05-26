@@ -735,12 +735,6 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
   #   Span of overlapping kmers must be greater than min_bp_shared
   #   Distance b/w consecutive shared kmers must be less than max_dist
 
-    def get_pos_in_read(kmer, cread):
-      if kmer in cread:
-        return sum([int(cread[s]) for s in range(cread.index(kmer)) if s % 2 == 0])
-      else:
-        print 'error:', kmer, 'not in', cread
-
     def len_read(cread):
       return sum([int(cread[s]) for s in range(len(cread)) if s % 2 == 0])
 
@@ -855,24 +849,74 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
       ans.append(prefixes[i] + '_' + past[i])
     return ans
 
-  # Start actual code for get_1_deg_nhood(...)
-  collected_h = set()
-  ktmers = []
+  def get_pos_in_read(kmer, cread):
+    if kmer in cread:
+      return sum([int(cread[s]) for s in range(cread.index(kmer)) if s % 2 == 0])
+    else:
+      print 'error:', kmer, 'not in', cread
+
+  # # Start actual code for get_1_deg_nhood(...)
+  # collected_h = set()
+  # ktmers = []
+  # if header not in creads or len(creads[header]) == 1:
+  #   print header
+  #   return ''
+  # for i in range(len(creads[header])):
+  #   if i % 2 == 1:
+  #     ktmers.append(creads[header][i])
+  # for kt in ktmers:
+  #   for h in headers[kt]:
+  #     if h != header:
+  #       collected_h.add(h)
+  #     # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
+
+  # # Special 1-deg nhood
+  # collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
+  # collected_h = remove_rc_duplicate_in_headers(collected_h)
+
+  # NEW FASTER? code for get_1_deg_nhood(...), test 5/25/15
+  positions = defaultdict(list)    # Key = header, Val = list of ktmers and their total positions
   if header not in creads or len(creads[header]) == 1:
     print header
     return ''
+  curr_dist = 0
   for i in range(len(creads[header])):
     if i % 2 == 1:
-      ktmers.append(creads[header][i])
-  for kt in ktmers:
-    for h in headers[kt]:
-      if h != header:
-        collected_h.add(h)
-      # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
+      ktmer = creads[header][i]
+      for h in headers[ktmer]:
+        positions[h].append(ktmer)
+        positions[h].append(str(curr_dist))
+    else:
+      curr_dist += int(creads[header][i])
 
-  # Special 1-deg nhood
-  collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
-  collected_h = remove_rc_duplicate_in_headers(collected_h)
+  collected_h = set()
+  max_dist = 100000
+  min_bp_shared = 7000
+  for k in positions.keys():
+    curr_list = positions[k]
+    dists = [int(curr_list[1])]
+    for i in range(3, len(curr_list)):
+      if i % 2 == 1:
+        dists.append(int(curr_list[i]) - dists[-1])
+    dists = dists[1:]
+    print dists
+
+    failed = False
+    for d in dists:
+      if d > max_dist:
+        failed = True
+    if sum(dists) < min_bp_shared:
+      failed = True
+    if failed:
+      continue
+    else:
+      collected_h.add(k)
+
+  windows = []
+  for ch in collected_h:
+    window = [get_pos_in_read(positions[ch][0], creads[ch]), get_pos_in_read(positions[ch][-2], creads[ch])]
+    windows.append(window)
+    print window
 
   return collected_h, windows
 
