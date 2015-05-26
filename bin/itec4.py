@@ -660,7 +660,7 @@ def nhood_stats(base_index, nhood_indices):
     return
   specificity = []
   sensitivity = []
-  ground_truth = '/home/yu/max/research/data/overlap_filter_7k_0524.txt'
+  ground_truth = '/home/yu/max/research/data/genome_nhood.txt'
   rest = []
   with open(ground_truth) as f:
     for i, line in enumerate(f):
@@ -694,7 +694,7 @@ def get_nhood(header, headers, creads, hr):
   nhood_indices = [hr.index(s) for s in list(collected)]
   nhood_stats(base_index, nhood_indices)
 
-  depth = 1
+  depth = 0
   for i in range(depth):
     new_headers = []
     new_windows = []
@@ -723,7 +723,7 @@ def get_nhood(header, headers, creads, hr):
     print false_reads, [hr[s] for s in false_reads]
     print header
 
-  print [hr[s] for s in collected]        # testing
+  print [hr.index(s) for s in collected]        # testing
   return list(collected)
 
 
@@ -763,8 +763,8 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
             break
       return indices
 
-    leniency = 500    # for comparing relative distances between kmers
-    max_dist = 3500   # If at least one read does not have a shared kmer within this distance, False
+    leniency = 100000    # for comparing relative distances between kmers
+    max_dist = 100000   # If at least one read does not have a shared kmer within this distance, False
     min_bp_shared = 7000
     extend_range = 0
 
@@ -799,6 +799,7 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
             if c_dist != 0 and m_dist != 0:
               cand_dists.append(c_dist)
               master_dists.append(m_dist)
+          print m_kmer,
           prev_cand = m_kmer
       if prev_cand != '':
         window[1] = min(get_pos_in_read(prev_cand, cand_cread) + extend_range, len_read(cand_cread))
@@ -830,7 +831,7 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
       if failed:
         continue
 
-      # print hr.index(candidate), master_dists, cand_dists   # testing
+      print hr.index(candidate), master_dists, cand_dists   # testing
       # print window      # testing
       windows.append(window)
       new_nhood.append(candidate)
