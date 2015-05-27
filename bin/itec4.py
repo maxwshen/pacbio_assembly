@@ -44,7 +44,7 @@ e_coli_genome = '/home/yu/data/ecoli_consensus_mark.fasta'
 use_ecs = False
 
 # IMPORTANT - CHANGE THIS WHEN CHANGING EC TOOL
-ec_prefix = 'C0424_'
+ec_prefix = 'C0421_'
 
 def main():
   global contigs_fold
@@ -65,15 +65,15 @@ def main():
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
   # reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   # reads_file = '/home/mshen/research/data/reads.20k.' + cov + 'x.rc.fasta'
-  reads_file = prior + 'data/undersampled_20k/reads.20k.' + cov + 'x.rc.fasta'
+  reads_file = prior + 'data/undersampled_20k/reads.20k.' + cov + 'x.' + _num + 'rc.fasta'
   # reads_file = prior + 'data/reads.20k.rc.fasta'
 
   # creads_file = '/home/mshen/research/data/temp_creads.out_28_6_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
   # creads_file = '/home/mshen/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
-  creads_file = prior + 'data/undersampled_20k/temp_creads.outcov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
-  ktmer_headers_file = prior + 'data/undersampled_20k/temp_ktmer_headerscov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
+  creads_file = prior + 'data/undersampled_20k/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
+  ktmer_headers_file = prior + 'data/undersampled_20k/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
 
   # creads_file = prior + 'data/temp_creads.outrx_27_6_rc_v2.out'
   # ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_27_6_rc_v2.out'
@@ -728,7 +728,7 @@ def get_nhood(header, headers, creads, hr):
   return list(collected)
 
 
-def get_simple_1_deg_nhood(header, creads, headers):
+def get_simple_1_deg_nhood(header, creads, headers, hr):
   collected_h = set()
   ktmers = []
   if header not in creads or len(creads[header]) == 1:
@@ -742,7 +742,7 @@ def get_simple_1_deg_nhood(header, creads, headers):
       if h != header:
         collected_h.add(h)
       # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
-  return collected_h
+  return collected_h, None
 
 def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
   # Gets the special 1-deg nhood
@@ -974,8 +974,8 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
     global temp_sig
   reads = []
 
-  print 'POSITION OF BASE READ'                     # testing
-  find_genomic_position(rr[hr.index(header)], hr, rr)       # testing
+  # print 'POSITION OF BASE READ'                     # testing
+  # find_genomic_position(rr[hr.index(header)], hr, rr)       # testing
   
   # # 1-deg nhood
   collected_h, windows = get_simple_1_deg_nhood(header, creads, headers, hr)
