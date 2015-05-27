@@ -871,7 +871,8 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
       if h != header:
         collected_h.add(h)
         # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
-  nhood_stats(header, [hr.index(s) for s in list(collected_h)])
+  print 'regular nhood stats:',
+  nhood_stats(hr.index(header), [hr.index(s) for s in list(collected_h)])
 
   # # Special 1-deg nhood
   # collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
@@ -883,7 +884,13 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
     print header
     return ''
   curr_dist = 0
-  for i in range(len(creads[header])):
+  master_range = []
+  if len(n_range) == 0:
+    master_range = range(len(creads[header]))
+  else:
+    indices = convert_pos_range_to_indices(n_range, creads[header])
+    master_range = range(indices[0], indices[1])
+  for i in master_range:
     if i % 2 == 1:
       ktmer = creads[header][i]
       for h in headers[ktmer]:
@@ -898,12 +905,7 @@ def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
   for k in positions.keys():
     curr_list = positions[k]
     dists = []
-    if len(n_range) == 0:
-      master_range = range(len(curr_list))
-    else:
-      indices = convert_pos_range_to_indices(n_range, curr_list)
-      master_range = range(indices[0], indices[1])    
-    for i in master_range:
+    for i in range(len(curr_list)):
       if i % 2 == 1:
         if len(dists) == 0:
           dists.append(int(curr_list[i]))
