@@ -53,10 +53,10 @@ def main():
   contigs_fold = prior + cf_dir
   # parallel_prefix = sys.argv[2]
   parallel_prefix = '0'
-  # cov = sys.argv[2]
-  # _k = sys.argv[3]
-  # _t = sys.argv[4]
-  # _num = sys.argv[5]
+  cov = sys.argv[2]
+  _k = sys.argv[3]
+  _t = sys.argv[4]
+  _num = sys.argv[5]
 
   if not os.path.exists(contigs_fold):
     os.makedirs(contigs_fold)
@@ -65,28 +65,29 @@ def main():
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
   # reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   # reads_file = '/home/mshen/research/data/reads.20k.' + cov + 'x.rc.fasta'
-  # reads_file = prior + 'data/reads.20k.' + cov + 'x.rc.fasta'
-  reads_file = prior + 'data/reads.20k.rc.fasta'
+  reads_file = prior + 'data/undersampled_20k/reads.20k.' + cov + 'x.rc.fasta'
+  # reads_file = prior + 'data/reads.20k.rc.fasta'
 
   # creads_file = '/home/mshen/research/data/temp_creads.out_28_6_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
   # creads_file = '/home/mshen/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
-  # creads_file = prior + 'data/20k_v2/temp_creads.outcov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
-  # ktmer_headers_file = prior + 'data/20k_v2/temp_ktmer_headerscov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
+  creads_file = prior + 'data/undersampled_20k/temp_creads.outcov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
+  ktmer_headers_file = prior + 'data/undersampled_20k/temp_ktmer_headerscov' + cov[0] + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
 
-  creads_file = prior + 'data/temp_creads.outrx_27_6_rc_v2.out'
-  ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_27_6_rc_v2.out'
+  # creads_file = prior + 'data/temp_creads.outrx_27_6_rc_v2.out'
+  # ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_27_6_rc_v2.out'
 
   # ec_tool = '/home/lin/program/error_correction_5X_0210.sh'   
   # ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
   # ec_tool = '/home/yu/program/error_correction_0402.sh'
   # ec_tool = '/home/yu/program/error_correction_test.sh'
-  ec_tool = '/home/yu/program/error_correction_0424.sh'
+  ec_tool = '/home/yu/program/error_correction_0421.sh'
   # ec_tool = '/home/yu/program/' + sys.argv[2]
 
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', \
     ktmer_headers_file, '\nEC Tool:', ec_tool, '\nContigs fold', contigs_fold
+  print 'Cov, k, t, num', cov, _k, _t, _num
 
 
   # Actions
@@ -515,7 +516,7 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
 
   reads = []
 
-  reads, windows = get_1_deg_nhood(header, creads, headers, hr)
+  reads, windows = get_simple_1_deg_nhood(header, creads, headers, hr)
 
   if len(reads) != 0:
     return reads
@@ -684,7 +685,7 @@ def get_nhood(header, headers, creads, hr):
   def len_read(cread):
     return sum([cread[s] for s in range(len(cread)) if s % 2 == 0])
 
-  nhood_headers, windows = get_1_deg_nhood(header, creads, headers, hr)
+  nhood_headers, windows = get_special_1_deg_nhood(header, creads, headers, hr)
   collected_headers = [nhood_headers]   # List of lists
   collected_windows = [windows]
   collected = set(nhood_headers)
@@ -707,7 +708,7 @@ def get_nhood(header, headers, creads, hr):
       curr_head = curr_level_headers[j]
       curr_window = curr_level_windows[j]
       # print curr_window
-      new_nhood_headers, new_nhood_windows = get_1_deg_nhood(curr_head, creads, headers, hr, curr_window)
+      new_nhood_headers, new_nhood_windows = get_special_1_deg_nhood(curr_head, creads, headers, hr, curr_window)
       for k in range(len(new_nhood_headers)):
         if new_nhood_headers[k] not in collected:
           collected.add(new_nhood_headers[k])
@@ -727,7 +728,23 @@ def get_nhood(header, headers, creads, hr):
   return list(collected)
 
 
-def get_1_deg_nhood(header, creads, headers, hr, n_range = []):
+def get_simple_1_deg_nhood(header, creads, headers):
+  collected_h = set()
+  ktmers = []
+  if header not in creads or len(creads[header]) == 1:
+    print header
+    return ''
+  for i in range(len(creads[header])):
+    if i % 2 == 1:
+      ktmers.append(creads[header][i])
+  for kt in ktmers:
+    for h in headers[kt]:
+      if h != header:
+        collected_h.add(h)
+      # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
+  return collected_h
+
+def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
   # Gets the special 1-deg nhood
 
   def convert_pos_range_to_indices(n_range, cread):
@@ -959,13 +976,13 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
   find_genomic_position(rr[hr.index(header)], hr, rr)       # testing
   
   # # 1-deg nhood
-  # collected_h, windows = get_1_deg_nhood(header, creads, headers, hr)
-  # collected_h = list(collected_h) 
-  # print 'Original 1deg nhood:', len(collected_h)
+  collected_h, windows = get_simple_1_deg_nhood(header, creads, headers, hr)
+  collected_h = list(collected_h) 
+  print 'Original 1deg nhood:', len(collected_h)
 
   # if len(candidates) > 0:
   #   for cd in candidates:
-  #     new_h, windows = get_1_deg_nhood(cd, creads, headers, hr)
+  #     new_h, windows = get_simple_1_deg_nhood(cd, creads, headers, hr)
   #     collected_h += list(new_h)
   #   collected_h = keep_duplicates_only(collected_h)
   #   print 'Duplicates only after combine:', len(collected_h)
@@ -975,7 +992,7 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
     # find_genomic_position(rr[hr.index(ch)], hr, rr)       # testing
 
   # n-degree nhood
-  collected_h = get_nhood(header, headers, creads, hr)
+  # collected_h = get_nhood(header, headers, creads, hr)
 
   # FOR PLOTTING A-BRUIJN GRAPH OF NHOODS
   # print creads[header]
@@ -1198,7 +1215,7 @@ def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool
   for i in [s for s in par_range if s % 2 == 1]:
     print i
     header = hr[i]
-    collected_h, windows = get_1_deg_nhood(header, creads, headers, hr)
+    collected_h, windows = get_simple_1_deg_nhood(header, creads, headers, hr)
 
     base_file = str(i) + '_base.fasta'
     hood_file = str(i) + '_hood.fasta'
@@ -1240,7 +1257,7 @@ def output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktme
 
   for i in range(len(input_headers)):
     header = input_headers[i]
-    collected_h, windows = get_1_deg_nhood(header, creads, headers, hr)
+    collected_h, windows = get_simple_1_deg_nhood(header, creads, headers, hr)
 
     base_file = str(i) + '_base.fasta'
     hood_file = str(i) + '_hood.fasta'
