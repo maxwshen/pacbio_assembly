@@ -733,7 +733,7 @@ def get_simple_1_deg_nhood(header, creads, headers, hr):
   ktmers = []
   if header not in creads or len(creads[header]) == 1:
     print header
-    return ''
+    return '', None
   for i in range(len(creads[header])):
     if i % 2 == 1:
       ktmers.append(creads[header][i])
