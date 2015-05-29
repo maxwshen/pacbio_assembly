@@ -63,13 +63,10 @@ def main():
 
   # NEW 20KB DATASET
   # reads_file = '/home/mchaisso/datasets/pacbio_ecoli/reads.20k.fasta'
-  # reads_file = '/home/mshen/research/data/reads.20k.rc.fasta'
   # reads_file = '/home/mshen/research/data/reads.20k.' + cov + 'x.rc.fasta'
   reads_file = prior + 'data/undersampled_20k/reads.20k.' + cov + 'x.' + _num + 'rc.fasta'
   # reads_file = prior + 'data/reads.20k.rc.fasta'
 
-  # creads_file = '/home/mshen/research/data/temp_creads.out_28_6_rc.out'
-  # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers_28_6_rc.out'
   # creads_file = '/home/mshen/research/data/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc.out'
   # ktmer_headers_file = '/home/mshen/research/data/temp_ktmer_headers' + cov + 'x_' + _k + '_' + _t + '_rc.out'
   creads_file = prior + 'data/undersampled_20k/temp_creads.out' + cov + 'x_' + _k + '_' + _t + '_rc_v2_' + _num + '.out'
@@ -724,7 +721,7 @@ def get_nhood(header, headers, creads, hr):
     # print false_reads, [hr[s] for s in false_reads]
     # print header
 
-  print [hr.index(s) for s in collected]        # testing
+  # print [hr.index(s) for s in collected]        # testing
   return list(collected)
 
 
@@ -811,7 +808,7 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
             if c_dist != 0 and m_dist != 0:
               cand_dists.append(c_dist)
               master_dists.append(m_dist)
-          print m_kmer,
+          # print m_kmer,
           prev_cand = m_kmer
       if prev_cand != '':
         window[1] = min(get_pos_in_read(prev_cand, cand_cread) + extend_range, len_read(cand_cread))
@@ -843,7 +840,7 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
       if failed:
         continue
 
-      print hr.index(candidate), master_dists, cand_dists   # testing
+      # print hr.index(candidate), master_dists, cand_dists   # testing
       # print window      # testing
       windows.append(window)
       new_nhood.append(candidate)
@@ -892,9 +889,9 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
   nhood_stats(hr.index(header), [hr.index(s) for s in list(collected_h)])
 
   # # Special 1-deg nhood
-  collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
-  collected_h = remove_rc_duplicate_in_headers(collected_h)
-  return collected_h, windows
+  # collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
+  # collected_h = remove_rc_duplicate_in_headers(collected_h)
+  # return collected_h, windows
 
   # NEW FASTER? code for get_1_deg_nhood(...), test 5/25/15
   positions = defaultdict(list)    # Key = header, Val = list of ktmers and their total positions
@@ -918,7 +915,7 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
       curr_dist += int(creads[header][i])
 
   collected_h = set()
-  max_dist = 200000
+  max_dist = 3500
   min_bp_shared = 7000
   for k in positions.keys():
     curr_list = positions[k]
@@ -928,7 +925,7 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
         if len(dists) == 0:
           dists.append(int(curr_list[i]))
         else:
-          dists.append(int(curr_list[i]) - dists[-1])
+          dists.append(int(curr_list[i]) - int(curr_list[i - 2]))
     dists = dists[1:]
     # print dists
 
