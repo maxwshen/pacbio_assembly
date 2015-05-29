@@ -892,8 +892,9 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
   nhood_stats(hr.index(header), [hr.index(s) for s in list(collected_h)])
 
   # # Special 1-deg nhood
-  # collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
-  # collected_h = remove_rc_duplicate_in_headers(collected_h)
+  collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
+  collected_h = remove_rc_duplicate_in_headers(collected_h)
+  return collected_h, windows
 
   # NEW FASTER? code for get_1_deg_nhood(...), test 5/25/15
   positions = defaultdict(list)    # Key = header, Val = list of ktmers and their total positions

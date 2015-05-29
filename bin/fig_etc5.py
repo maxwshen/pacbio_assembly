@@ -21,3 +21,9 @@ nhood_indices = [hr.index(s) for s in nhood]
 
 itec4.nhood_stats(hr.index(header), nhood_indices)
 print len(nhood)
+
+nhood, windows = itec4.get_nhood(header, headers, creads, hr)
+nhood = list(nhood)
+nhood_indices = [hr.index(s) for s in nhood]
+itec4.nhood_stats(hr.index(header), nhood_indices)
+print len(nhood)
