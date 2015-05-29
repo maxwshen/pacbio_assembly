@@ -1,5 +1,6 @@
 # Combines contigs
 import itec4
+import sys, datetime
 
 def main():
   contigs_fold = sys.argv[1]
