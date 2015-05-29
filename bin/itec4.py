@@ -885,8 +885,8 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
       if h != header:
         collected_h.add(h)
         # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
-  print 'regular nhood stats:',
-  nhood_stats(hr.index(header), [hr.index(s) for s in list(collected_h)])
+  # print 'regular nhood stats:',
+  # nhood_stats(hr.index(header), [hr.index(s) for s in list(collected_h)])
 
   # # Special 1-deg nhood
   # collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
