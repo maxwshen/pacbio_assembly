@@ -758,9 +758,9 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
     return indices
 
   def filter_special_1_deg_nhood(header, nhood_headers, creads, n_range):
-  # Filters a neighborhood of reads to a master_read. Searches for overlapping kmers
-  #   Span of overlapping kmers must be greater than min_bp_shared
-  #   Distance b/w consecutive shared kmers must be less than max_dist
+    # Filters a neighborhood of reads to a master_read. Searches for overlapping kmers
+    #   Span of overlapping kmers must be greater than min_bp_shared
+    #   Distance b/w consecutive shared kmers must be less than max_dist
 
     def len_read(cread):
       return sum([int(cread[s]) for s in range(len(cread)) if s % 2 == 0])
@@ -876,7 +876,7 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
   ktmers = []
   if header not in creads or len(creads[header]) == 1:
     print header
-    return ''
+    return '', None
   for i in range(len(creads[header])):
     if i % 2 == 1:
       ktmers.append(creads[header][i])
@@ -897,7 +897,7 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
   positions = defaultdict(list)    # Key = header, Val = list of ktmers and their total positions
   if header not in creads or len(creads[header]) == 1:
     print header
-    return ''
+    return '', None
   curr_dist = 0
   master_range = []
   if len(n_range) == 0:
