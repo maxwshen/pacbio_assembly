@@ -179,6 +179,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         # don't start here, if it's within 1500bp of a consensus we already have 
         continue 
     curr_contig_headers = [h + 'START']
+    curr_contig_headers_data = ['_']
     master_h = h
     master_traversed_headers = [h]
 
