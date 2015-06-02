@@ -292,22 +292,15 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
           # for gc in good_candidates:                                # testing
             # find_genomic_position(rr[hr.index(gc)], hr, rr)       # testing
 
-          # Filter candidates by their support for each other
+          # Filter candidates that are already in curr_contig_headers
           filtered_good_candidates = []
           if not km:
-            filtered_good_candidates = good_candidates
-            # if verify_against_candidates_longest(good_candidates, hr, rr):
-              # filtered_good_candidates = good_candidates
-            # for gc in good_candidates:
-              # temp_candidates = copy.copy(good_candidates)
-              # temp_candidates.remove(gc)
-              # if verify_against_candidates(gc, temp_candidates, hr, rr):
-                # filtered_good_candidates.append(gc)
+            filtered_good_candidates = [s for s in good_candidates if s not in curr_contig_headers]
           if km:
             filtered_good_candidates = good_candidates
-          print 'Filtered', len(good_candidates) - len(filtered_good_candidates), 'reads by support filter'
+          print 'Filtered', len(good_candidates) - len(filtered_good_candidates), 'old reads'
           if len(filtered_good_candidates) == 0:
-            print 'No reads passed filtering step against other candidates'
+            print 'No reads passed filtering'
             for p in possible_heads:
               temp_traversed_headers.append(p)
             if km:
