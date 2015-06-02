@@ -293,11 +293,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             # find_genomic_position(rr[hr.index(gc)], hr, rr)       # testing
 
           # Filter candidates that are already in curr_contig_headers
-          filtered_good_candidates = []
-          if not km:
-            filtered_good_candidates = [s for s in good_candidates if s not in curr_contig_headers]
-          if km:
-            filtered_good_candidates = good_candidates
+          filtered_good_candidates = [s for s in good_candidates if s not in curr_contig_headers]
           print 'Filtered', len(good_candidates) - len(filtered_good_candidates), 'old reads'
           if len(filtered_good_candidates) == 0:
             print 'No reads passed filtering'
@@ -350,10 +346,12 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
               continue
             if direction == 'right':
               curr_contig.append(consensus_temp)
-              curr_contig_headers.append(h + '_' + str(n1) + '_' + str(n2))
+              curr_contig_headers.append(h)
+              curr_contig_headers_data.append('_' + str(n1) + '_' + str(n2))
             if direction == 'left':
               curr_contig.insert(0, consensus_temp)
-              curr_contig_headers.insert(0, h + '_' + str(n1) + '_' + str(n2))
+              curr_contig_headers.insert(0, h)
+              curr_contig_headers_data.insert(0, '_' + str(n1) + '_' + str(n2))
             master_traversed_headers.append(h)
 
           if h == old_h:
@@ -374,7 +372,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     contig_result = contigs_fold + 'contig_' + parallel_prefix + str(m) + 'results.fasta'
     for j in range(len(curr_contig)):
       if curr_contig[j] != '':
-        contig += '>' + curr_contig_headers[j] + '\n' + curr_contig[j] + '\n'
+        contig += '>' + curr_contig_headers[j] + curr_contig_headers_data[j] + '\n' + curr_contig[j] + '\n'
     with open(contig_file, 'w') as f:
       f.write(contig)
     status = commands.getstatusoutput(blasr_exe + ' ' + contig_file +' ' + e_coli_genome + ' ' + blasr_options + ' -maxMatch 20 > ' + contig_result)[1]
