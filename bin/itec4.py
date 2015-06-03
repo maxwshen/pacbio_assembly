@@ -31,7 +31,6 @@ km_cutoff = 100                 # .
 support_dist_cutoff = 100000    # CONSENSUS: Bp. length, acceptable support distance from end of consensus
 support_t = 3                   # CONSENSUS: Req. # reads to support a position to determine farthest support
 nhood_header_limit = float('inf')         # .
-nhood_it_limit = 3              # .
 n21ratio_cutoff = 0.05             # If n2/n1 is greater than this, find another consensus
 # blasr_exe = '/home/jeyuan/blasr/alignment/bin/blasr'
 blasr_exe = 'blasr'
