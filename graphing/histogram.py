@@ -12,8 +12,8 @@ import random
 
 def main():
   input_file = sys.argv[1]
-  plot_1group(input_file)
-  # plot_2groups(input_file)
+  # plot_1group(input_file)
+  plot_2groups(input_file)
   # plot_2groups_2files(input_file)
 
 def plot_1group(input_file):
@@ -47,8 +47,8 @@ def plot_2groups(input_file):
   for i, line in enumerate(fileh):  
     words = line.strip().split()
 
-    data1.append(int(words[0]))
-    data2.append(int(words[1]))
+    data1.append(float(words[0]))
+    data2.append(float(words[1]))
 
   largest = [max(data1), max(data2)]
   binrange = range(0, max(largest), 3)
@@ -56,8 +56,8 @@ def plot_2groups(input_file):
   plt.hist(data1, color = 'green', bins = binrange, alpha = 0.4, log = False)
   plt.hist(data2, color = 'red', bins = binrange, alpha = 0.4, log = False)
 
-  plt.xlabel('Nhood size')
-  plt.ylabel('Quantity')
+  plt.xlabel('Initial unc-22 mRNA quantity (ng)')
+  plt.ylabel('# Samples')
   plt.show()
 
 def plot_2groups_2files(input_file):
