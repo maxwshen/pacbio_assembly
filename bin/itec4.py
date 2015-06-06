@@ -839,7 +839,7 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
     return new_nhood, windows
 
   def remove_rc_duplicate_in_headers(headers):
-    # Randomly removes one of the dulpicate reads (rc and normal) in a set of headers
+    # Randomly removes one of the duplicate reads (rc and normal) in a set of headers
     # We can remove randomly because we pass into Yu's EC which uses BLASR to align
     # all headers to the base read, which will automatically flip if needed
     past = []
@@ -850,6 +850,10 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
       if trimmed_h not in past:
         past.append(trimmed_h)
         prefixes.append(prefix)
+      else:
+        ind = past.index(trimmed_h)
+        del past[ind]
+        del prefixes[ind]
     
     ans = []
     for i in range(len(past)):
