@@ -428,7 +428,7 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   # Optional consensus boolean toggles the case where we're aligning one consensus to another
 
   if not consensus:
-    dist_from_end = 2000
+    dist_from_end = 5000  # there are reads that have long tips that don't align to the genome
     # dist_from_end = 100
     acc_cutoff = overlap_accuracy_cutoff
     len_cutoff = overlap_length_cutoff
