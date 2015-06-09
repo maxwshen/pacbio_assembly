@@ -17,7 +17,7 @@ global contigs_fold
 temp_sig = str(datetime.datetime.now()).split()[1]
 prior = '/home/yu/max/research/'
 overlap_accuracy_cutoff = 75    # .
-overlap_length_cutoff = 7000     # .
+overlap_length_cutoff = 4000     # .
 overlap_accuracy_cutoff_consensus = 98
 overlap_length_cutoff_consensus = 7000
 min_extension = 0               # Min. bp extension candidates need to extend

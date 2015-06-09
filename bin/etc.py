@@ -3,6 +3,7 @@
 import sys, string, datetime, random, copy, os, commands, fnmatch
 import numpy as np
 import itec4
+import read_fasta as rf
 from collections import defaultdict
 
 def main():
@@ -12,8 +13,8 @@ def main():
   ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_27_6_rc_v2.out'
 
   hr, rr = rf.read_fasta(reads_file)
-  headers = build_headers_dict(ktmer_headers_file)
-  creads = build_creads_dict(creads_file, hr, rr)
+  headers = itec4.build_headers_dict(ktmer_headers_file)
+  creads = itec4.build_creads_dict(creads_file, hr, rr)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
 
@@ -24,13 +25,14 @@ def main():
   for i in [s for s in range(len(hr)) if s % 2 == 1]:
     print i
     header = hr[i]
-    nhood = get_special_1_deg_nhood(header, creads, headers, hr)
+    nhood = get_special_1_deg_nhood(header, creads, headers, hr, rr)
 
     base_file = str(i) + '_base.fasta'
     hood_file = str(i) + '_hood.fasta'
     with open(base_file, 'w') as f:
       f.write(header + '\n' + rr[i])
-    with open(hood_file, 'w') as f:
+    if len(nhood) != 0:
+      with open(hood_file, 'w') as f:
         f.write('\n'.join(nhood))
 
     commands.getstatusoutput('mv ' + base_file + ' ' + out_fold)
@@ -66,7 +68,7 @@ def get_special_1_deg_nhood(header, creads, headers, hr, rr, n_range = []):
   positions = defaultdict(list)    # Key = header, Val = list of ktmers and their total positions
   if header not in creads or len(creads[header]) == 1:
     print header
-    return '', None
+    return []
   curr_dist = 0
   master_range = []
   if len(n_range) == 0:
@@ -99,10 +101,12 @@ def get_special_1_deg_nhood(header, creads, headers, hr, rr, n_range = []):
     # Stats for Yu (6/8/15)
     first_ktmer = curr_list[0]
     last_ktmer = curr_list[-2]
-    first_pos_b = get_pos_in_read(first_ktmer, header)
-    last_pos_b = get_pos_in_read(last_ktmer, header)
-    first_pos_n = get_pos_in_read(first_ktmer, k)
-    last_pos_n = get_pos_in_read(last_ktmer, k)
+    h_cr = creads[header]
+    k_cr = creads[k]
+    first_pos_b = get_pos_in_read(first_ktmer, h_cr)
+    last_pos_b = get_pos_in_read(last_ktmer, h_cr)
+    first_pos_n = get_pos_in_read(first_ktmer, k_cr)
+    last_pos_n = get_pos_in_read(last_ktmer, k_cr)
     dist_last_b = len_read(creads[header]) - last_pos_b
     dist_last_n = len_read(creads[k]) - last_pos_n
 
@@ -120,7 +124,7 @@ def get_special_1_deg_nhood(header, creads, headers, hr, rr, n_range = []):
       end_pos = len_read(creads[k])
       last_term = dist_last_n
 
-    nhood += [k + '_' + '_'.join([str(s) for s in [first_term, first_pos_b, last_pos_b, last_term]]), rr[hr.index(k)][start_pos : end_pos]]
+    nhood += [k + ' ' + ' '.join([str(s) for s in [first_term, first_pos_b, last_pos_b, last_term]]), rr[hr.index(k)][start_pos : end_pos]]
 
   return nhood
 
