@@ -6,6 +6,11 @@ import itec4
 from collections import defaultdict
 
 def main():
+  prior = '/home/yu/max/research/'
+  reads_file = prior + 'data/reads.20k.rc.fasta'
+  creads_file = prior + 'data/temp_creads.outrx_27_6_rc_v2.out'
+  ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_27_6_rc_v2.out'
+
   hr, rr = rf.read_fasta(reads_file)
   headers = build_headers_dict(ktmer_headers_file)
   creads = build_creads_dict(creads_file, hr, rr)
