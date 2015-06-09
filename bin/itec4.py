@@ -748,13 +748,15 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
           break
     return indices
 
+  def len_read(cread):
+    return sum([int(cread[s]) for s in range(len(cread)) if s % 2 == 0])
+
   def filter_special_1_deg_nhood(header, nhood_headers, creads, n_range):
     # Filters a neighborhood of reads to a master_read. Searches for overlapping kmers
     #   Span of overlapping kmers must be greater than min_bp_shared
     #   Distance b/w consecutive shared kmers must be less than max_dist
 
-    def len_read(cread):
-      return sum([int(cread[s]) for s in range(len(cread)) if s % 2 == 0])
+
 
     def get_relative_dist(kmer1, kmer2, cread):
       # Returns 0 if there are no elements between kmer1 and kmer2, kmer1 must be before kmer2
@@ -839,7 +841,8 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
     return new_nhood, windows
 
   def remove_rc_duplicate_in_headers(headers):
-    # Randomly removes one of the duplicate reads (rc and normal) in a set of headers
+    # Randomly removes both (as of 6/5/15, before just removed 1) of the duplicate reads
+    # (rc and normal) in a set of headers
     # We can remove randomly because we pass into Yu's EC which uses BLASR to align
     # all headers to the base read, which will automatically flip if needed
     past = []
@@ -866,19 +869,19 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
     else:
       print 'error:', kmer, 'not in', cread
 
-  # Start actual code for get_1_deg_nhood(...)
-  collected_h = set()
-  ktmers = []
-  if header not in creads or len(creads[header]) == 1:
-    print header
-    return '', None
-  for i in range(len(creads[header])):
-    if i % 2 == 1:
-      ktmers.append(creads[header][i])
-  for kt in ktmers:
-    for h in headers[kt]:
-      if h != header:
-        collected_h.add(h)
+  # # Start actual code for get_1_deg_nhood(...)
+  # collected_h = set()
+  # ktmers = []
+  # if header not in creads or len(creads[header]) == 1:
+  #   print header
+  #   return '', None
+  # for i in range(len(creads[header])):
+  #   if i % 2 == 1:
+  #     ktmers.append(creads[header][i])
+  # for kt in ktmers:
+  #   for h in headers[kt]:
+  #     if h != header:
+  #       collected_h.add(h)
         # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
   # print 'regular nhood stats:',
   # nhood_stats(hr.index(header), [hr.index(s) for s in list(collected_h)])
@@ -924,6 +927,8 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
     dists = dists[1:]
     # print dists
 
+
+    # Filters out reads
     failed = False
     for d in dists:
       if d > max_dist:
