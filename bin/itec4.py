@@ -186,8 +186,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
 
 
     # MAIN LOOP
-    # for direction in ['right', 'left']:
-    for direction in ['right']:
+    for direction in ['right', 'left']:
+    # for direction in ['right']:
       counter = 0
       limit_km_times = limit_km_times_total
       h = master_h
