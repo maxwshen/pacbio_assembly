@@ -197,7 +197,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         print datetime.datetime.now() - curr_time
         print 'iteration', counter, direction
         curr_time = datetime.datetime.now()
-        if counter > 500:
+        if counter > 700:
           break
         old_h = h
         temp_traversed_headers = []
