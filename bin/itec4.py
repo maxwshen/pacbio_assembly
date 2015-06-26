@@ -88,8 +88,8 @@ def main():
 
   # Actions
   iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
+  combine_contigs(contigs_fold)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
-  # combine_contigs(contigs_fold)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
   # contigs_results_file = '/home/mshen/research/contigs30/contig_70results.fasta'

@@ -461,6 +461,8 @@ def convertReads(reads, ktmers, _k):
   num_reads_wo_ktmers = 0
   curr_dna = ''
 
+  ktmers_per_read = []
+
   readcount = 0
   with open(reads) as f:
     curr_read = ''
@@ -474,9 +476,11 @@ def convertReads(reads, ktmers, _k):
           tempDist = []
           tempKmers = []
           count = 0
+          num_found = 0
           for j in range(len(curr_read) - _k + 1):
             kmer = curr_read[j : j + _k]
             if kmer in ktmers:
+              num_found += 1
               tempDist.append(count)
               tempKmers.append(kmer)
               count = 1
@@ -487,6 +491,7 @@ def convertReads(reads, ktmers, _k):
             num_reads_wo_ktmers += 1
           cReads.append((tempKmers, tempDist))
           curr_read = ''
+          ktmers_per_read.append(num_found)
     readcount += 1
     tempDist = []
     tempKmers = []
@@ -507,6 +512,7 @@ def convertReads(reads, ktmers, _k):
 
   # print cReads
   print num_reads_wo_ktmers, 'reads without any kt-mers out of', readcount, 'reads'
+  print float(sum(ktmers_per_read)) / float(len(ktmers_per_read)), 'avg. num of kt-mers per read'
   # print cReads
   return cReads
 
