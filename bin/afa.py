@@ -41,12 +41,15 @@ def afa(reads_fn, ktmer_headers_fn, creads_fn):
   ktmer = 'TTTTCATCTGGAAGCGATTCTCGGGGA'   # pos = 4478401
   print gr.find(ktmer)
 
-  seenReads = TraversedReads(ktmer, creads, headers)
+  seenReads = TraversedReads()
+  seenReads.update(ktmer, creads, headers)
   traversed = set(ktmer)
   while True:
     ktmer = move(ktmer, seenReads, traversed, creads, headers, gr, num_shared_cutoff)
     # print gr.find(ktmer)
-    print 'pos: ', ', '.join([str(s.start()) for s in re.finditer(ktmer, gr)])
+    print ', '.join([str(s.start()) for s in re.finditer(ktmer, gr)]), ktmer
+    print '  curr pos in reads:', [get_pos_in_read(ktmer, creads[r]) for r in headers[ktmer]]
+    print '  len reads:', [get_len_cread(creads[r]) for r in headers[ktmer]]
 
   return
 
@@ -83,18 +86,24 @@ def move(ktmer, seenReads, traversed, creads, headers, gr, num_shared_cutoff):
       for r in headers[ckmer]:
         if r in seenReads.tr:
           num_shared += 1
-          scoresum += score(get_pos_in_read(ckmer, creads[r], seenReads.get(r)))
+          scoresum += score(get_pos_in_read(ckmer, creads[r]), seenReads.get(r))
       if num_shared <= num_shared_cutoff:
         scoresum = 0
       scores.append(scoresum)
+    if sum(scores) == 0:
+      return ''
     sorted_cands = [x for (y,x) in sorted(zip(scores, cands))]
-    print '  ', sorted(scores), '\n  ', [gr.find(s) for s in sorted_cands]
+    print '  cands scores:', sorted(scores), '\n  cands in genome:', [gr.find(s) for s in sorted_cands]
     return sorted_cands[-1]
 
 
   cands, dists = find_candidates(ktmer, creads, headers)
   cands = [s for s in cands if s not in traversed]
-  new_ktmer = get_best_candidate(cands, seenReads, creads, headers, num_shared_cutoff)
+  for i in range(len(cands)):
+    if cands[i][:-1] == ktmer[1:]:
+      new_ktmer = cands[i]
+    else:
+      new_ktmer = get_best_candidate(cands, seenReads, creads, headers, num_shared_cutoff)
   while new_ktmer == '':
     num_shared_cutoff -= 1
     if num_shared_cutoff < 0:
@@ -112,11 +121,12 @@ def get_pos_in_read(kmer, cread):
   else:
     print 'error:', kmer, 'not in', cread
 
+def get_len_cread(cread):
+    return sum([int(cread[s]) for s in range(len(cread)) if s % 2 == 0])
 
 class TraversedReads():
-  def __init__(self, kmer, creads, headers):
+  def __init__(self):
     self.tr = dict()
-    self.update(kmer, headers, creads)
 
   def update(self, kmer, creads, headers):
     for read in headers[kmer]:
