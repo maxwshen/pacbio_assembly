@@ -38,7 +38,8 @@ def afa(reads_fn, ktmer_headers_fn, creads_fn):
   print 'Found', len(ktmers), 'kt-mers.'
 
   num_shared_cutoff = 6
-  ktmer = 'TTTTCATCTGGAAGCGATTCTCGGGGA'   # pos = 4478401
+  # ktmer = 'TTTTCATCTGGAAGCGATTCTCGGGGA'   # pos = 4478401
+  ktmer = 'TGGTGTTTTTGAGGTTCTCCAGTGGCT'   # pos = 4506698
   print gr.find(ktmer)
 
   seenReads = TraversedReads()
@@ -53,17 +54,55 @@ def afa(reads_fn, ktmer_headers_fn, creads_fn):
 
   return
 
+def find_repeats(ktmer, creads, headers):
+  def find_index_after_lastrepeat(cread):
+    ktm = dict()
+    for i in range(len(cread)):
+      if i % 2 == 1:
+        kt = cread[i]
+        if kt not in ktm:
+          ktm[kt] = 1
+        else:
+          ktm[kt] += 1
+    last_pos = -1
+    for i in range(len(cread) - 1, 0, -1):
+      if i % 2 == 1:
+        kt = cread[i]
+        if ktm[kt] > 1:
+          last_pos = i + 2
+          break
+    return last_pos
+
+  # BEGIN def find_repeats(...)
+  next_ktmers = []
+  next_dists = []
+  for r in headers[ktmer]:
+    cc = creads[r]
+    instances = [i for i, x in enumerate(cc) if x == ktmer]
+    if len(instances) > 1:
+      nkti = find_index_after_lastrepeat(cc)
+      if nkti < len(cc) and cc[nkti] not in next_ktmers:
+        next_ktmers.append(cc[nkti])
+        next_dists.append(get_dist_in_cread(cc, cc.index(ktmer), nkti))
+  return next_ktmers, next_dists
+
 def move(ktmer, seenReads, traversed, creads, headers, gr, num_shared_cutoff):
   def find_candidates(ktmer, creads, headers):
-    reads = headers[ktmer]
-    next_ktmers = []
-    next_dists = []
-    for r in reads:
-      nkti = creads[r].index(ktmer) + 2
-      if nkti < len(creads[r]) and creads[r][nkti] not in next_ktmers:
-        next_ktmers.append(creads[r][nkti])
-        next_dists.append(creads[r][nkti - 1])
-    return next_ktmers, next_dists
+    next_ktmers, next_dists = find_repeats(ktmer, creads, headers)
+    if len(next_ktmers) > 0:
+      print 'Found repeat kt-mer'
+      return next_ktmers, next_dists
+    else:
+      # If this kt-mer is not repeated in reads
+      reads = headers[ktmer]
+      next_ktmers = []
+      next_dists = []
+      for r in reads:
+        nkti = creads[r].index(ktmer) + 2
+        if nkti < len(creads[r]) and creads[r][nkti] not in next_ktmers:
+          next_ktmers.append(creads[r][nkti])
+          next_dists.append(creads[r][nkti - 1])
+      return next_ktmers, next_dists
 
   def shared_reads(base_reads, new_reads):
     return len(base_reads.intersection(new_reads))
@@ -78,6 +117,11 @@ def move(ktmer, seenReads, traversed, creads, headers, gr, num_shared_cutoff):
     if len(cands) == 0:
       print 'No candidates found'
       return ''
+
+    # for i in range(len(cands)):
+    #   # If one-overlap, immediately take it
+    #   if cands[i][:-1] == ktmer[1:]:
+    #     return cands[i]
 
     scores = []
     for ckmer in cands:
@@ -94,16 +138,13 @@ def move(ktmer, seenReads, traversed, creads, headers, gr, num_shared_cutoff):
       return ''
     sorted_cands = [x for (y,x) in sorted(zip(scores, cands))]
     print '  cands scores:', sorted(scores), '\n  cands in genome:', [gr.find(s) for s in sorted_cands]
+    # print '  ', sorted_cands
     return sorted_cands[-1]
 
-
+  # BEGIN def move(...)
   cands, dists = find_candidates(ktmer, creads, headers)
   cands = [s for s in cands if s not in traversed]
-  for i in range(len(cands)):
-    if cands[i][:-1] == ktmer[1:]:
-      new_ktmer = cands[i]
-    else:
-      new_ktmer = get_best_candidate(cands, seenReads, creads, headers, num_shared_cutoff)
+  new_ktmer = get_best_candidate(cands, seenReads, creads, headers, num_shared_cutoff)
   while new_ktmer == '':
     num_shared_cutoff -= 1
     if num_shared_cutoff < 0:
@@ -122,7 +163,10 @@ def get_pos_in_read(kmer, cread):
     print 'error:', kmer, 'not in', cread
 
 def get_len_cread(cread):
-    return sum([int(cread[s]) for s in range(len(cread)) if s % 2 == 0])
+  return sum([int(cread[s]) for s in range(len(cread)) if s % 2 == 0])
+
+def get_dist_in_cread(cread, index1, index2):
+  return sum([int(cread[s]) for s in range(index1, index2 + 1) if s % 2 == 0  ])
 
 class TraversedReads():
   def __init__(self):
