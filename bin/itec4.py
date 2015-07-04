@@ -7,7 +7,7 @@ import sys, string, datetime, random, copy, os, commands, fnmatch
 import numpy as np
 from collections import defaultdict
 
-import read_fasta as rf
+import mylib as ml
 import find_read
 import kmer_matching
 import convert_creads_to_nhoods
@@ -98,7 +98,7 @@ def main():
   # convert_creads_to_nhoods.convert_creads_to_nhoods(reads_file, creads_file, ktmer_headers_file)
 
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix):
-  hr, rr = rf.read_fasta(reads_file)
+  hr, rr = ml.read_fasta(reads_file)
   headers = build_headers_dict(ktmer_headers_file)
   creads = build_creads_dict(creads_file, hr, rr)
   for i in range(len(hr)):
@@ -636,7 +636,7 @@ def find_extending_read(ktmer, headers, hr, rr):
   # check this to the last error corrected portion.
   # This is because sometimes the EC consensus can be much shorter than
   # the actual read, and we just want a read that extends past the EC consensus,
-  # not the current read we perform 1-deg nhood extension on.
+  # not the current read we peml.rm 1-deg nhood extension on.
   valid = []
   # if verify_against_candidates(headers[ktmer][0], headers[ktmer][1:], hr, rr):
     # valid = headers[ktmer]
@@ -1175,7 +1175,7 @@ def find_jumps_in_contigs(contigs_fold, parallel_prefix):
       split_pts = [0, total_contig_len]
 
     # Write split contigs
-    ch, cr = rf.read_fasta(contigs_fold + curr_contig)
+    ch, cr = ml.read_fasta(contigs_fold + curr_contig)
     ch = ch[0]
     cr = cr[0]
     for i in range(len(split_pts) - 1):
@@ -1189,7 +1189,7 @@ def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool
   out_fold = '/home/yu/max/research/1deg_nhoods_27.6_55x/'
   if not os.path.exists(out_fold):
     os.makedirs(out_fold)
-  hr, rr = rf.read_fasta(reads_file)
+  hr, rr = ml.read_fasta(reads_file)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
   creads = build_creads_dict(creads_file, hr, rr)
@@ -1237,7 +1237,7 @@ def output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool
 
 def output_some_1_deg_nhoods(contigs_results_file, reads_file, creads_file, ktmer_headers_file, ec_tool):
   out_fold = '/home/mshen/research/1deg_nhoods_20kb_c30full/'
-  hr, rr = rf.read_fasta(reads_file)
+  hr, rr = ml.read_fasta(reads_file)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
   
@@ -1294,7 +1294,7 @@ def read_ec_from_file():
 def check_contigs(contigs_fold, reads_file):
   # Aligns component reads to combined contigs in an effort to find jumps.
   # 1/5/15: Doesn't work very well.
-  hr, rr = rf.read_fasta(reads_file)
+  hr, rr = ml.read_fasta(reads_file)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
   res_file = contigs_fold + 'contig_0results.fasta'
@@ -1322,7 +1322,7 @@ def combine_contigs(contigs_fold):
       print fn                              # TESTING
       # if fn.split('.')[0] + '_combined.fasta' in os.listdir(contigs_fold):
         # continue
-      hs, rs = rf.read_fasta(contigs_fold + fn)
+      hs, rs = ml.read_fasta(contigs_fold + fn)
       for i in range(len(hs)):
         hs[i] = hs[i].split()[0]
       bases = [rs[0]]
@@ -1432,7 +1432,7 @@ def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
     return None
 
   headers = build_headers_dict(ktmer_headers_file)
-  hr, rr = rf.read_fasta(reads_file)
+  hr, rr = ml.read_fasta(reads_file)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
 
@@ -1594,14 +1594,14 @@ def filter_ktmers(ktmers, creads, headers):
   return new_ktmers
 
   # genome = '/home/mshen/research/data/e_coli_genome.fasta'
-  # gh, gr = rf.read_fasta(genome)
+  # gh, gr = ml.read_fasta(genome)
   # for kt in ktmers:
   #   if kt in gr[0]:
   #     print gr[0].index(kt)
 
 
 def ktmers_from_genome(ktmers, min_bp, max_bp):
-  hg, rg = rf.read_fasta(e_coli_genome)
+  hg, rg = ml.read_fasta(e_coli_genome)
   rg = rg[0]
 
   new_kt = []
