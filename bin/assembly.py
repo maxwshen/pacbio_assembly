@@ -385,7 +385,7 @@ def findKTmers(reads, _k, _t):
     for i, line in enumerate(f):
       if line[0] != '>':
         dna = line.strip()
-        curr_read += dna
+        curr_read += dna.upper()
       if line[0] == '>' or line[0] == '@':
         readcount += 1
         for j in range(len(curr_read) - _k + 1):

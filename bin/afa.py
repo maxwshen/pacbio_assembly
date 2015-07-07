@@ -41,16 +41,6 @@ def afa(reads_fn, ktmer_headers_fn, creads_fn):
   random.shuffle(ktmers)
   print 'Found', len(ktmers), 'kt-mers.'
 
-def check_pct_genomic(ktmers, genome):
-  found = 0
-  for i in range(len(ktmers)):
-    kt = ktmers[i]
-    if genome.find(kt) != -1 and genome.find(rc(kt)):
-      found += 1
-    print i, found, float(found) / float(i + 1)
-  print '# Genomic:', found
-  print 'pct Genomic:', float(found) / float(len(ktmers))
-
   num_shared_cutoff = 4
   # ktmer = 'TTTTCATCTGGAAGCGATTCTCGGGGA'   # pos = 4478401
   # ktmer = 'TGGTGTTTTTGAGGTTCTCCAGTGGCT'   # pos = 4506698
@@ -83,6 +73,16 @@ def check_pct_genomic(ktmers, genome):
     print '  len reads:', [get_len_cread(creads[r]) for r in headers[ktmer]]
 
   return
+
+def check_pct_genomic(ktmers, genome):
+  found = 0
+  for i in range(len(ktmers)):
+    kt = ktmers[i]
+    if genome.find(kt) != -1 and genome.find(ml.reverse_complement(kt)):
+      found += 1
+    print i, found, float(found) / float(i + 1)
+  print '# Genomic:', found
+  print 'pct Genomic:', float(found) / float(len(ktmers))
 
 def find_ktmer_in_genome(ktmer, genome):
   print ', '.join([str(s.start()) for s in re.finditer(ktmer, genome)]), ktmer

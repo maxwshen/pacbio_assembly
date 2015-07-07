@@ -649,7 +649,7 @@ def nhood_stats(base_index, nhood_indices):
     return
   specificity = []
   sensitivity = []
-  ground_truth = '/home/yu/max/research/data/genome_nhood.txt'
+  ground_truth = '/home/mshen/research/data/genome_nhood_7k.txt'
   rest = []
   with open(ground_truth) as f:
     for i, line in enumerate(f):
@@ -665,8 +665,10 @@ def nhood_stats(base_index, nhood_indices):
   sensitivity.append(float(intersect) / float(len(rest)))
   specificity.append(float(intersect) / float(len(nhood_indices)))
 
-  print 'sensitivity:', float(sum(sensitivity)) / float(len(sensitivity))
-  print 'specificity:', float(sum(specificity)) / float(len(specificity))
+  # print 'sensitivity:', float(sum(sensitivity)) / float(len(sensitivity))
+  # print 'specificity:', float(sum(specificity)) / float(len(specificity))
+  print 'false:', len(false_reads)
+  print 'missing:', len(rest) - intersect
   return false_reads
 
 def get_nhood(header, headers, creads, hr):
@@ -870,26 +872,26 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
       print 'error:', kmer, 'not in', cread
 
   # # Start actual code for get_1_deg_nhood(...)
-  # collected_h = set()
-  # ktmers = []
-  # if header not in creads or len(creads[header]) == 1:
-  #   print header
-  #   return '', None
-  # for i in range(len(creads[header])):
-  #   if i % 2 == 1:
-  #     ktmers.append(creads[header][i])
-  # for kt in ktmers:
-  #   for h in headers[kt]:
-  #     if h != header:
-  #       collected_h.add(h)
+  collected_h = set()
+  ktmers = []
+  if header not in creads or len(creads[header]) == 1:
+    print header
+    return '', None
+  for i in range(len(creads[header])):
+    if i % 2 == 1:
+      ktmers.append(creads[header][i])
+  for kt in ktmers:
+    for h in headers[kt]:
+      if h != header:
+        collected_h.add(h)
         # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
-  # print 'regular nhood stats:',
+  print 'regular nhood stats:',
   # nhood_stats(hr.index(header), [hr.index(s) for s in list(collected_h)])
 
-  # # Special 1-deg nhood
-  # collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
-  # collected_h = remove_rc_duplicate_in_headers(collected_h)
-  # return collected_h, windows
+  # Special 1-deg nhood
+  collected_h, windows = filter_special_1_deg_nhood(header, list(collected_h), creads, n_range)
+  collected_h = remove_rc_duplicate_in_headers(collected_h)
+  return collected_h, windows
 
   # NEW FASTER? code for get_1_deg_nhood(...), test 5/25/15
   positions = defaultdict(list)    # Key = header, Val = list of ktmers and their total positions
