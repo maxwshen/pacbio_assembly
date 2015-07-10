@@ -769,7 +769,7 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
 
     leniency = 100000    # for comparing relative distances between kmers
     max_dist = 100000   # If at least one read does not have a shared kmer within this distance, False
-    min_bp_shared = 7000
+    min_bp_shared = 3500
     extend_range = 0
 
     new_nhood = []
