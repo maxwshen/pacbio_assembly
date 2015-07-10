@@ -32,7 +32,7 @@ def scaffold_main(contigs_dr):
         cns[i + jump].ref = res
       new_tried = cns[i].tried + cns[i + jump].tried
       for nt in new_tried:
-        nt.tried = new_tried
+        cns[nt].tried = new_tried
 
 def attempt_scaffold(c1_fn, c2_fn, contigs_dr):
   # Returns '' upon failure
@@ -84,8 +84,8 @@ def attempt_scaffold(c1_fn, c2_fn, contigs_dr):
         commands.getstatusoutput('rm -rf ' + c1_fn)
       if c2_fn.split('_')[-1] == '_scaffold.fasta':
         commands.getstatusoutput('rm -rf ' + c2_fn)
-      newc_fn = contigs_dr + 'contig_' + c1n + c2n + '_scaffold.fasta'
-      with open(newc_fn, 'w') as f:
+      newc_fn = 'contig_' + c1n + c2n + '_scaffold.fasta'
+      with open(contigs_dr + newc_fn, 'w') as f:
         f.write('>scaffold\n' + newc_fn)
       return newc_fn
     return ''
