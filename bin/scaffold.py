@@ -9,7 +9,7 @@ import mylib
 def main():
   contigs_dr = sys.argv[1]
   
-  scaffold(contigs_dr)
+  scaffold_main(contigs_dr)
 
   return
   
@@ -24,6 +24,7 @@ def scaffold_main(contigs_dr):
 
   for jump in range(1, len(cns) - 1):
     for i in range(0, len(cns)):
+      print i, i + jump
       res = attempt_scaffold(cns[i].ref, cns[i + jump].ref, contigs_dr)
       if len(res) != 0:
         print 'success', res
@@ -44,12 +45,14 @@ def attempt_scaffold(c1_fn, c2_fn, contigs_dr):
   blasr_zero_len = 8  # 0 on debruijn, 8 on Yu's computer
   blasr_options = '-bestn 1 -m 1 -maxMatch 20'
 
-  c1h, c1r = mylib.read_fasta(c1_fn)
-  c2h, c2r = mylib.read_fasta(c2_fn)
+  c1h, c1r = mylib.read_fasta(contigs_dr + c1_fn)
+  c2h, c2r = mylib.read_fasta(contigs_dr + c2_fn)
   c1r = c1r[0]
   c2r = c2r[0]
-
-  status = commands.getstatusoutput(blasr_exe + ' ' + c1_fn + ' ' + c2_fn + ' ' + blasr_options)[1]
+  
+  print 'test'
+  status = commands.getstatusoutput(blasr_exe + ' ' + contigs_dr + c1_fn + ' ' + contigs_dr + c2_fn + ' ' + blasr_options)[1]
+  print status
   if len(status.split()) == blasr_zero_len:
     print 'FAILED BLASR ALIGNMENT'
     return ''
