@@ -26,7 +26,7 @@ def scaffold_main(contigs_dr):
     for i in range(0, len(cns)):
       res = attempt_scaffold(cns[i].ref, cns[i + jump].ref, contigs_dr)
       if len(res) != 0:
-        print 'succes', res
+        print 'success', res
         cns[i].ref = res
         cns[i + jump].ref = res
       new_tried = cns[i].tried + cns[i + jump].tried
@@ -101,7 +101,7 @@ class Contig():
     self.ref = fn
 
   def is_complete(self, cap):
-    return len(self.tried) == cap:
+    return len(self.tried) == cap
 
 
 if __name__ == '__main__':
