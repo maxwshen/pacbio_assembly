@@ -22,7 +22,7 @@ def scaffold_main(contigs_dr):
       cns.append(Contig(fn, num_contigs))
       num_contigs += 1
 
-  for jump in range(1, len(cns) - 1):
+  for jump in range(1, len(cns)):
     for i in range(0, len(cns) - jump):
       print i, i + jump
       res = attempt_scaffold(cns[i].ref, cns[i + jump].ref, contigs_dr)
@@ -86,7 +86,7 @@ def attempt_scaffold(c1_fn, c2_fn, contigs_dr):
         commands.getstatusoutput('rm -rf ' + c2_fn)
       newc_fn = 'contig_' + c1n + c2n + '_scaffold.fasta'
       with open(contigs_dr + newc_fn, 'w') as f:
-        f.write('>scaffold\n' + newc_fn)
+        f.write('>scaffold\n' + new_base)
       return newc_fn
     return ''
 
