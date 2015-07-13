@@ -1,4 +1,7 @@
 # Scaffolds together combined contigs in the same folder
+# TIME:
+#   Can take a few minutes to align megabase contigs to each other
+#   Overall, can take 5-10 minutes depending on size of contigs, num of contigs
 
 import sys, string, datetime, random, copy, os, commands, fnmatch, re
 import numpy as np
@@ -50,7 +53,6 @@ def attempt_scaffold(c1_fn, c2_fn, contigs_dr):
   c1r = c1r[0]
   c2r = c2r[0]
   
-  print 'test'
   status = commands.getstatusoutput(blasr_exe + ' ' + contigs_dr + c1_fn + ' ' + contigs_dr + c2_fn + ' ' + blasr_options)[1]
   print status
   if len(status.split()) == blasr_zero_len:
