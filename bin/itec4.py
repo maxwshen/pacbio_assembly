@@ -43,7 +43,9 @@ e_coli_genome = '/home/yu/data/ecoli_consensus_mark.fasta'
 use_ecs = False
 
 # IMPORTANT - CHANGE THIS WHEN CHANGING EC TOOL
-ec_prefix = 'C0421_'
+# ec_prefix = 'C0421_'
+ec_prefix = 'C0701_'
+ec_n = '4'  # Used for ec_0701
 
 def main():
   global contigs_fold
@@ -74,11 +76,8 @@ def main():
   # creads_file = prior + 'data/temp_creads.outrx_27_6_rc_v2.out'
   # ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_27_6_rc_v2.out'
 
-  # ec_tool = '/home/lin/program/error_correction_5X_0210.sh'   
-  # ec_tool = '/home/max/program/error_correction_0318.sh'      # yu's comp
-  # ec_tool = '/home/yu/program/error_correction_0402.sh'
-  # ec_tool = '/home/yu/program/error_correction_test.sh'
-  ec_tool = '/home/yu/program/error_correction_0421.sh'
+  # ec_tool = '/home/yu/program/error_correction_0421.sh'
+  ec_tool = '/home/yu/program/error_correction_0701.sh'
   # ec_tool = '/home/yu/program/' + sys.argv[2]
 
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', \
@@ -1028,21 +1027,19 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
     f.write('\n'.join(reads))
 
   ec_out = ec_prefix + temp_orig_file
-  status = commands.getstatusoutput(ec_tool + ' ' + temp_orig_file + ' ' + temp_nhood_file)[1]
+  status = commands.getstatusoutput(ec_tool + ' ' + temp_orig_file + ' ' + temp_nhood_file + ' ' + ec_n)[1]
   print status
   if 'ERROR' in status or 'No such file or directory' in status:
     print status
     return '', -1, 1
 
-  with open(ec_out, 'r') as f:  
-    text = f.readlines()
-    if len(text) > 1:
-      header_con = text[0].strip()
-      consensus = text[1].strip()
-      if len(consensus) == 0:
-        return '', -1, 1
-    else:
-      consensus = ''
+  ch, cr = ml.read_fasta(ec_out)
+  consensus = cr[0]
+  if len(consensus) == 0:
+      return '', -1, 1
+  else:
+    consensus = ''
+
   print header_con
   n1 = float(header_con.split('_')[2])
   n2 = float(header_con.split('_')[3].split('(')[0])
