@@ -23,7 +23,7 @@ def scaffold_main(contigs_dr):
       num_contigs += 1
 
   for jump in range(1, len(cns) - 1):
-    for i in range(0, len(cns)):
+    for i in range(0, len(cns) - jump):
       print i, i + jump
       res = attempt_scaffold(cns[i].ref, cns[i + jump].ref, contigs_dr)
       if len(res) != 0:
