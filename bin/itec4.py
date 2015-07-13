@@ -1038,8 +1038,6 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
   header_con = ch[0]
   if len(consensus) == 0:
       return '', -1, 1
-  else:
-    consensus = ''
 
   print header_con
   n1 = float(header_con.split('_')[2])
