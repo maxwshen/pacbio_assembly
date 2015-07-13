@@ -8,7 +8,7 @@ import mylib
 blasr_exe = 'blasr'
 blasr_zero = 4      # 0 on debruijn, 4 on Yu's computer
 blasr_zero_len = 8  # 0 on debruijn, 8 on Yu's computer
-blasr_options = '-bestn 1 -m 1'   # Concise output
+blasr_options = '-bestn 1 -m 1 -maxMatch 20'   # Concise output
 
 def main():
   cc_fn = sys.argv[1]
