@@ -12,6 +12,7 @@ blasr_options = '-bestn 1 -m 1'   # Concise output
 
 def main():
   cc_fn = sys.argv[1]
+  trim_circular(cc_fn)
   return
   
 def trim_circular(cc_fn):
@@ -49,7 +50,7 @@ def trim_circular(cc_fn):
   end_pos_r2 = total_len_r2 - end_align_r2
   length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2   # Average alignment length
 
-  
+
 
 if __name__ == '__main__':
   start = datetime.datetime.now()
