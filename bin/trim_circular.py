@@ -50,6 +50,9 @@ def trim_circular(cc_fn):
   end_pos_r2 = total_len_r2 - end_align_r2
   length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2   # Average alignment length
 
+  status = commands.getstatusoutput('rm -rf ' + temp1_fn)[1]
+  status = commands.getstatusoutput('rm -rf ' + temp2_fn)[1]
+
   new_r = r[:-beg_align_r2]
   out_fn = cc_fn.split('.fasta')[0] + '.circle.fasta'
   with open(out_fn, 'w') as f:

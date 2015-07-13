@@ -11,6 +11,7 @@ import mylib as ml
 import find_read
 import kmer_matching
 import convert_creads_to_nhoods
+import trim_circular
 
 global temp_sig
 global contigs_fold
@@ -1400,6 +1401,8 @@ def combine_contigs(contigs_fold):
       status = commands.getstatusoutput(blasr_exe + ' ' + contigs_fold + out_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
       print 'BEST:'
       print status
+      trim_circular.trim_circular(contigs_fold + out_file)
+  return
 
 
 def ktmer_reads_pct_overlap(ktmer_headers_file, reads_file):
