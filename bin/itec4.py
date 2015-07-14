@@ -45,8 +45,8 @@ use_ecs = False
 
 # IMPORTANT - CHANGE THIS WHEN CHANGING EC TOOL
 # ec_prefix = 'C0421_'
-ec_prefix = 'C0701_'
-ec_n = '4'  # Used for ec_0701
+ec_prefix = 'C0706_'
+ec_n = '10'  # CHANGE THIS DEPENDING ON COVERAGE, YU RECOMMENDS = 0.2 * COV
 
 def main():
   global contigs_fold
