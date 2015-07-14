@@ -77,8 +77,8 @@ def main():
   # creads_file = prior + 'data/temp_creads.outrx_27_6_rc_v2.out'
   # ktmer_headers_file = prior + 'data/temp_ktmer_headersrx_27_6_rc_v2.out'
 
-  # ec_tool = '/home/yu/program/error_correction_0421.sh'
-  ec_tool = '/home/yu/program/error_correction_0701.sh'
+  # ec_tool = '/home/yu/program/error_correction_0701.sh'
+  ec_tool = '/home/yu/program/error_correction_0706.sh'
   # ec_tool = '/home/yu/program/' + sys.argv[2]
 
   print 'Reads File:', reads_file, '\ncreads File:', creads_file, '\nktmer Headers File:', \
@@ -151,7 +151,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   # ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
-  num_contig_attempts = 20                   # testing
+  num_contig_attempts = 2                   # testing
   # num_contig_attempts = len(ktmers)
   for m in range(num_contig_attempts):
     print '\n' + str(datetime.datetime.now())
