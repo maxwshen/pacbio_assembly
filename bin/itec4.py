@@ -1042,8 +1042,12 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
       return '', -1, 1
 
   print header_con
-  n1 = float(header_con.split('_')[2])
-  n2 = float(header_con.split('_')[3].split('(')[0])
+  if ec_tool != '/home/yu/program/error_correction_0706.sh':
+    n1 = float(header_con.split('_')[2])
+    n2 = float(header_con.split('_')[3].split('(')[0])
+  else:
+    n1 = 1
+    n2 = 0
   n21ratio = n2 / n1
   print 'consensus len:', len(consensus), 'out of', len(rr[hr.index(header)]), ' error ratio (bp):', n21ratio
   if n21ratio > n21ratio_cutoff:
