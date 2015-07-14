@@ -486,7 +486,7 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
       # print status                    # TESTING
       return accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 + min_extension and beg_align_r2 < dist_from_end
     if direction == 'left':
-      return accuracy >= acc_cutoff and length > len_cutoff and beg_align_r2 < dist_from_end and beg_align_r1 > beg_align_r2 + min_extension and end_pos_r1 < dist_from_end
+      return accuracy >= acc_cutoff and length > len_cutoff and beg_align_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + min_extension and end_pos_r2 < dist_from_end
   else:
     return accuracy >= acc_cutoff and length > len_cutoff
 
