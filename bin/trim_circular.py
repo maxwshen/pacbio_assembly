@@ -44,7 +44,7 @@ def trim_circular(cc_fn):
 
   status = commands.getstatusoutput(blasr_exe + ' ' + temp1_fn +' ' + temp2_fn + ' ' + blasr_options)[1]
   if len(status.split()) == blasr_zero_len:
-    return False
+    return ''
   print status                    # TESTING
   r2_strand_dir = int(status.split()[blasr_zero + 2])
   r1_strand_dir = int(status.split()[blasr_zero + 3])
