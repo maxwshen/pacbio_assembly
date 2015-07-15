@@ -14,9 +14,9 @@ def main():
   cc_fn = sys.argv[1]
   res = trim_circular(cc_fn)
   while res != '':
-    next_res = trim_circular(cc_fn)
+    next_res = trim_circular(res)
     status = commands.getstatusoutput('rm -rf ' + res)[1]
-    status = commands.getstatusoutput('mv ' + next_res + ' ' res)[1]
+    status = commands.getstatusoutput('mv ' + next_res + ' ' + res)[1]
     res = next_res
   return
 
