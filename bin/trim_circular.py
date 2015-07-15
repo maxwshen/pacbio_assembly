@@ -63,7 +63,7 @@ def trim_circular(cc_fn):
   status = commands.getstatusoutput('rm -rf ' + temp2_fn)[1]
 
   if beg_align_r1 < DIST_TO_END and end_pos_r2 < DIST_TO_END and accuracy > ACC_CUTOFF:
-    new_r = r[:-beg_align_r2]
+    new_r = r[:-beg_align_r1]
     out_fn = cc_fn.split('.fasta')[0] + '.circle.fasta'
     with open(out_fn, 'w') as f:
       f.write(h[0] + '\n' + new_r)
