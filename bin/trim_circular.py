@@ -43,6 +43,8 @@ def trim_circular(cc_fn):
     f.write('>temp2\n' + r[:LENALIGN])
 
   status = commands.getstatusoutput(blasr_exe + ' ' + temp1_fn +' ' + temp2_fn + ' ' + blasr_options)[1]
+  status = commands.getstatusoutput('rm -rf ' + temp1_fn)[1]
+  status = commands.getstatusoutput('rm -rf ' + temp2_fn)[1]
   if len(status.split()) == blasr_zero_len:
     return ''
   print status                    # TESTING
@@ -59,8 +61,7 @@ def trim_circular(cc_fn):
   end_pos_r2 = total_len_r2 - end_align_r2
   length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2   # Average alignment length
 
-  status = commands.getstatusoutput('rm -rf ' + temp1_fn)[1]
-  status = commands.getstatusoutput('rm -rf ' + temp2_fn)[1]
+
 
   if beg_align_r1 < DIST_TO_END and end_pos_r2 < DIST_TO_END and accuracy > ACC_CUTOFF:
     new_r = r[: -end_align_r1]
