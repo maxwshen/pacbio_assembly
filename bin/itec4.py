@@ -405,9 +405,9 @@ def find_genomic_position(read, hr, rr, print_alignment = False, align_consensus
     temp_blasr_options += ' -maxMatch 20'
     new_blasr_options += ' -maxMatch 20'
 
-  if print_alignment:
-    print commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + e_coli_genome + ' ' + temp_blasr_options)[1]
   status = commands.getstatusoutput(blasr_exe + ' ' + temp_file +' ' + e_coli_genome + ' ' + new_blasr_options)[1]
+  if print_alignment:
+    print status
 
   if len(status.split()) > blasr_zero_len:
     print status
