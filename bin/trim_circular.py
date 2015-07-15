@@ -13,6 +13,7 @@ blasr_options = '-bestn 1 -m 1 -maxMatch 20'   # Concise output
 def main():
   cc_fn = sys.argv[1]
   res = trim_circular(cc_fn)
+  next_res = res
   while next_res != '':
     next_res = trim_circular(res)
     status = commands.getstatusoutput('rm -rf ' + res)[1]
