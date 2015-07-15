@@ -14,6 +14,8 @@ def main():
   cc_fn = sys.argv[1]
   res = trim_circular(cc_fn)
   next_res = res
+  if next_res == '':
+    return
   while True:
     next_res = trim_circular(res)
     if next_res == '':
