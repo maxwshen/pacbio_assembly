@@ -43,8 +43,8 @@ def trim_circular(cc_fn):
     f.write('>temp2\n' + r[:LENALIGN])
 
   status = commands.getstatusoutput(blasr_exe + ' ' + temp1_fn +' ' + temp2_fn + ' ' + blasr_options)[1]
-  status = commands.getstatusoutput('rm -rf ' + temp1_fn)[1]
-  status = commands.getstatusoutput('rm -rf ' + temp2_fn)[1]
+  commands.getstatusoutput('rm -rf ' + temp1_fn)[1]
+  commands.getstatusoutput('rm -rf ' + temp2_fn)[1]
   if len(status.split()) == blasr_zero_len:
     return ''
   print status                    # TESTING
