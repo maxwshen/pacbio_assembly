@@ -1406,7 +1406,7 @@ def combine_contigs(contigs_fold):
       status = commands.getstatusoutput(blasr_exe + ' ' + contigs_fold + out_file + ' ' + e_coli_genome + ' ' + blasr_options)[1]
       print 'BEST:'
       print status
-      trim_circular.trim_circular(contigs_fold + out_file)
+      # trim_circular.trim_circular(contigs_fold + out_file)
   return
 
 
