@@ -148,7 +148,6 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   # max_bp = 2119820
   # print 'Filtering kt-mers between', min_bp, max_bp
   # ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
-  covered_range = []        # testing, stores a list of consensus positions so we don't overlap
   # ktmers = filter_ktmers(ktmers, creads, headers)
   print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
@@ -172,12 +171,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     if len(curr_contig[0]) == 0:
       continue
     # pos = find_genomic_position(curr_contig[0], hr, rr, align_consensus = True)       # testing
-    if pos > curr_max_pos or pos < curr_min_pos:                   # testing
-      continue                                  # testing
-    for cr in covered_range:
-      if abs(pos - cr) < 50:
-        # don't start here, if it's within 1500bp of a consensus we already have 
-        continue 
+    # if pos > curr_max_pos or pos < curr_min_pos:                   # testing
+      # continue                                  # testing
     curr_contig_headers = [h + 'START']
     curr_contig_headers_data = ['_']
     master_h = h
@@ -198,7 +193,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         print datetime.datetime.now() - curr_time, datetime.datetime.now()
         print 'iteration', counter, direction
         curr_time = datetime.datetime.now()
-        if counter > 1500:
+        if counter > 750:
           break
         old_h = h
         temp_traversed_headers = []
@@ -319,10 +314,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             print 'CANDIDATE CHOSEN:'
 
             # just for my own info
-            if direction == 'right':
-              test_overlap(h, rr[hr.index(h)], curr_contig[-1], direction, farthest_support, criteria, relaxed = False, print_alignment = True)     # testing
-            if direction == 'left':
-              test_overlap(h, curr_contig[0], rr[hr.index(h)], direction, farthest_support, criteria, relaxed = False, print_alignment = True)     # testing
+            # if direction == 'right':
+              # test_overlap(h, rr[hr.index(h)], curr_contig[-1], direction, farthest_support, criteria, relaxed = False, print_alignment = True)     # testing
+            # if direction == 'left':
+              # test_overlap(h, curr_contig[0], rr[hr.index(h)], direction, farthest_support, criteria, relaxed = False, print_alignment = True)     # testing
 
             # find_genomic_position(rr[hr.index(h)], hr, rr)  # testing
             if USE_ECS and h in ecs:
@@ -340,8 +335,6 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
           else:
             print 'New header:', h, criteria[h]       # testing
             print 'SUCCESS!',                         # testing 
-            # con_pos = find_genomic_position(consensus_temp, hr, rr, align_consensus = True)     # testing
-            covered_range.append(con_pos)
             if len(consensus_temp) == 0:
               print 'failed to error correct'
               continue
