@@ -22,6 +22,7 @@ OVERLAP_ACCURACY_CUTOFF = 75    # .
 OVERLAP_LENGTH_CUTOFF = 7000     # .
 OVERLAP_ACCURACY_CUTOFF_CONSENSUS = 98
 OVERLAP_LENGTH_CUTOFF_CONSENSUS = 7000
+OVERLAP_TEST_LIMIT = 5          # Once we find this many overlapping reads, just early out
 MIN_EXTENSION = 0               # Min. bp extension candidates need to extend
 # OVERLAP_LENGTH_CUTOFF = 300     # .
 NUM_ATTEMPTS = 1                # Number of times to try nhood extension.
@@ -270,6 +271,9 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
                 criteria[head] = len(creads[head]) / 2 - 1    # Criteria = # of neighbors in 1-deg nhood
                 # print 'Overlap:', overlaps                  # testing
 
+              if len(good_candidates) > OVERLAP_TEST_LIMIT:
+                break
+
             if len(farthest_support) == 0:
               break
             support_pos = min(SUPPORT_T - 1, len(farthest_support) - 1)
@@ -303,10 +307,11 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
           filtered_good_candidates.sort(key = lambda d: criteria[d], reverse = True)
           # filtered_good_candidates.sort(key = lambda d: criteria[d])
           # random.shuffle(filtered_good_candidates)    # testing
-          print filtered_good_candidates
+          # print filtered_good_candidates          # testing
 
           print 'TIME for candidates:', datetime.datetime.now() - curr_time
-          # Once we choose a particular candidate
+
+          # Find consensus and extend
           consensus_temp = ''
           for i in range(len(filtered_good_candidates)):
             best_head = filtered_good_candidates[i]
