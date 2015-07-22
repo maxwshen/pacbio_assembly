@@ -90,7 +90,7 @@ def main():
 
   # Actions
   iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix)
-  combine_contigs(contigs_fold)
+  # combine_contigs(contigs_fold)
   # ktmer_reads_pct_overlap(ktmer_headers_file, reads_file)
   # check_contigs(contigs_fold, reads_file)
   # output_all_1_deg_nhoods(reads_file, creads_file, ktmer_headers_file, ec_tool, parallel_prefix)
@@ -110,48 +110,10 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   ktmers = headers.keys()
   random.shuffle(ktmers)
   print 'Found', len(ktmers), 'kt-mers.'
-
-  contigs = []
-
-  curr_min_pos = 0
-  curr_max_pos = 5000000
-  if parallel_prefix == '000':
-    curr_max_pos = 500000
-  if parallel_prefix == '050':
-    curr_min_pos = 500000
-    curr_max_pos = 1000000
-  if parallel_prefix == '100':
-    curr_min_pos = 1000000
-    curr_max_pos = 1500000
-  if parallel_prefix == '150':
-    curr_min_pos = 1500000
-    curr_max_pos = 2000000
-  if parallel_prefix == '200':
-    curr_min_pos = 2000000
-    curr_max_pos = 2500000
-  if parallel_prefix == '250':
-    curr_min_pos = 2500000
-    curr_max_pos = 3000000
-  if parallel_prefix == '300':
-    curr_min_pos = 3000000
-    curr_max_pos = 3500000
-  if parallel_prefix == '350':
-    curr_min_pos = 3500000
-    curr_max_pos = 4000000
-  if parallel_prefix == '400':
-    curr_min_pos = 4000000
-    curr_max_pos = 4500000
-  if parallel_prefix == '450':
-    curr_min_pos = 4500000
-    curr_max_pos = 5000000
-
-  # min_bp = 2119287 
-  # max_bp = 2119820
-  # print 'Filtering kt-mers between', min_bp, max_bp
-  # ktmers = ktmers_from_genome(ktmers, min_bp, max_bp)   # testing
   # ktmers = filter_ktmers(ktmers, creads, headers)
-  print 'After filtering,', len(ktmers), 'kt-mers remain.'
+  # print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
+  completed_contigs = []    # Holds combined contigs
   num_contig_attempts = 2                   # testing
   # num_contig_attempts = len(ktmers)
   for m in range(num_contig_attempts):
@@ -159,28 +121,19 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     curr_ktmer = ktmers[m]
 
     h = get_read_with_most_neighbors(curr_ktmer, headers, creads)
-    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/4937/4611_8608/0_3997'  # farthest
-    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/37843/0_2510/0_2510'    # base
-    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/74540/0_1570/0_1570'  # most ktmers
-    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/25524/0_5702/0_5702'  # jump ex
-    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/66451/0_6519/0_6519'    # normal ex
-    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/22681/0_4859/0_4859'  # 4 iterations  before jump ex
-    # h = '>m120114_011938_42177_c100247042550000001523002504251220_s1_p0/1326/0_5814/0_5814' # a little farther from jump ex
     print 'STARTING HEADER:\n', h
-    curr_contig = [error_correct(ec_tool, h, headers, creads, hr, rr)[0]]
+    scon = error_correct(ec_tool, h, headers, creads, hr, rr)[0]
+    curr_contig = [scon]
+    ccc = scon
     print 'STARTING AT',                        # testing
-    if len(curr_contig[0]) == 0:
+    if len(scon) == 0 or find_in_contigs(completed_contigs, scon):
       continue
     # pos = find_genomic_position(curr_contig[0], hr, rr, align_consensus = True)       # testing
-    # if pos > curr_max_pos or pos < curr_min_pos:                   # testing
-      # continue                                  # testing
     curr_contig_headers = [h + 'START']
     curr_contig_headers_data = ['_']
     master_h = h
     master_traversed_headers = [h]
-
     curr_time = datetime.datetime.now()
-
 
     # MAIN LOOP
     # for direction in ['right', 'left']:
@@ -347,11 +300,14 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
               curr_contig.append(consensus_temp)
               curr_contig_headers.append(h)
               curr_contig_headers_data.append('_' + str(n1) + '_' + str(n2))
+              ccc, change = extend_attach(ccc, consensus_temp, direction)
             if direction == 'left':
               curr_contig.insert(0, consensus_temp)
               curr_contig_headers.insert(0, h)
               curr_contig_headers_data.insert(0, '_' + str(n1) + '_' + str(n2))
+              ccc, change = extend_attach(ccc, consensus_temp, direction)
             master_traversed_headers.append(h)
+            print 'Curr contig len:', len(ccc)
 
           if h == old_h:
             # This part ensures nhood extension by preventing us from 
@@ -369,12 +325,17 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     contig = ''
     contig_file = contigs_fold + 'contig_' + parallel_prefix + str(m) + '.fasta'
     contig_result = contigs_fold + 'contig_' + parallel_prefix + str(m) + 'results.fasta'
+    contig_cc = contigs_fold = 'contig_' + parallel_prefix + str(m) + '.combined.fasta'
     for j in range(len(curr_contig)):
       if curr_contig[j] != '':
         contig += '>' + curr_contig_headers[j] + curr_contig_headers_data[j] + '\n' + curr_contig[j] + '\n'
     with open(contig_file, 'w') as f:
       f.write(contig)
-    # status = commands.getstatusoutput(BLASR_EXE + ' ' + contig_file +' ' + E_COLI_GENOME + ' ' + BLASR_OPTIONS + ' -maxMatch 20 > ' + contig_result)[1]
+    with open(contig_cc, 'w') as f:
+      f.write('>combined\n' + ccc)
+    status = commands.getstatusoutput(BLASR_EXE + ' ' + contig_file +' ' + E_COLI_GENOME + ' ' + BLASR_OPTIONS + ' -maxMatch 20 > ' + contig_result)[1]
+
+    completed_contigs.append(ccc)
 
     # Filter kt-mers
     curr_ktmer_len = len(ktmers)
@@ -420,6 +381,7 @@ def find_genomic_position(read, hr, rr, print_alignment = False, align_consensus
     print '\tFAILED ALIGNMENT'
     return -1
 
+
 def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relaxed = False, print_alignment = False, consensus = False):
   # Tests that seq1 is after seq2
   # farthest_support is a list that will contains distances 
@@ -444,11 +406,9 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   with open(temps2, 'w') as f:
     f.write('>2\n' + seq2)
 
-  if print_alignment:
-    temp_BLASR_OPTIONS = '-bestn 1 -m 1'
-    print commands.getstatusoutput(BLASR_EXE + ' ' + temps1 + ' ' + temps2 + ' ' + temp_BLASR_OPTIONS)[1]
-
   status = commands.getstatusoutput(BLASR_EXE + ' ' + temps1 + ' ' + temps2 + ' ' + BLASR_OPTIONS)[1]
+  if print_alignment:
+    print status
   if len(status.split()) == BLASR_ZERO_LEN:
     return False
   # print status                    # TESTING
@@ -489,6 +449,72 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
       # return accuracy >= acc_cutoff and length > len_cutoff and beg_align_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + MIN_EXTENSION and end_pos_r2 < dist_from_end
   else:
     return accuracy >= acc_cutoff and length > len_cutoff
+
+
+def find_in_contigs(completed_contigs, consensus):
+  LEN_CUTOFF = 1000
+  for cc in completed_contigs:
+    temps1 = 'temp_seq1' + temp_sig + '.fasta'
+    temps2 = 'temp_seq2' + temp_sig + '.fasta'
+    with open(temps1, 'w') as f:
+      f.write('>1\n' + consensus)
+    with open(temps2, 'w') as f:
+      f.write('>2\n' + cc)
+
+    status = commands.getstatusoutput(BLASR_EXE + ' ' + temps1 + ' ' + temps2 + ' ' + BLASR_OPTIONS)[1]
+    if len(status.split()) == BLASR_ZERO_LEN:
+      return False
+    accuracy = float(status.split()[BLASR_ZERO + 5])
+    beg_align_r1 = int(status.split()[BLASR_ZERO + 6])
+    end_align_r1 = int(status.split()[BLASR_ZERO + 7])
+    beg_align_r2 = int(status.split()[BLASR_ZERO + 9])
+    end_align_r2 = int(status.split()[BLASR_ZERO + 10])
+    length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2
+
+    if length > LEN_CUTOFF:
+      return True
+  return False
+
+
+def extend_attach(ccc, consensus_temp, direction):
+  # Extends the big contig we have right now
+  dist_from_end = 100
+  acc_cutoff = OVERLAP_ACCURACY_CUTOFF_CONSENSUS
+  len_cutoff = OVERLAP_LENGTH_CUTOFF_CONSENSUS
+
+  temps1 = 'temp_seq1' + temp_sig + '.fasta'
+  temps2 = 'temp_seq2' + temp_sig + '.fasta'
+  with open(temps1, 'w') as f:
+    f.write('>1\n' + consensus_temp)
+  with open(temps2, 'w') as f:
+    f.write('>2\n' + ccc)
+
+  status = commands.getstatusoutput(BLASR_EXE + ' ' + temps1 + ' ' + temps2 + ' ' + BLASR_OPTIONS)[1]
+  if len(status.split()) == BLASR_ZERO_LEN:
+    return False
+  r2_strand_dir = int(status.split()[BLASR_ZERO + 2])
+  r1_strand_dir = int(status.split()[BLASR_ZERO + 3])
+  accuracy = float(status.split()[BLASR_ZERO + 5])
+  beg_align_r1 = int(status.split()[BLASR_ZERO + 6])
+  end_align_r1 = int(status.split()[BLASR_ZERO + 7])
+  total_len_r1 = int(status.split()[BLASR_ZERO + 8])
+  end_pos_r1 = total_len_r1 - end_align_r1
+  beg_align_r2 = int(status.split()[BLASR_ZERO + 9])
+  end_align_r2 = int(status.split()[BLASR_ZERO + 10])
+  total_len_r2 = int(status.split()[BLASR_ZERO + 11])
+  end_pos_r2 = total_len_r2 - end_align_r2
+  length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2
+
+  change = False
+  if direction == 'right':
+    if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r2 < dist_from_end:
+      ccc = ccc[: -end_align_r2] + consensus_temp[beg_align_r1 :]
+      change = True
+  if direction == 'left':
+    if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r2 < dist_from_end:
+      ccc =  consensus_temp[: -end_align_r1] + ccc[beg_align_r2 :]
+      change = True
+  return ccc, change
 
 
 def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
@@ -643,6 +669,7 @@ def find_extending_read(ktmer, headers, hr, rr):
   valid = headers[ktmer]  
   return valid
 
+
 def nhood_stats(base_index, nhood_indices):
   if len(nhood_indices) == 0:
     print 'empty nhood'
@@ -670,6 +697,7 @@ def nhood_stats(base_index, nhood_indices):
   print 'false:', len(false_reads)
   print 'missing:', len(rest) - intersect
   return false_reads
+
 
 def get_nhood(header, headers, creads, hr):
   def len_read(cread):
@@ -733,6 +761,7 @@ def get_simple_1_deg_nhood(header, creads, headers, hr):
         collected_h.add(h)
       # find_genomic_position(rr[hr.index(h)], hr, rr)    # testing
   return collected_h, None
+
 
 def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
   # Gets the special 1-deg nhood
@@ -950,6 +979,7 @@ def get_special_1_deg_nhood(header, creads, headers, hr, n_range = []):
     # print window
 
   return collected_h, windows
+
 
 def keep_duplicates_only(inp):
   # Given a list, returns a new list with 1 copy of any duplicates
