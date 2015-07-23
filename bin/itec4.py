@@ -505,13 +505,14 @@ def extend_attach(ccc, consensus_temp, direction):
   change = False
   if direction == 'right':
     if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r2 < dist_from_end:
-      ccc = ccc[: end_align_r1] + consensus_temp[beg_align_r2 :]
+      ccc = ccc[: end_align_r1] + consensus_temp[end_align_r2 :]
       change = True
   if direction == 'left':
     if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r2 < dist_from_end:
-      ccc =  consensus_temp[: end_align_r2] + ccc[beg_align_r1 :]
+      ccc =  consensus_temp[: end_align_r2] + ccc[end_align_r1 :]
       change = True
-  print 'Failure:', status
+  if not change:
+    print 'Failure:', status
   return ccc, change
 
 
