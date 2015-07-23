@@ -281,11 +281,11 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             h = old_h
           else:
             ccc, change = extend_attach(ccc, consensus_temp, direction)
-            if change = False:
+            if change == False:
               print 'New consensus does not overlap with the end of current contig'
               h = old_h
               break   # No more attempts, end current contig
-            if change = True:
+            if change == True:
               print 'New header:', h, criteria[h]       # testing
               print 'SUCCESS!',                         # testing 
               if direction == 'right':
