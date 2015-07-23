@@ -158,7 +158,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         else:
           NUM_ATTEMPTS_temp = NUM_ATTEMPTS
         for i in range(NUM_ATTEMPTS_temp):
-          print 'Attempt', i                                            # testing
+          print 'Attempt', i,                                            # testing
           km = False
           km_early_out = False
           traversed_headers = master_traversed_headers
@@ -289,7 +289,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             if change == False:
               print 'New consensus does not overlap with the end of current contig'
               h = old_h
-              break   # No more attempts, end current contig
+              break  # No more attempts, end current contig
             if change == True:
               print 'New header:', h, criteria[h]       # testing
               print 'SUCCESS!',                         # testing 
@@ -303,6 +303,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
                 curr_contig_headers_data.insert(0, '_' + str(n1) + '_' + str(n2))
               master_traversed_headers.append(h)
               print 'Curr contig len:', len(ccc)
+              break   # Break from more attempts
 
         if counter % 10 == 0:
           if find_in_contigs(completed_contigs, consensus_temp):
@@ -502,11 +503,11 @@ def extend_attach(ccc, consensus_temp, direction):
   change = False
   if direction == 'right':
     if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r2 < dist_from_end:
-      ccc = ccc[: -end_align_r2] + consensus_temp[beg_align_r1 :]
+      ccc = ccc[: end_align_r1] + consensus_temp[beg_align_r2 :]
       change = True
   if direction == 'left':
     if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r2 < dist_from_end:
-      ccc =  consensus_temp[: -end_align_r1] + ccc[beg_align_r2 :]
+      ccc =  consensus_temp[: end_align_r2] + ccc[beg_align_r1 :]
       change = True
   return ccc, change
 
