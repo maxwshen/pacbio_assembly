@@ -125,8 +125,12 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     curr_contig = [scon]
     ccc = scon
     print 'STARTING AT',                        # testing
-    if len(scon) == 0 or find_in_contigs(completed_contigs, scon):
+    if len(scon) == 0:
+      print 'Empty consensus'
       continue
+    if find_in_contigs(completed_contigs, scon):
+      print 'Found consensus in previous contig'
+      continue 
     # pos = find_genomic_position(curr_contig[0], hr, rr, align_consensus = True)       # testing
     curr_contig_headers = [h + 'START']
     curr_contig_headers_data = ['_']
@@ -461,6 +465,7 @@ def find_in_contigs(completed_contigs, consensus):
     length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2
 
     if length > LEN_CUTOFF:
+      print 'find in contigs:\n' + status
       return True
   return False
 
