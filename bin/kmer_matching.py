@@ -56,8 +56,8 @@ def kmer_matching(ec_seq_file, read_file, _k, cutoff, file_bool = True):
 
   filtered_heads = []
   for key in sorted(reads, key = reads.get, reverse = True):
-    print key, reads[key]
-    if reads[key] < cutoff:
+    # print key, reads[key]
+    if reads[key] < cutoff or len(filtered_heads) > 50:
       break
     filtered_heads.append(key)
 
