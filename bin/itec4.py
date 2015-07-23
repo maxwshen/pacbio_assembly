@@ -119,7 +119,9 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     print '\n' + str(datetime.datetime.now())
     curr_ktmer = ktmers[m]
 
-    h = get_read_with_most_neighbors(curr_ktmer, headers, creads)
+    # h = get_read_with_most_neighbors(curr_ktmer, headers, creads)
+    h = '>R_m140909_094518_42139_c100697390480000001823143803261574_s1_p0/135703/1766_23219'
+    # Comparison with 99
     print 'STARTING HEADER:\n', h
     scon = error_correct(ec_tool, h, headers, creads, hr, rr)[0]
     curr_contig = [scon]
@@ -446,7 +448,7 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
 
 
 def find_in_contigs(completed_contigs, consensus):
-  LEN_CUTOFF = 1000
+  LEN_CUTOFF = 10000
   for cc in completed_contigs:
     temps1 = 'temp_seq1' + temp_sig + '.fasta'
     temps2 = 'temp_seq2' + temp_sig + '.fasta'
@@ -509,6 +511,7 @@ def extend_attach(ccc, consensus_temp, direction):
     if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r2 < dist_from_end:
       ccc =  consensus_temp[: end_align_r2] + ccc[beg_align_r1 :]
       change = True
+  print 'Failure:', status
   return ccc, change
 
 
