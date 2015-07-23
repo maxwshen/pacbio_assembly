@@ -105,8 +105,6 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   creads = build_creads_dict(creads_file, hr, rr)
   for i in range(len(hr)):
     hr[i] = hr[i].split()[0]
-  if USE_ECS:
-    ecs = read_ec_from_file()
   ktmers = headers.keys()
   random.shuffle(ktmers)
   print 'Found', len(ktmers), 'kt-mers.'
@@ -150,7 +148,6 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         if counter > 750:
           break
         old_h = h
-        temp_traversed_headers = []
         if limit_km_times > 0:
           NUM_ATTEMPTS_temp = NUM_ATTEMPTS + 1
         else:
@@ -159,7 +156,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
           print 'Attempt', i                                            # testing
           km = False
           km_early_out = False
-          traversed_headers = master_traversed_headers + temp_traversed_headers
+          traversed_headers = master_traversed_headers
 
           # Grab candidates via nhood extension or kmer matching
           if i < NUM_ATTEMPTS:
@@ -196,10 +193,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             good_candidates = []
             farthest_support = []
             for head in possible_heads:
-              if USE_ECS and head in ecs:
-                candidate_read = ecs[head]
-              else:
-                candidate_read = rr[hr.index(head)]
+              candidate_read = rr[hr.index(head)]
 
               # if len(possible_heads) < 50:                            # testing
                 # print head,                                           # testing
@@ -250,8 +244,6 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
           print 'Filtered', len(good_candidates) - len(filtered_good_candidates), 'old reads'
           if len(filtered_good_candidates) == 0:
             print 'No reads passed filtering'
-            for p in possible_heads:
-              temp_traversed_headers.append(p)
             if km:
               km_early_out = True
             continue
@@ -278,10 +270,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
               # test_overlap(h, curr_contig[0], rr[hr.index(h)], direction, farthest_support, criteria, relaxed = False, print_alignment = True)     # testing
 
             # find_genomic_position(rr[hr.index(h)], hr, rr)  # testing
-            if USE_ECS and h in ecs:
-              consensus_temp = ecs[h]
-            else:
-              consensus_temp, n1, n2 = error_correct(ec_tool, h, headers, creads, hr, rr, candidates = filtered_good_candidates)
+            consensus_temp, n1, n2 = error_correct(ec_tool, h, headers, creads, hr, rr, candidates = filtered_good_candidates)
             if len(consensus_temp) != 0 and consensus_temp not in curr_contig:
               if direction == 'right' and test_overlap(h, consensus_temp, curr_contig[-1], direction, farthest_support, criteria, print_alignment = True, consensus = True):
                 break
@@ -291,31 +280,30 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             print 'COULD NOT ERROR CORRECT ANY FILTERED GOOD CANDIDATES'
             h = old_h
           else:
-            print 'New header:', h, criteria[h]       # testing
-            print 'SUCCESS!',                         # testing 
-            if len(consensus_temp) == 0:
-              print 'failed to error correct'
-              continue
-            if direction == 'right':
-              curr_contig.append(consensus_temp)
-              curr_contig_headers.append(h)
-              curr_contig_headers_data.append('_' + str(n1) + '_' + str(n2))
-              ccc, change = extend_attach(ccc, consensus_temp, direction)
-            if direction == 'left':
-              curr_contig.insert(0, consensus_temp)
-              curr_contig_headers.insert(0, h)
-              curr_contig_headers_data.insert(0, '_' + str(n1) + '_' + str(n2))
-              ccc, change = extend_attach(ccc, consensus_temp, direction)
-            master_traversed_headers.append(h)
-            print 'Curr contig len:', len(ccc)
+            ccc, change = extend_attach(ccc, consensus_temp, direction)
+            if change = False:
+              print 'New consensus does not overlap with the end of current contig'
+              h = old_h
+              break   # No more attempts, end current contig
+            if change = True:
+              print 'New header:', h, criteria[h]       # testing
+              print 'SUCCESS!',                         # testing 
+              if direction == 'right':
+                curr_contig.append(consensus_temp)
+                curr_contig_headers.append(h)
+                curr_contig_headers_data.append('_' + str(n1) + '_' + str(n2))
+              if direction == 'left':
+                curr_contig.insert(0, consensus_temp)
+                curr_contig_headers.insert(0, h)
+                curr_contig_headers_data.insert(0, '_' + str(n1) + '_' + str(n2))
+              master_traversed_headers.append(h)
+              print 'Curr contig len:', len(ccc)
 
-          if h == old_h:
-            # This part ensures nhood extension by preventing us from 
-            # getting stuck in returning lower degree headers. This should be made more temporary.
-            for p in possible_heads:
-              temp_traversed_headers.append(p)
-          else:
+        if counter % 10 == 0:
+          if find_in_contigs(completed_contigs, consensus_temp):
+            'Current contig is found to overlap with existing contig'
             break
+
         if h == old_h:
           print 'No new reads overlapped with current contig'
           break
@@ -531,6 +519,7 @@ def extend_n(header, headers, creads, traversed_headers, direction, hr, rr):
   reads = []
 
   reads, windows = get_simple_1_deg_nhood(header, creads, headers, hr)
+  reads = [s for s in reads if s not in traversed_headers]
 
   if len(reads) != 0:
     return reads
