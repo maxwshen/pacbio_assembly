@@ -488,7 +488,8 @@ def extend_attach(ccc, consensus_temp, direction):
 
   status = commands.getstatusoutput(BLASR_EXE + ' ' + temps1 + ' ' + temps2 + ' ' + BLASR_OPTIONS)[1]
   if len(status.split()) == BLASR_ZERO_LEN:
-    return False
+    print 'Failure: No alignment'
+    return ccc, False
   r2_strand_dir = int(status.split()[BLASR_ZERO + 2])
   r1_strand_dir = int(status.split()[BLASR_ZERO + 3])
   accuracy = float(status.split()[BLASR_ZERO + 5])
