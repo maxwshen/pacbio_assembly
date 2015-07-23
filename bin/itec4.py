@@ -100,6 +100,7 @@ def main():
   # convert_creads_to_nhoods.convert_creads_to_nhoods(reads_file, creads_file, ktmer_headers_file)
 
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix):
+  global contigs_fold
   hr, rr = ml.read_fasta(reads_file)
   headers = build_headers_dict(ktmer_headers_file)
   creads = build_creads_dict(creads_file, hr, rr)
