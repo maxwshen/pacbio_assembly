@@ -116,6 +116,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   completed_contigs = []    # Holds combined contigs
   past_headers = set()
   num_contig_attempts = 2                   # testing
+  print 'Trying to make', num_contig_attempts, 'contigs'
   # num_contig_attempts = len(ktmers)
   for m in range(num_contig_attempts):
     print '\n' + str(datetime.datetime.now())
@@ -150,7 +151,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         print datetime.datetime.now() - curr_time, datetime.datetime.now()
         print '-----------------\niteration', counter, direction
         curr_time = datetime.datetime.now()
-        if counter > 5:
+        if counter > 1500:
+          print 'Reached maximum number of iterations:', counter
           break
         old_h = h
         if limit_km_times > 0:
@@ -1098,7 +1100,7 @@ def get_read_with_most_neighbors(ktmer, headers, creads):
   best_neighbors = 0
   for h in headers[ktmer]:
     num_neighbors = len(creads[h]) / 2 - 1
-    print h, num_neighbors
+    # print h, num_neighbors
     if num_neighbors > best_neighbors:
       best_neighbors = num_neighbors
       best_h = h
