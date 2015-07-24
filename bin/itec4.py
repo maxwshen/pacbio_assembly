@@ -152,7 +152,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         print datetime.datetime.now() - curr_time, datetime.datetime.now()
         print '-----------------\niteration', counter, direction
         curr_time = datetime.datetime.now()
-        if counter > 750:
+        if counter > 10:
           break
         old_h = h
         if limit_km_times > 0:
@@ -327,21 +327,23 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         contig += '>' + curr_contig_headers[j] + curr_contig_headers_data[j] + '\n' + curr_contig[j] + '\n'
     with open(contig_file, 'w') as f:
       f.write(contig)
+    print 'Writing to', contig_cc
     with open(contig_cc, 'w') as f:
       f.write('>combined\n' + ccc)
+    print 'Done'
     status = commands.getstatusoutput(BLASR_EXE + ' ' + contig_file +' ' + E_COLI_GENOME + ' ' + BLASR_OPTIONS + ' -maxMatch 20 > ' + contig_result)[1]
 
     completed_contigs.append(ccc)
 
-    # Filter kt-mers
+    # Filter kt-mers from consensus
+    print 'Filtering kt-mers...', datetime.datetime.now()
     curr_ktmer_len = len(ktmers)
-    for i in range(len(curr_contig)):
-      new_ktmers = []
-      for kt in ktmers:
-        if kt not in curr_contig[i]:
-          new_ktmers.append(kt)
-      ktmers = new_ktmers
-    print curr_ktmer_len - len(ktmers), ' kt-mers filtered from consensus'
+    new_ktmers = []
+    for kt in ktmers:
+      if kt not in ccc:
+        new_ktmers.append(kt)
+    ktmers = new_ktmers
+    print curr_ktmer_len - len(ktmers), ' kt-mers filtered from consensus', datetime.datetime.now()
 
 
 def find_genomic_position(read, hr, rr, print_alignment = False, align_consensus = False):
