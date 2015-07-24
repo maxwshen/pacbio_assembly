@@ -99,14 +99,6 @@ def main():
   # find_jumps_in_contigs(contigs_fold, parallel_prefix)
   # convert_creads_to_nhoods.convert_creads_to_nhoods(reads_file, creads_file, ktmer_headers_file)
 
-def find_new_ktmer(ktmers, completed_contigs):
-  for i in range(len(ktmers)):
-    kt = ktmers[i]
-    for cc in completed_contigs:
-      if kt in cc:
-        continue
-    print 'Skipped over', i, 'kt-mers'
-    return kt
 
 def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_prefix):
   global contigs_fold
@@ -122,18 +114,17 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   # print 'After filtering,', len(ktmers), 'kt-mers remain.'
 
   completed_contigs = []    # Holds combined contigs
+  past_headers = set()
   num_contig_attempts = 2                   # testing
   # num_contig_attempts = len(ktmers)
   for m in range(num_contig_attempts):
     print '\n' + str(datetime.datetime.now())
-    curr_ktmer = find_new_ktmer(ktmers, completed_contigs)
-
-    h = get_read_with_most_neighbors(curr_ktmer, headers, creads)
+    h = find_new_read(ktmers, completed_contigs, past_headers, headers, creads)
     print 'STARTING HEADER:\n', h
+
     scon = error_correct(ec_tool, h, headers, creads, hr, rr)[0]
     curr_contig = [scon]
     ccc = scon
-    print 'STARTING AT',                        # testing
     if len(scon) == 0:
       print 'Empty consensus'
       continue
@@ -141,7 +132,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
       print 'Found consensus in previous contig'
       continue 
     # pos = find_genomic_position(curr_contig[0], hr, rr, align_consensus = True)       # testing
-    curr_contig_headers = [h + 'START']
+    curr_contig_headers = [h]
     curr_contig_headers_data = ['_']
     master_h = h
     master_traversed_headers = [h]
@@ -159,7 +150,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         print datetime.datetime.now() - curr_time, datetime.datetime.now()
         print '-----------------\niteration', counter, direction
         curr_time = datetime.datetime.now()
-        if counter > 10:
+        if counter > 5:
           break
         old_h = h
         if limit_km_times > 0:
@@ -328,20 +319,32 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     contig = ''
     contig_file = contigs_fold + 'contig_' + parallel_prefix + str(m) + '.fasta'
     contig_result = contigs_fold + 'contig_' + parallel_prefix + str(m) + 'results.fasta'
-    contig_cc = contigs_fold = 'contig_' + parallel_prefix + str(m) + '.combined.fasta'
+    contig_cc = contigs_fold + 'contig_' + parallel_prefix + str(m) + '.combined.fasta'
     for j in range(len(curr_contig)):
       if curr_contig[j] != '':
         contig += '>' + curr_contig_headers[j] + curr_contig_headers_data[j] + '\n' + curr_contig[j] + '\n'
     with open(contig_file, 'w') as f:
       f.write(contig)
-    print 'Writing to', contig_cc
     with open(contig_cc, 'w') as f:
       f.write('>combined\n' + ccc)
-    print 'Done'
     status = commands.getstatusoutput(BLASR_EXE + ' ' + contig_file +' ' + E_COLI_GENOME + ' ' + BLASR_OPTIONS + ' -maxMatch 20 > ' + contig_result)[1]
 
+    for s in curr_contig_headers:
+      past_headers.add(s)
     completed_contigs.append(ccc)
     # END LOOP
+
+
+def find_new_read(ktmers, completed_contigs, past_headers, headers, creads):
+  for i in range(len(ktmers)):
+    kt = ktmers[i]
+    for cc in completed_contigs:
+      if kt in cc:
+        continue
+    print 'Skipped over', i, 'kt-mers'
+    h = get_read_with_most_neighbors(kt, headers, creads)
+    if h not in past_headers:
+      return h
 
 
 def find_genomic_position(read, hr, rr, print_alignment = False, align_consensus = False):
