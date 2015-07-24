@@ -322,6 +322,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     contig_file = contigs_fold + 'contig_' + parallel_prefix + str(m) + '.fasta'
     contig_result = contigs_fold + 'contig_' + parallel_prefix + str(m) + 'results.fasta'
     contig_cc = contigs_fold + 'contig_' + parallel_prefix + str(m) + '.combined.fasta'
+    print 'Writing to files...'
     for j in range(len(curr_contig)):
       if curr_contig[j] != '':
         contig += '>' + curr_contig_headers[j] + curr_contig_headers_data[j] + '\n' + curr_contig[j] + '\n'
@@ -330,6 +331,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     with open(contig_cc, 'w') as f:
       f.write('>combined\n' + ccc)
     status = commands.getstatusoutput(BLASR_EXE + ' ' + contig_file +' ' + E_COLI_GENOME + ' ' + BLASR_OPTIONS + ' -maxMatch 20 > ' + contig_result)[1]
+    print 'Trimming contig to make it circular...'
+    trim_circular.trim_circular(contig_cc)
 
     for s in curr_contig_headers:
       past_headers.add(s)
