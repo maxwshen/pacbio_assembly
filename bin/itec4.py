@@ -478,6 +478,7 @@ def extend_attach(ccc, consensus_temp, direction):
   dist_from_end = 100
   acc_cutoff = OVERLAP_ACCURACY_CUTOFF_CONSENSUS
   len_cutoff = OVERLAP_LENGTH_CUTOFF_CONSENSUS
+  blasr_o = '-bestn 1 -m 1 -maxMatch 20'
 
   temps1 = 'temp_seq1' + temp_sig + '.fasta'
   temps2 = 'temp_seq2' + temp_sig + '.fasta'
@@ -486,7 +487,7 @@ def extend_attach(ccc, consensus_temp, direction):
   with open(temps2, 'w') as f:
     f.write('>2\n' + ccc)
 
-  status = commands.getstatusoutput(BLASR_EXE + ' ' + temps1 + ' ' + temps2 + ' ' + BLASR_OPTIONS)[1]
+  status = commands.getstatusoutput(BLASR_EXE + ' ' + temps1 + ' ' + temps2 + ' ' + blasr_o)[1]
   if len(status.split()) == BLASR_ZERO_LEN:
     print 'Failure: No alignment'
     print 'Files: Consensus:', temps1, 'Current contig:', temps2
