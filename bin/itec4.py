@@ -150,7 +150,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         # Break condition: Current header doesn't change, meaning we couldn't find any extension candidates
         counter += 1
         print datetime.datetime.now() - curr_time, datetime.datetime.now()
-        print 'iteration', counter, direction
+        print '-----------------\niteration', counter, direction
         curr_time = datetime.datetime.now()
         if counter > 750:
           break
@@ -502,6 +502,8 @@ def extend_attach(ccc, consensus_temp, direction):
   total_len_r2 = int(status.split()[BLASR_ZERO + 11])
   end_pos_r2 = total_len_r2 - end_align_r2
   length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2
+
+  print status  # testing
 
   change = False
   if direction == 'right':
