@@ -489,6 +489,7 @@ def extend_attach(ccc, consensus_temp, direction):
   status = commands.getstatusoutput(BLASR_EXE + ' ' + temps1 + ' ' + temps2 + ' ' + BLASR_OPTIONS)[1]
   if len(status.split()) == BLASR_ZERO_LEN:
     print 'Failure: No alignment'
+    print 'Files: Consensus:', temps1, 'Current contig:', temps2
     return ccc, False
   r2_strand_dir = int(status.split()[BLASR_ZERO + 2])
   r1_strand_dir = int(status.split()[BLASR_ZERO + 3])
@@ -516,6 +517,7 @@ def extend_attach(ccc, consensus_temp, direction):
       change = True
   if not change:
     print 'Failure:', status
+    print 'Files: Consensus:', temps1, 'Current contig:', temps2
   return ccc, change
 
 
