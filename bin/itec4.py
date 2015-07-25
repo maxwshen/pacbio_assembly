@@ -22,7 +22,6 @@ OVERLAP_ACCURACY_CUTOFF = 75    # .
 OVERLAP_LENGTH_CUTOFF = 7000     # .
 OVERLAP_ACCURACY_CUTOFF_CONSENSUS = 98
 OVERLAP_LENGTH_CUTOFF_CONSENSUS = 7000
-OVERLAP_TEST_LIMIT = 5          # Once we find this many overlapping reads, just early out
 MIN_EXTENSION = 0               # Min. bp extension candidates need to extend
 # OVERLAP_LENGTH_CUTOFF = 300     # .
 NUM_ATTEMPTS = 1                # Number of times to try nhood extension.
@@ -200,34 +199,17 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
           for i2 in range(2):
             good_candidates = []
             farthest_support = []
+            candreads = []
             for head in possible_heads:
-              candidate_read = rr[hr.index(head)]
+              candreads.append(rr[hr.index(head)])
 
-              # if len(possible_heads) < 50:                            # testing
-                # print head,                                           # testing
-                # find_genomic_position(candidate_read, hr, rr)       # testing
-                # num_neighbors = len(creads[head]) / 2 - 1   # testing
-                # print head, num_neighbors                   # testing
+            if direction == 'right':
+              good_candidates = test_overlap_multiple(possible_heads, candreads, curr_contig[-1], direction, farthest_support, criteria, relaxed = km)
+            else:
+              good_candidates = test_overlap_multiple(possible_heads, candreads, curr_contig[0], direction, farthest_support, criteria, relaxed = km)
 
-              # candidate_read = error_correct(ec_tool, head, headers, creads, hr, rr)[0]    # testing
-              # print 'consensus:',                         # testing
-              # find_genomic_position(candidate_read, hr, rr, align_consensus = True))       # testing
-              # print' original:',                          # testing
-              # find_genomic_position(rr[hr.index(head)], hr, rr)   # testing
-
-              overlaps = False
-              if direction == 'right' and test_overlap(head, candidate_read, curr_contig[-1], direction, farthest_support, criteria, relaxed = km):
-                # option: relaxed = km
-                overlaps = True
-              if direction == 'left' and test_overlap(head, curr_contig[0], candidate_read, direction, farthest_support, criteria, relaxed = km):
-                overlaps = True
-              if overlaps:
-                good_candidates.append(head)
-                criteria[head] = len(creads[head]) / 2 - 1    # Criteria = # of neighbors in 1-deg nhood
-                # print 'Overlap:', overlaps                  # testing
-
-              if len(good_candidates) > OVERLAP_TEST_LIMIT:
-                break
+            for gc in good_candidates:
+              criteria[gc] = len(creads[gc]) / 2 - 1
 
             if len(farthest_support) == 0:
               break
@@ -270,12 +252,6 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             best_head = filtered_good_candidates[i]
             h = best_head
             print 'CANDIDATE CHOSEN:'
-
-            # just for my own info
-            # if direction == 'right':
-              # test_overlap(h, rr[hr.index(h)], curr_contig[-1], direction, farthest_support, criteria, relaxed = False, print_alignment = True)     # testing
-            # if direction == 'left':
-              # test_overlap(h, curr_contig[0], rr[hr.index(h)], direction, farthest_support, criteria, relaxed = False, print_alignment = True)     # testing
 
             # find_genomic_position(rr[hr.index(h)], hr, rr)  # testing
             consensus_temp, n1, n2 = error_correct(ec_tool, h, headers, creads, hr, rr, candidates = filtered_good_candidates)
@@ -446,15 +422,81 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
 
   if not relaxed:
     if direction == 'right':
-      # if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 and beg_align_r2 < dist_from_end:
       # print status                    # TESTING
       return accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 + MIN_EXTENSION and beg_align_r2 < dist_from_end
     if direction == 'left':
       return accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + MIN_EXTENSION and beg_align_r2 < dist_from_end
-      # return accuracy >= acc_cutoff and length > len_cutoff and beg_align_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + MIN_EXTENSION and end_pos_r2 < dist_from_end
   else:
     return accuracy >= acc_cutoff and length > len_cutoff
 
+def test_overlap_multiple(heads, seqs, seq2, direction, farthest_support, criteria, relaxed = False, print_alignment = False, consensus = False):
+  # Tests that seqs overlap in direction with seq2
+  if not consensus:
+    dist_from_end = 5000
+    acc_cutoff = OVERLAP_ACCURACY_CUTOFF
+    len_cutoff = OVERLAP_LENGTH_CUTOFF
+  if consensus:
+    dist_from_end = 100
+    acc_cutoff = OVERLAP_ACCURACY_CUTOFF_CONSENSUS
+    len_cutoff = OVERLAP_LENGTH_CUTOFF_CONSENSUS
+
+  temps1 = 'temp_seq1' + temp_sig + '.fasta'
+  temps2 = 'temp_seq2' + temp_sig + '.fasta'
+  with open(temps1, 'w') as f:
+    for i in range(len(seqs)):
+      f.write('>' + str(i) + '\n' + seqs[i] + '\n')
+  with open(temps2, 'w') as f:
+    f.write('>2\n' + seq2)
+
+  overlaps = []
+  status = commands.getstatusoutput(BLASR_EXE + ' ' + temps1 + ' ' + temps2 + ' ' + BLASR_OPTIONS)[1]
+  if print_alignment:
+    print status
+  if len(status.split()) == BLASR_ZERO_LEN:
+    return overlaps
+  # print status                    # TESTING
+
+  newstatus = status.splitlines()[1:-1]
+  for ii in range(len(newstatus)):
+    line = newstatus[ii]
+    r2_strand_dir = int(line.split()[2])
+    r1_strand_dir = int(line.split()[3])
+    accuracy = float(line.split()[5])
+    beg_align_r1 = int(line.split()[6])
+    end_align_r1 = int(line.split()[7])
+    total_len_r1 = int(line.split()[8])
+    end_pos_r1 = total_len_r1 - end_align_r1
+    beg_align_r2 = int(line.split()[9])
+    end_align_r2 = int(line.split()[10])
+    total_len_r2 = int(line.split()[11])
+    end_pos_r2 = total_len_r2 - end_align_r2
+    length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2   # Average alignment length
+
+    if r2_strand_dir != r1_strand_dir:
+      continue
+
+    if not consensus:
+      # update criteria
+      criteria[heads[ii]] = accuracy
+      
+      if direction == 'right':
+        farthest_support.append(end_pos_r1)
+      if direction == 'left':
+        farthest_support.append(beg_align_r2)
+
+      if not relaxed:
+        if direction == 'right':
+          # print status                    # TESTING
+          if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
+            overlaps.append(heads[ii])
+        if direction == 'left':
+          if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
+            overlaps.append(heads[ii])
+      else:
+        if accuracy >= acc_cutoff and length > len_cutoff:
+          overlaps.append(heads[ii])
+
+  return overlaps
 
 def find_in_contigs(completed_contigs, consensus):
   LEN_CUTOFF = 10000
