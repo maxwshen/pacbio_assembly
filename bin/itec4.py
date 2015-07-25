@@ -132,7 +132,11 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     if find_in_contigs(completed_contigs, scon):
       print 'Found consensus in previous contig'
       continue 
-    # pos = find_genomic_position(curr_contig[0], hr, rr, align_consensus = True)       # testing
+    
+    # UPDATE BETA TESTING
+    pos = find_genomic_position(curr_contig[0], hr, rr, align_consensus = True)       # testing
+    # 
+    
     curr_contig_headers = [h]
     curr_contig_headers_data = ['_']
     master_h = h
@@ -255,7 +259,12 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
 
             # find_genomic_position(rr[hr.index(h)], hr, rr)  # testing
             consensus_temp, n1, n2 = error_correct(ec_tool, h, headers, creads, hr, rr, candidates = filtered_good_candidates)
-            if len(consensus_temp) != 0 and consensus_temp not in curr_contig:
+
+            # UPDATE BETA TESTING
+            find_genomic_position(consensus_temp, hr, rr)     # testing
+            # 
+            
+            if len(consensus_temp) != 0:
               if direction == 'right' and test_overlap(h, consensus_temp, curr_contig[-1], direction, farthest_support, criteria, print_alignment = True, consensus = True):
                 break
               if direction == 'left' and test_overlap(h, curr_contig[0], consensus_temp, direction, farthest_support, criteria, print_alignment = True, consensus = True):
@@ -1117,6 +1126,7 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
     f.write('\n'.join(reads))
 
   ec_out = EC_PREFIX + temp_orig_file
+  # print 'Consensus out file:', ec_out
   status = commands.getstatusoutput(ec_tool + ' ' + temp_orig_file + ' ' + temp_nhood_file + ' ' + EC_N)[1]
   print status
   if 'ERROR' in status or 'No such file or directory' in status:
