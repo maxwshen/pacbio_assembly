@@ -489,9 +489,11 @@ def test_overlap_multiple(heads, seqs, seq2, direction, farthest_support, criter
           # print status                    # TESTING
           if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
             overlaps.append(heads[ii])
+            print line    # testing
         if direction == 'left':
           if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
             overlaps.append(heads[ii])
+            print line    # testing
       else:
         if accuracy >= acc_cutoff and length > len_cutoff:
           overlaps.append(heads[ii])
