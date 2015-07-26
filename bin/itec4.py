@@ -481,12 +481,15 @@ def test_overlap_multiple(heads, seqs, seq2, direction, farthest_support, criter
     end_pos_r2 = total_len_r2 - end_align_r2
     length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2   # Average alignment length
 
+    currindex = int(line.split('/')[0])
+    currhead = heads[currindex]
+
     if r2_strand_dir != r1_strand_dir:
       continue
 
     if not consensus:
       # update criteria
-      criteria[heads[ii]] = accuracy
+      criteria[currhead] = accuracy
       
       if direction == 'right':
         farthest_support.append(end_pos_r1)
@@ -497,15 +500,13 @@ def test_overlap_multiple(heads, seqs, seq2, direction, farthest_support, criter
         if direction == 'right':
           # print status                    # TESTING
           if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
-            overlaps.append(heads[ii])
-            print line    # testing
+            overlaps.append(currhead)
         if direction == 'left':
           if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
-            overlaps.append(heads[ii])
-            print line    # testing
+            overlaps.append(currhead)
       else:
         if accuracy >= acc_cutoff and length > len_cutoff:
-          overlaps.append(heads[ii])
+          overlaps.append(currhead)
 
   return overlaps
 
