@@ -507,22 +507,22 @@ def test_overlap_multiple(heads, seqs, seq2, direction, farthest_support, criter
       if direction == 'left':
         farthest_support.append(beg_align_r2)
 
-        if not relaxed:
-          if accuracy >= acc_cutoff and length > len_cutoff:
-            if direction == 'right':
-              if end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
-                overlaps.append(currhead)
-              if abs(actual_len_r1 - total_len_r1) < COMPLETE_OVERLAP_THRESH:
-                overlaps.append(currhead)
+      if not relaxed:
+        if accuracy >= acc_cutoff and length > len_cutoff:
+          if direction == 'right':
+            if end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
+              overlaps.append(currhead)
+            if abs(actual_len_r1 - total_len_r1) < COMPLETE_OVERLAP_THRESH:
+              overlaps.append(currhead)
 
-            if direction == 'left':
-              if end_pos_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
-                overlaps.append(currhead)
-              if abs(actual_len_r2 - total_len_r2) < COMPLETE_OVERLAP_THRESH:
-                overlaps.append(currhead)
-        else:
-          if accuracy >= acc_cutoff and length > len_cutoff:
-            overlaps.append(currhead)    
+          if direction == 'left':
+            if end_pos_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
+              overlaps.append(currhead)
+            if abs(actual_len_r2 - total_len_r2) < COMPLETE_OVERLAP_THRESH:
+              overlaps.append(currhead)
+      else:
+        if accuracy >= acc_cutoff and length > len_cutoff:
+          overlaps.append(currhead)    
   return overlaps
 
 def find_in_contigs(completed_contigs, consensus):
