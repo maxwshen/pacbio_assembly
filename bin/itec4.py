@@ -119,11 +119,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   # num_contig_attempts = len(ktmers)
   for m in range(num_contig_attempts):
     print '\n' + str(datetime.datetime.now())
-    print 'past_headers:', past_headers
     h = find_new_read(ktmers, completed_contigs, past_headers, headers, creads)
-    # TEST 
-    h = '>m140909_094518_42139_c100697390480000001823143803261574_s1_p0/138669/0_24490'
-    # TESTING COMPLETE OVERLAP SCENARIO
     print 'STARTING HEADER:\n', h
 
     scon = error_correct(ec_tool, h, headers, creads, hr, rr)[0]
@@ -155,7 +151,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
         print datetime.datetime.now() - curr_time, datetime.datetime.now()
         print '-----------------\niteration', counter, direction
         curr_time = datetime.datetime.now()
-        if counter > 3:
+        if counter > 1500:
           print 'Reached maximum number of iterations:', counter
           break
         old_h = h
