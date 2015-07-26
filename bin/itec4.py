@@ -121,6 +121,9 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
     print '\n' + str(datetime.datetime.now())
     print 'past_headers:', past_headers
     h = find_new_read(ktmers, completed_contigs, past_headers, headers, creads)
+    # TEST 
+    h = '>m140909_094518_42139_c100697390480000001823143803261574_s1_p0/138669/0_24490'
+    # TESTING COMPLETE OVERLAP SCENARIO
     print 'STARTING HEADER:\n', h
 
     scon = error_correct(ec_tool, h, headers, creads, hr, rr)[0]
@@ -133,9 +136,6 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
       print 'Found consensus in previous contig'
       continue 
     
-    # UPDATE BETA TESTING
-    pos = find_genomic_position(curr_contig[0], hr, rr, align_consensus = True)       # testing
-    # 
     
     curr_contig_headers = [h]
     curr_contig_headers_data = ['_']
@@ -260,10 +260,6 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
             # find_genomic_position(rr[hr.index(h)], hr, rr)  # testing
             consensus_temp, n1, n2 = error_correct(ec_tool, h, headers, creads, hr, rr, candidates = filtered_good_candidates)
 
-            # UPDATE BETA TESTING
-            find_genomic_position(consensus_temp, hr, rr)     # testing
-            # 
-            
             if len(consensus_temp) != 0:
               if direction == 'right' and test_overlap(h, consensus_temp, curr_contig[-1], direction, farthest_support, criteria, print_alignment = True, consensus = True):
                 break
@@ -387,7 +383,7 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
     dist_from_end = 100
     acc_cutoff = OVERLAP_ACCURACY_CUTOFF_CONSENSUS
     len_cutoff = OVERLAP_LENGTH_CUTOFF_CONSENSUS
-
+  COMPLETE_OVERLAP_THRESH = 50
 
   temps1 = 'temp_seq1' + temp_sig + '.fasta'
   temps2 = 'temp_seq2' + temp_sig + '.fasta'
@@ -408,10 +404,12 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
   beg_align_r1 = int(status.split()[BLASR_ZERO + 6])
   end_align_r1 = int(status.split()[BLASR_ZERO + 7])
   total_len_r1 = int(status.split()[BLASR_ZERO + 8])
+  actual_len_r1 = end_align_r1 - beg_align_r1
   end_pos_r1 = total_len_r1 - end_align_r1
   beg_align_r2 = int(status.split()[BLASR_ZERO + 9])
   end_align_r2 = int(status.split()[BLASR_ZERO + 10])
   total_len_r2 = int(status.split()[BLASR_ZERO + 11])
+  actual_len_r2 = end_align_r2 - end_align_r1
   end_pos_r2 = total_len_r2 - end_align_r2
   length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2   # Average alignment length
 
@@ -430,13 +428,21 @@ def test_overlap(head1, seq1, seq2, direction, farthest_support, criteria, relax
       farthest_support.append(beg_align_r2)
 
   if not relaxed:
-    if direction == 'right':
-      # print status                    # TESTING
-      return accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 + MIN_EXTENSION and beg_align_r2 < dist_from_end
-    if direction == 'left':
-      return accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + MIN_EXTENSION and beg_align_r2 < dist_from_end
+    if accuracy >= acc_cutoff and length > len_cutoff:
+      if direction == 'right':
+        if end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
+          return True
+        if abs(actual_len_r1 - total_len_r1) < COMPLETE_OVERLAP_THRESH:
+          return True
+
+      if direction == 'left':
+        if end_pos_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
+          return True
+        if abs(actual_len_r2 - total_len_r2) < COMPLETE_OVERLAP_THRESH:
+          return True
   else:
     return accuracy >= acc_cutoff and length > len_cutoff
+
 
 def test_overlap_multiple(heads, seqs, seq2, direction, farthest_support, criteria, relaxed = False, print_alignment = False, consensus = False):
   # Tests that seqs overlap in direction with seq2
@@ -448,6 +454,8 @@ def test_overlap_multiple(heads, seqs, seq2, direction, farthest_support, criter
     dist_from_end = 100
     acc_cutoff = OVERLAP_ACCURACY_CUTOFF_CONSENSUS
     len_cutoff = OVERLAP_LENGTH_CUTOFF_CONSENSUS
+  COMPLETE_OVERLAP_THRESH = 50
+
 
   temps1 = 'temp_seq1' + temp_sig + '.fasta'
   temps2 = 'temp_seq2' + temp_sig + '.fasta'
@@ -474,11 +482,14 @@ def test_overlap_multiple(heads, seqs, seq2, direction, farthest_support, criter
     beg_align_r1 = int(line.split()[6])
     end_align_r1 = int(line.split()[7])
     total_len_r1 = int(line.split()[8])
+    actual_len_r1 = end_align_r1 - beg_align_r1
     end_pos_r1 = total_len_r1 - end_align_r1
     beg_align_r2 = int(line.split()[9])
     end_align_r2 = int(line.split()[10])
     total_len_r2 = int(line.split()[11])
+    actual_len_r2 = end_align_r2 - beg_align_r2
     end_pos_r2 = total_len_r2 - end_align_r2
+
     length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2   # Average alignment length
 
     currindex = int(line.split('/')[0])
@@ -496,18 +507,22 @@ def test_overlap_multiple(heads, seqs, seq2, direction, farthest_support, criter
       if direction == 'left':
         farthest_support.append(beg_align_r2)
 
-      if not relaxed:
-        if direction == 'right':
-          # print status                    # TESTING
-          if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
-            overlaps.append(currhead)
-        if direction == 'left':
-          if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
-            overlaps.append(currhead)
-      else:
-        if accuracy >= acc_cutoff and length > len_cutoff:
-          overlaps.append(currhead)
+        if not relaxed:
+          if accuracy >= acc_cutoff and length > len_cutoff:
+            if direction == 'right':
+              if end_pos_r1 < dist_from_end and end_pos_r2 > end_pos_r1 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
+                overlaps.append(currhead)
+              if abs(actual_len_r1 - total_len_r1) < COMPLETE_OVERLAP_THRESH:
+                overlaps.append(currhead)
 
+            if direction == 'left':
+              if end_pos_r1 < dist_from_end and beg_align_r1 > beg_align_r2 + MIN_EXTENSION and beg_align_r2 < dist_from_end:
+                overlaps.append(currhead)
+              if abs(actual_len_r2 - total_len_r2) < COMPLETE_OVERLAP_THRESH:
+                overlaps.append(currhead)
+        else:
+          if accuracy >= acc_cutoff and length > len_cutoff:
+            overlaps.append(currhead)    
   return overlaps
 
 def find_in_contigs(completed_contigs, consensus):
@@ -541,6 +556,7 @@ def extend_attach(ccc, consensus_temp, direction):
   dist_from_end = 100
   acc_cutoff = OVERLAP_ACCURACY_CUTOFF_CONSENSUS
   len_cutoff = OVERLAP_LENGTH_CUTOFF_CONSENSUS
+  COMPLETE_OVERLAP_THRESH = 50
   blasr_o = '-bestn 1 -m 1 -maxMatch 20'
 
   temps1 = 'temp_seq1' + temp_sig + '.fasta'
@@ -561,24 +577,33 @@ def extend_attach(ccc, consensus_temp, direction):
   beg_align_r1 = int(status.split()[BLASR_ZERO + 6])
   end_align_r1 = int(status.split()[BLASR_ZERO + 7])
   total_len_r1 = int(status.split()[BLASR_ZERO + 8])
+  actual_len_r1 = end_align_r1 - beg_align_r1
   end_pos_r1 = total_len_r1 - end_align_r1
   beg_align_r2 = int(status.split()[BLASR_ZERO + 9])
   end_align_r2 = int(status.split()[BLASR_ZERO + 10])
   total_len_r2 = int(status.split()[BLASR_ZERO + 11])
+  actual_len_r2 = end_align_r2 - beg_align_r2
   end_pos_r2 = total_len_r2 - end_align_r2
   length = (end_align_r2 - beg_align_r2 + end_align_r1 - beg_align_r1) / 2
 
   print status  # testing
 
   change = False
-  if direction == 'right':
-    if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r2 < dist_from_end:
-      ccc = ccc[: end_align_r1] + consensus_temp[end_align_r2 :]
-      change = True
-  if direction == 'left':
-    if accuracy >= acc_cutoff and length > len_cutoff and end_pos_r1 < dist_from_end and beg_align_r2 < dist_from_end:
-      ccc =  consensus_temp[: end_align_r2] + ccc[end_align_r1 :]
-      change = True
+  if accuracy >= acc_cutoff and length > len_cutoff:
+    if direction == 'right':
+      if end_pos_r1 < dist_from_end and beg_align_r2 < dist_from_end:
+        ccc = ccc[: end_align_r1] + consensus_temp[end_align_r2 :]
+        change = True
+      if abs(actual_len_r1 - total_len_r1) < COMPLETE_OVERLAP_THRESH:
+        ccc = ccc[: end_align_r1] + consensus_temp[end_align_r2 :]
+        change = True
+    if direction == 'left':
+      if end_pos_r1 < dist_from_end and beg_align_r2 < dist_from_end:
+        ccc =  consensus_temp[: end_align_r2] + ccc[end_align_r1 :]
+        change = True
+      if abs(actual_len_r2 - total_len_r2) < COMPLETE_OVERLAP_THRESH:
+        ccc =  consensus_temp[: end_align_r2] + ccc[end_align_r1 :]
+        change = True
   if not change:
     print 'Failure:', status
     print 'Files: Consensus:', temps1, 'Current contig:', temps2
@@ -1415,6 +1440,7 @@ def check_contigs(contigs_fold, reads_file):
 
 
 def combine_contigs(contigs_fold):
+  # 7/26/15: Might not detect if one read completely contains the current contig we are building 
   acc_cutoff = 0
   dist_to_end = 2000
   BLASR_OPTIONS = '-bestn 1 -m 1 -maxMatch 20'
