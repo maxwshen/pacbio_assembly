@@ -1156,6 +1156,10 @@ def error_correct(ec_tool, header, headers, creads, hr, rr, temp_sig_out = None,
     print status
     return '', -1, 1
 
+  if not os.path.isfile(ec_out):
+    print 'EC did not return a consensus'
+    return '', -1, 1
+
   ch, cr = ml.read_fasta(ec_out)
   consensus = cr[0]
   header_con = ch[0]
