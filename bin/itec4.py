@@ -22,7 +22,7 @@ OVERLAP_ACCURACY_CUTOFF = 75    # .
 OVERLAP_LENGTH_CUTOFF = 7000     # .
 OVERLAP_ACCURACY_CUTOFF_CONSENSUS = 98
 OVERLAP_LENGTH_CUTOFF_CONSENSUS = 7000
-MIN_EXTENSION = 0               # Min. bp extension candidates need to extend
+MIN_EXTENSION = 1               # Min. bp extension candidates need to extend
 # OVERLAP_LENGTH_CUTOFF = 300     # .
 NUM_ATTEMPTS = 1                # Number of times to try nhood extension.
 SUPPORT_CUTOFF = 70             # CANDIDATE: Required pct accuracy for support to count
@@ -120,7 +120,8 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   for m in range(num_contig_attempts):
     print '\n' + str(datetime.datetime.now())
     h = find_new_read(ktmers, completed_contigs, past_headers, headers, creads)
-    h = '>R_m140909_094518_42139_c100697390480000001823143803261574_s1_p0/19610/0_22247'
+    # h = '>R_m140909_094518_42139_c100697390480000001823143803261574_s1_p0/19610/0_22247'
+    h = '>R_m140909_094518_42139_c100697390480000001823143803261574_s1_p0/150041/17393_51634'
     print 'STARTING HEADER:\n', h
 
     scon = error_correct(ec_tool, h, headers, creads, hr, rr)[0]
