@@ -120,6 +120,7 @@ def iterative_ec(reads_file, ktmer_headers_file, creads_file, ec_tool, parallel_
   for m in range(num_contig_attempts):
     print '\n' + str(datetime.datetime.now())
     h = find_new_read(ktmers, completed_contigs, past_headers, headers, creads)
+    h = '>R_m140909_094518_42139_c100697390480000001823143803261574_s1_p0/19610/0_22247'
     print 'STARTING HEADER:\n', h
 
     scon = error_correct(ec_tool, h, headers, creads, hr, rr)[0]
