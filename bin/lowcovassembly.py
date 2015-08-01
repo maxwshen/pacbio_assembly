@@ -37,10 +37,12 @@ if __name__ == '__main__':
   parser.add_argument('overlap_fn', \
     help = 'Reads Overlap File', \
     type = os.path.abspath, \
+    nargs = '?', \
     default = '/home/yu/mshen/pacbio_assembly/data/max_assemble_files/reads.20k.cov20.more_samp1.fasta.info')
   parser.add_argument('reads_fn', \
     help = 'Reads File', \
     type = os.path.abspath, \
+    nargs = '?', \
     default = '/home/yu/mshen/pacbio_assembly/data/max_assemble_files/reads.20k.cov20.more_samp1.fasta.info.number.fasta')
   args = parser.parse_args()
   
