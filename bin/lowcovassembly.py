@@ -13,7 +13,7 @@ def main(args):
 
 
 class OverlapGraph():
-  def __init__(overlap_fn):
+  def __init__(self, overlap_fn):
     self.chimeras = set()
     self.edges = defaultdict(list)
 
