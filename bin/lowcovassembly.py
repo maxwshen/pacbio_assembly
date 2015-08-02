@@ -44,10 +44,10 @@ class OverlapGraph():
     nums = dict()
     for c in cc:
       sp = self.get_starting_nodes(c)
-      if sp not in nums:
-        nums[sp] = 1
+      if len(sp) not in nums:
+        nums[len(sp)] = 1
       else:
-        nums[sp] += 1
+        nums[len(sp)] += 1
       if len(c) == 1:
         num_singles += 1
     print 'Found', num_singles, 'single node components out of', len(cc)
@@ -93,7 +93,7 @@ class OverlapGraph():
       curr_cc = [curr_node.num]
       used.add(curr_node.num)
       while len(next) != 0:
-        print 'Next:', len(next)
+        # print 'Next:', len(next)
         curr_node = self.nodes[next[0]]
         next = next[1:]
         used.add(curr_node.num)
@@ -101,7 +101,7 @@ class OverlapGraph():
         next += [s for s in curr_node.non_inedges if s not in used and s not in next]
         next += [s for s in curr_node.non_outedges if s not in used and s not in next]
       cc.append(curr_cc)
-      print 'Used:', len(used)
+      # print 'Used:', len(used)
     print 'Found', len(cc), 'connected components'
     return cc
 
