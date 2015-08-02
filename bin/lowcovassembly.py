@@ -64,7 +64,7 @@ class Node():
     if chimerism:
       self.chi_inedges.append(innum)
     else:
-      self.non_outedges.append(innum)
+      self.non_inedges.append(innum)
 
 
 if __name__ == '__main__':
