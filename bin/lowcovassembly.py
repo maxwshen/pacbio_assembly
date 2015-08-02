@@ -48,10 +48,10 @@ class Node():
     self.outedges = []
     self.inedges = []
 
-  def add_out(outnum):
+  def add_out(self, outnum):
     self.outedges.append(outnum)
 
-  def add_in(innum):
+  def add_in(self, innum):
     self.outedges.append(innum)
 
 
