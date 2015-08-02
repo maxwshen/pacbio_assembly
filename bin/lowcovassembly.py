@@ -48,7 +48,7 @@ class OverlapGraph():
     return
 
   def get_starting_nodes(self):
-    sn = [s for s in self.nodes if len(self.nodes[s].non_inedges) == 0]]
+    sn = [s for s in self.nodes if len(self.nodes[s].non_inedges) == 0]
     print 'Found', len(sn), 'starting nodes'
     return sn
 
@@ -58,21 +58,21 @@ class OverlapGraph():
     return en
 
   def find_connected_components(self):
-    used = set()
+    used = set()    # Nums
     cc = []   # List of starting nodes
 
-    for sn in get_starting_nodes:
-      if sn in used:
+    for sn in self.get_starting_nodes():
+      curr_node = self.nodes[sn]
+      if curr_node in used:
         continue
-      curr_node = sn
-      next = [curr.non_outedges]
+      next = curr_node.non_outedges  # list of nums
       curr_cc = []
-      used.add(curr_node)
+      used.add(curr_node.num)
       while len(next) != 0:
-        curr_node = next[0]
+        curr_node = self.nodes[next[0]]
         next = next[1:]
-        used.add(curr_node)
-        curr_cc.append(curr_node)
+        used.add(curr_node.num)
+        curr_cc.append(curr_node.num)
         next += [s for s in curr_node.non_inedges if s not in used]
         next += [s for s in curr_node.non_outedges if s not in used]
       cc.append(curr_cc)
