@@ -69,7 +69,7 @@ class OverlapGraph():
       curr_cc = []
       used.add(curr_node.num)
       while len(next) != 0:
-        print 'Next:', next
+        print 'Next:', len(next)
         curr_node = self.nodes[next[0]]
         next = next[1:]
         used.add(curr_node.num)
