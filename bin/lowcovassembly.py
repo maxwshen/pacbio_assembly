@@ -18,42 +18,53 @@ class OverlapGraph():
     self.nodes = dict()   # Key = num, Val = node
 
     with open(overlap_fn) as f:
+      chimerism = False
       for i, line in enumerate(f):
         words = line.split()
         if words[0] == 'Chimeric':
           self.chimeras.add(words[1])
+          chimerism = True
+        if words[0] == 'NonChimeric':
+          chimerism = False
         if words[0] == 'Right':
           base = words[1]
           extend = words[2]
           shift = int(words[3])
-
-          self.add_right_edge(base, extend)
+          self.add_right_edge(base, extend, chimerism)
 
     print 'Found', len(self.chimeras), 'chimeras'
     print 'Found', len(self.nodes), 'reads'
-    print len([s for s in self.nodes if len(self.nodes[s].inedges) == 0]), 'starting pts found'
+    print len([s for s in self.nodes if len(self.nodes[s].non_inedges) == 0]), 'starting pts found'
 
-  def add_right_edge(self, base, extend):
+  def add_right_edge(self, base, extend, chimerism):
     if base not in self.nodes:
       self.nodes[base] = Node(base)
     if extend not in self.nodes:
       self.nodes[extend] = Node(extend)
-    self.nodes[base].add_out(extend)
-    self.nodes[extend].add_in(base)
+    self.nodes[base].add_out(extend, chimerism)
+    self.nodes[extend].add_in(base, chimerism)
     return
+
 
 class Node():
   def __init__(self, num):
     self.num = num
-    self.outedges = []
-    self.inedges = []
+    self.non_outedges = []
+    self.non_inedges = []
+    self.chi_outedges = []
+    self.chi_inedges = []
 
-  def add_out(self, outnum):
-    self.outedges.append(outnum)
+  def add_out(self, outnum, chimerism):
+    if chimerism:
+      self.chi_outedges.append(outnum)
+    else:
+      self.non_outedges.append(outnum)
 
-  def add_in(self, innum):
-    self.inedges.append(innum)
-
+  def add_in(self, innum, chimerism):
+    if chimerism:
+      self.chi_inedges.append(innum)
+    else:
+      self.non_outedges.append(innum)
 
 
 if __name__ == '__main__':
