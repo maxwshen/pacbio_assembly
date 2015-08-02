@@ -9,6 +9,7 @@ def main(args):
   reads_fn = args.reads_fn
 
   og = OverlapGraph(overlap_fn)
+  og.find_nonchimeric_contigs()
   return
 
 
@@ -37,13 +38,22 @@ class OverlapGraph():
     self.get_starting_nodes()
     self.get_ending_nodes()
 
+  def find_nonchimeric_contigs(self):
     cc = self.find_connected_components()
     num_singles = 0
+    nums = dict()
     for c in cc:
       sp = self.get_starting_nodes(c)
+      if sp not in nums:
+        nums[sp] = 1
+      else:
+        nums[sp] += 1
       if len(c) == 1:
         num_singles += 1
-    print 'Found', num_singles, 'number of single node components'
+    print 'Found', num_singles, 'single node components out of', len(cc)
+    for key in nums:
+      print 'Found', nums[key], 'components with', key, 'starting nodes'
+    return
 
   def add_right_edge(self, base, extend, chimerism):
     if base not in self.nodes:
@@ -63,7 +73,7 @@ class OverlapGraph():
         print 'Given empty list in get_starting_nodes'
         return []
       sn = [s for s in inp if len(self.nodes[s].non_inedges) == 0]
-      print 'Found', len(sn), 'starting nodes in given list'
+      # print 'Found', len(sn), 'starting nodes in given list'
     return sn
 
   def get_ending_nodes(self):
