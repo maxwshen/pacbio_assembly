@@ -35,6 +35,8 @@ class OverlapGraph():
     print 'Found', len(self.chimeras), 'chimeras'
     print 'Found', len(self.nodes), 'reads'
     print len([s for s in self.nodes if len(self.nodes[s].non_inedges) == 0]), 'starting pts found'
+    print len([s for s in self.nodes if len(self.nodes[s].non_outedges) == 0]), 'ending pts found'
+
 
   def add_right_edge(self, base, extend, chimerism):
     if base not in self.nodes:
@@ -68,17 +70,19 @@ class Node():
 
 
 if __name__ == '__main__':
+  prior = '/home/yu/mshen/pacbio_assembly/data/max_assemble_files/'
+
   parser = argparse.ArgumentParser(description = 'Low Coverage Assembly with Overlaying Information')
   parser.add_argument('overlap_fn', \
     help = 'Reads Overlap File', \
     type = os.path.abspath, \
     nargs = '?', \
-    default = '/home/yu/mshen/pacbio_assembly/data/max_assemble_files/reads.20k.cov20.more_samp1.fasta.info')
+    default = prior + 'reads.20k.cov20.more_samp1.fasta.info')
   parser.add_argument('reads_fn', \
     help = 'Reads File', \
     type = os.path.abspath, \
     nargs = '?', \
-    default = '/home/yu/mshen/pacbio_assembly/data/max_assemble_files/reads.20k.cov20.more_samp1.fasta.info.number.fasta')
+    default = prior + 'reads.20k.cov20.more_samp1.fasta.info.number.fasta')
   args = parser.parse_args()
   
   start = datetime.datetime.now()
