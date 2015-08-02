@@ -31,7 +31,7 @@ class OverlapGraph():
 
     print 'Found', len(self.chimeras), 'chimeras'
     print 'Found', len(self.nodes), 'reads'
-    print len([s for s in self.nodes if len(s.inedges) == 0]), 'starting pts found'
+    print len([s for s in self.nodes if len(self.nodes[s].inedges) == 0]), 'starting pts found'
 
   def add_right_edge(self, base, extend):
     if base not in self.nodes:
