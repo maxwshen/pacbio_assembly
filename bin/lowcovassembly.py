@@ -37,6 +37,10 @@ class OverlapGraph():
     self.get_starting_nodes()
     self.get_ending_nodes()
     cc = self.find_connected_components()
+    for c in cc:
+      sp = get_starting_nodes(c)
+      if len(c) == 1:
+        print 'Single node found'
 
   def add_right_edge(self, base, extend, chimerism):
     if base not in self.nodes:
@@ -47,9 +51,16 @@ class OverlapGraph():
     self.nodes[extend].add_in(base, chimerism)
     return
 
-  def get_starting_nodes(self):
-    sn = [s for s in self.nodes if len(self.nodes[s].non_inedges) == 0]
-    print 'Found', len(sn), 'starting nodes'
+  def get_starting_nodes(self, inp = None):
+    if inp is None:
+      sn = [s for s in self.nodes if len(self.nodes[s].non_inedges) == 0]
+      print 'Found', len(sn), 'starting nodes in all'
+    else:
+      if len(inp) == 0:
+        print 'Given empty list in get_starting_nodes'
+        return []
+      sn = [s for s in inp if len(self.nodes[s].non_inedges) == 0]
+      print 'Found', len(sn), 'starting nodes in given list'
     return sn
 
   def get_ending_nodes(self):
@@ -66,7 +77,7 @@ class OverlapGraph():
       if curr_node in used:
         continue
       next = curr_node.non_outedges  # list of nums
-      curr_cc = []
+      curr_cc = [curr_node.num]
       used.add(curr_node.num)
       while len(next) != 0:
         print 'Next:', len(next)
@@ -80,6 +91,8 @@ class OverlapGraph():
       print 'Used:', len(used)
     print 'Found', len(cc), 'connected components'
     return cc
+
+
 
 class Node():
   def __init__(self, num):
