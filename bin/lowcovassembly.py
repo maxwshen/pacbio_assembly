@@ -74,8 +74,8 @@ class OverlapGraph():
         next = next[1:]
         used.add(curr_node.num)
         curr_cc.append(curr_node.num)
-        next += [s for s in curr_node.non_inedges if s not in used]
-        next += [s for s in curr_node.non_outedges if s not in used]
+        next += [s for s in curr_node.non_inedges if s not in used and s not in next]
+        next += [s for s in curr_node.non_outedges if s not in used and s not in next]
       cc.append(curr_cc)
       print 'Used:', len(used)
     print 'Found', len(cc), 'connected components'
