@@ -12,8 +12,8 @@ import random
 
 def main():
   input_file = sys.argv[1]
-  # plot_1group(input_file)
-  plot_2groups(input_file)
+  plot_1group(input_file)
+  # plot_2groups(input_file)
   # plot_2groups_2files(input_file)
 
 def plot_1group(input_file):
@@ -35,8 +35,10 @@ def plot_1group(input_file):
   plt.hist(data, color = 'green', bins = binrange)
 
   print step
-  plt.xlabel('Number of (27,6)-mers per read')
-  plt.ylabel('Quantity of Reads')
+  plt.xlabel('Coverage (Bin Size = 1)')
+  plt.ylabel('Number of Edges')
+  plt.xlim([0, largest])
+  plt.ylim([0, 8])
   plt.show()
 
 def plot_2groups(input_file):
