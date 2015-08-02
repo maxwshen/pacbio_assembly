@@ -52,7 +52,7 @@ class Node():
     self.outedges.append(outnum)
 
   def add_in(self, innum):
-    self.outedges.append(innum)
+    self.inedges.append(innum)
 
 
 
