@@ -36,11 +36,14 @@ class OverlapGraph():
     print 'Found', len(self.nodes), 'reads'
     self.get_starting_nodes()
     self.get_ending_nodes()
+
     cc = self.find_connected_components()
+    num_singles = 0
     for c in cc:
-      sp = get_starting_nodes(c)
+      sp = self.get_starting_nodes(c)
       if len(c) == 1:
-        print 'Single node found'
+        num_singles += 1
+    print 'Found', num_singles, 'number of single node components'
 
   def add_right_edge(self, base, extend, chimerism):
     if base not in self.nodes:
