@@ -15,8 +15,7 @@ def main(args):
 class OverlapGraph():
   def __init__(self, overlap_fn):
     self.chimeras = set()
-    self.edges = defaultdict(list)
-    self.indegs = dict()
+    self.nodes = dict()   # Key = num, Val = node
 
     with open(overlap_fn) as f:
       for i, line in enumerate(f):
@@ -27,17 +26,34 @@ class OverlapGraph():
           base = words[1]
           extend = words[2]
           shift = int(words[3])
-          self.edges[base].append((extend, shift))
-          if extend not in self.indegs:
-            self.indegs[extend] = 1
-          else:
-            self.indegs[extend] += 1
-          if base not in self.indegs:
-            self.indegs[base] = 0
+
+          self.add_right_edge(base, extend)
 
     print 'Found', len(self.chimeras), 'chimeras'
-    print 'Found', len(self.edges), 'reads'
-    print len([s for s in self.indegs if self.indegs[s] == 0]), 'starting pts found'
+    print 'Found', len(self.nodes), 'reads'
+    print len([s for s in self.nodes if len(s.inedges) == 0]), 'starting pts found'
+
+  def add_right_edge(self, base, extend):
+    if base not in self.nodes:
+      self.nodes[base] = Node(base)
+    if extend not in self.nodes:
+      self.nodes[extend] = Node(extend)
+    self.nodes[base].add_out(extend)
+    self.nodes[extend].add_in(base)
+    return
+
+class Node():
+  def __init__(self, num):
+    self.num = num
+    self.outedges = []
+    self.inedges = []
+
+  def add_out(outnum):
+    self.outedges.append(outnum)
+
+  def add_in(innum):
+    self.outedges.append(innum)
+
 
 
 if __name__ == '__main__':
