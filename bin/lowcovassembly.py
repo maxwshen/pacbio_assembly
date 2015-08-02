@@ -16,6 +16,7 @@ class OverlapGraph():
   def __init__(self, overlap_fn):
     self.chimeras = set()
     self.edges = defaultdict(list)
+    self.indegs = dict()
 
     with open(overlap_fn) as f:
       for i, line in enumerate(f):
@@ -27,9 +28,16 @@ class OverlapGraph():
           extend = words[2]
           shift = int(words[3])
           self.edges[base].append((extend, shift))
+          if extend not in self.indegs:
+            self.indegs[extend] = 1
+          else:
+            self.indegs[extend] += 1
+          if base not in self.indegs:
+            self.indegs[base] = 0
 
     print 'Found', len(self.chimeras), 'chimeras'
     print 'Found', len(self.edges), 'reads'
+    print len([s for s in self.indegs if self.indegs[s] == 0]), 'starting pts found'
 
 
 if __name__ == '__main__':
