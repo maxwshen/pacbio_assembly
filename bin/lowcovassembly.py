@@ -30,8 +30,8 @@ class OverlapGraph():
         if words[0] == 'Right':
           base = words[1]
           extend = words[2]
-          shift = int(words[3])
-          self.add_right_edge(base, extend, chimerism)
+          right_shift = int(words[3])
+          self.add_right_edge(base, extend, chimerism, right_shift)
 
     print 'Found', len(self.chimeras), 'chimeras'
     print 'Found', len(self.nodes), 'reads'
@@ -39,28 +39,56 @@ class OverlapGraph():
     self.get_ending_nodes()
 
   def find_nonchimeric_contigs(self):
+    contigs = []
     cc = self.find_connected_components()
     num_singles = 0
     nums = dict()
     for c in cc:
-      sp = self.get_starting_nodes(c)
-      if len(sp) not in nums:
-        nums[len(sp)] = 1
-      else:
-        nums[len(sp)] += 1
       if len(c) == 1:
         num_singles += 1
-    print 'Found', num_singles, 'single node components out of', len(cc)
+        contigs.append(c)
+        continue
+      sp = self.get_starting_nodes(c)
+      longest_path(starting_nodes)
+
+    print '...Found', num_singles, 'single node components out of', len(cc)
     for key in nums:
-      print 'Found', nums[key], 'components with', key, 'starting nodes'
+      print '...Found', nums[key], 'components with', key, 'starting nodes'
     return
 
-  def add_right_edge(self, base, extend, chimerism):
+  def longest_path(starting_nodes):
+    traversed = set()
+    best = dict()   # Key = node num, val = longest distance
+    queue = starting_nodes
+    while len(queue) != 0:
+      curr = queue[0]
+      queue = queue[1:]
+      traversed.add(curr)
+
+      # Update scores and add ready nodes to queue
+      if curr not in best:
+        base = 0
+      else:
+        base = best[curr]
+      for oe in curr.non_outedges:
+        new_score = base + curr.outweights[oe]
+        if oe not in best:
+          best[oe] = new_score
+        elif new_score > best[oe]:
+          best[oe] = new_score
+        if oe.is_ready(traversed):
+          queue.append(oe)
+
+    ends = self.get_ending_nodes(list(traversed))
+    print max(best[ends]), best[ends]
+
+
+  def add_right_edge(self, base, extend, chimerism, right_shift):
     if base not in self.nodes:
       self.nodes[base] = Node(base)
     if extend not in self.nodes:
       self.nodes[extend] = Node(extend)
-    self.nodes[base].add_out(extend, chimerism)
+    self.nodes[base].add_out(extend, chimerism, right_shift)
     self.nodes[extend].add_in(base, chimerism)
     return
 
@@ -76,14 +104,20 @@ class OverlapGraph():
       # print 'Found', len(sn), 'starting nodes in given list'
     return sn
 
-  def get_ending_nodes(self):
-    en = [s for s in self.nodes if len(self.nodes[s].non_outedges) == 0]
-    print 'Found', len(en), 'ending pts found'
+  def get_ending_nodes(self, inp = None):
+    if inp is None:
+      en = [s for s in self.nodes if len(self.nodes[s].non_outedges) == 0]
+      print 'Found', len(en), 'ending pts found in all'
+    else:
+      if len(inp) == 0:
+        print 'Given empty list in get_starting_nodes'
+        return []
+      en = [s for s in self.nodes if len(self.nodes[s].non_outedges) == 0]
     return en
 
   def find_connected_components(self):
     used = set()    # Nums
-    cc = []   # List of starting nodes
+    cc = []   # List of lists, each list contains node nums
 
     for sn in self.get_starting_nodes():
       curr_node = self.nodes[sn]
@@ -111,15 +145,23 @@ class Node():
   def __init__(self, num):
     self.num = num
     self.non_outedges = []
+    self.outweights = dict()   # Key = neighbor, val = right shift int
     self.non_inedges = []
     self.chi_outedges = []
     self.chi_inedges = []
 
-  def add_out(self, outnum, chimerism):
+  def is_ready(self, traversed):
+    return len(traversed.intersection(self.non_inedges)) == len(traversed)
+
+  def add_out(self, outnum, chimerism, right_shift):
     if chimerism:
       self.chi_outedges.append(outnum)
     else:
       self.non_outedges.append(outnum)
+    if outnum in self.outweights:
+      print 'ERROR:', outnum, 'already in self.outweights of node', self.num
+    else:
+      self.outweights[outnum] = right_shift
 
   def add_in(self, innum, chimerism):
     if chimerism:
