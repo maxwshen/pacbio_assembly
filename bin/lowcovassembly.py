@@ -49,14 +49,14 @@ class OverlapGraph():
         contigs.append(c)
         continue
       sp = self.get_starting_nodes(c)
-      longest_path(starting_nodes)
+      self.longest_path(sp)
 
     print '...Found', num_singles, 'single node components out of', len(cc)
     for key in nums:
       print '...Found', nums[key], 'components with', key, 'starting nodes'
     return
 
-  def longest_path(starting_nodes):
+  def longest_path(self, starting_nodes):
     traversed = set()
     best = dict()   # Key = node num, val = longest distance
     queue = starting_nodes
