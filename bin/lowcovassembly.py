@@ -76,11 +76,13 @@ class OverlapGraph():
           best[oe] = new_score
         elif new_score > best[oe]:
           best[oe] = new_score
-        if oe.is_ready(traversed):
+        if self.nodes[oe].is_ready(traversed):
           queue.append(oe)
 
+    print len(traversed)
     ends = self.get_ending_nodes(list(traversed))
-    print max(best[ends]), best[ends]
+    print len(best), len(ends) 
+    print max([best[s] for s in ends]), [best[s] for s in ends]
 
 
   def add_right_edge(self, base, extend, chimerism, right_shift):
@@ -112,7 +114,7 @@ class OverlapGraph():
       if len(inp) == 0:
         print 'Given empty list in get_starting_nodes'
         return []
-      en = [s for s in self.nodes if len(self.nodes[s].non_outedges) == 0]
+      en = [s for s in inp if len(self.nodes[s].non_outedges) == 0]
     return en
 
   def find_connected_components(self):
