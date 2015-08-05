@@ -57,19 +57,19 @@ class OverlapGraph():
     return
 
   def longest_path(self, starting_nodes):
-    traversed = set()
+    traversed = set()   # Stores nums
     best = dict()   # Key = node num, val = longest distance
     queue = starting_nodes
     while len(queue) != 0:
-      curr = queue[0]
+      curr = self.nodes[queue[0]]
       queue = queue[1:]
-      traversed.add(curr)
+      traversed.add(curr.num)
 
       # Update scores and add ready nodes to queue
-      if curr not in best:
+      if curr.num not in best:
         base = 0
       else:
-        base = best[curr]
+        base = best[curr.num]
       for oe in curr.non_outedges:
         new_score = base + curr.outweights[oe]
         if oe not in best:
