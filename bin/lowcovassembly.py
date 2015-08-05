@@ -67,7 +67,7 @@ class OverlapGraph():
 
       # Update scores and add ready nodes to queue
       if curr.num not in best:
-        base = 0
+        base = 0    # Technically shouldn't be 0, should be length of read
       else:
         base = best[curr.num]
       for oe in curr.non_outedges:
