@@ -64,7 +64,6 @@ class OverlapGraph():
       curr = self.nodes[queue[0]]
       queue = queue[1:]
       traversed.add(curr.num)
-      print traversed
 
       # Update scores and add ready nodes to queue
       if curr.num not in best:
@@ -72,7 +71,6 @@ class OverlapGraph():
       else:
         base = best[curr.num]
       for oe in curr.non_outedges:
-        print curr.num, oe
         if oe in traversed or oe in queue:
           continue
         new_score = base + curr.outweights[oe]
@@ -82,7 +80,6 @@ class OverlapGraph():
           best[oe] = new_score
         if self.nodes[oe].is_ready(traversed):
           if oe in queue:
-            print oe, 'already in', queue
           queue.append(oe)
 
       print best
@@ -90,8 +87,11 @@ class OverlapGraph():
     print len(traversed)
     ends = self.get_ending_nodes(list(traversed))
     print len(best), len(ends) 
-    print max([best[s] for s in ends]), [best[s] for s in ends]
-
+    if len(ends) == 0:
+      print 'No ends found - circle?'
+    else:
+      print max([best[s] for s in ends]), [best[s] for s in ends]
+    return
 
   def add_right_edge(self, base, extend, chimerism, right_shift):
     if base not in self.nodes:
