@@ -80,7 +80,10 @@ class OverlapGraph():
         elif new_score > best[oe]:
           best[oe] = new_score
         if self.nodes[oe].is_ready(traversed):
+          if oe in queue:
+            print oe, 'already in', queue
           queue.append(oe)
+
       print best
 
     print len(traversed)
