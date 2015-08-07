@@ -72,6 +72,7 @@ class OverlapGraph():
       else:
         base = best[curr.num]
       for oe in curr.non_outedges:
+        print curr.num, oe
         if oe in traversed or oe in queue:
           continue
         new_score = base + curr.outweights[oe]
