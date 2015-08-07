@@ -64,6 +64,7 @@ class OverlapGraph():
       curr = self.nodes[queue[0]]
       queue = queue[1:]
       traversed.add(curr.num)
+      print traversed
 
       # Update scores and add ready nodes to queue
       if curr.num not in best:
@@ -80,6 +81,7 @@ class OverlapGraph():
           best[oe] = new_score
         if self.nodes[oe].is_ready(traversed):
           queue.append(oe)
+      print best
 
     print len(traversed)
     ends = self.get_ending_nodes(list(traversed))
