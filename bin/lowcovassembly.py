@@ -82,11 +82,10 @@ class OverlapGraph():
           if oe in queue:
             queue.append(oe)
 
-      print best
-
-    print len(traversed)
+    print 'Num traversed:', len(traversed)
     ends = self.get_ending_nodes(list(traversed))
-    print len(best), len(ends) 
+    print 'Num nodes in best:', len(best), 
+    print 'Num ends:', len(ends) 
     if len(ends) == 0:
       print 'No ends found - circle?'
     else:
@@ -103,6 +102,7 @@ class OverlapGraph():
     return
 
   def get_starting_nodes(self, inp = None):
+    # Inp can be a list of numbers
     if inp is None:
       sn = [s for s in self.nodes if len(self.nodes[s].non_inedges) == 0]
       print 'Found', len(sn), 'starting nodes in all'
@@ -115,6 +115,7 @@ class OverlapGraph():
     return sn
 
   def get_ending_nodes(self, inp = None):
+    # Inp can be a list of numbers
     if inp is None:
       en = [s for s in self.nodes if len(self.nodes[s].non_outedges) == 0]
       print 'Found', len(en), 'ending pts found in all'
